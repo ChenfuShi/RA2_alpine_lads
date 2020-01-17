@@ -13,10 +13,15 @@ import numpy as np
 
 class train_dataset():
     """
-    Dataset class for train split
+    Dataset class for train and validation split
     """
-    def __init__(self):
+    def __init__(self,config):
         # initialize all locations
+        pass
+
+
+    def copy_over(self):
+        # function that takes care of moving dataset to localscratch
         pass
 
     def minibatch_gen(self):

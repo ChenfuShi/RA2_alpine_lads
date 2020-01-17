@@ -18,13 +18,15 @@ class Config:
 
     pretrain_location = ""
 
-    train_location = ""
+    train_location = "data/train"
+
+    val_location = ""
 
     test_location = ""
 
     # move files 
     move_files = False
-    move_location = ""
+    move_location = "~/localscratch/RA_challenge_scratch"
 
     # other options
     CPU_threads = 8
