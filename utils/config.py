@@ -30,10 +30,16 @@ class Config:
     move_files = False
     move_location = "~/localscratch/RA_challenge_scratch"
 
+    # image settings
+    feet_height = 150
+    feet_width = 105
+    hands_height = 250 # random number
+    hands_width = 105
+
     # other options
     CPU_threads = 8
-
-
+    batch_size = 16
+    
     # Create logging file. prints both to screen and to log file
     cur_date = datetime.datetime.now()
     logging.basicConfig(

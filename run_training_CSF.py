@@ -6,6 +6,7 @@
 ########################################
 
 from utils.config import Config
+from dataset.train_dataset import train_dataset
 import model
 import dataset
 import logging
@@ -25,7 +26,9 @@ if __name__ == '__main__':
     logging.info("configuration loaded")
     
     # prepare data
-
+    logging.info("preparing train dataset")
+    dataset = train_dataset(configuration)
+    hands_dataset,feet_dataset = dataset.initialize_pipeline()
 
     # define model
 
