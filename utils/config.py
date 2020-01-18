@@ -39,6 +39,7 @@ class Config:
     # other options
     CPU_threads = 8
     batch_size = 16
+    have_val = True
     
     # Create logging file. prints both to screen and to log file
     cur_date = datetime.datetime.now()

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # prepare data
     logging.info("preparing train dataset")
     dataset = train_dataset(configuration)
-    hands_dataset,feet_dataset = dataset.initialize_pipeline()
+    hands_dataset,feet_dataset,hands_dataset_val,feet_dataset_val = dataset.initialize_pipeline()
 
     # define model
 

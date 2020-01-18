@@ -54,23 +54,39 @@ class train_dataset():
     def initialize_pipeline(self):    
         training_csv_file = os.path.join(self.config.train_location,"training.csv")
         self.data_hands,self.data_feet = self.get_dataframes(training_csv_file)
-        # here manage copy over to localscratch
+        # here manage copy over to localscratch# no need for this, just set the cache correctly
 
-        # here separate validation set
 
         # get dataset for hands
         hands_dataset = self.init_hands()
         # get dataset for feet
         feet_dataset = self.init_feet()
+        # here separate validation set
 
+        if self.config.have_val:
+            # shuffle to get random split every time. Be careful about this!
+            # hands_dataset = hands_dataset.shuffle()
+            # feet_dataset = feet_dataset.shuffle()
+            hands_dataset_val = hands_dataset.take(50) 
+            hands_dataset = hands_dataset.skip(50)
+            feet_dataset_val = feet_dataset.take(50) 
+            feet_dataset = feet_dataset.skip(50)
         # basic dataset processing
+
         # NEED CACHE LOCATION
         hands_dataset = _prepare_for_training(hands_dataset,self.config.batch_size)
         feet_dataset = _prepare_for_training(feet_dataset,self.config.batch_size)
+        if self.config.have_val:
+            hands_dataset_val = _prepare_for_training(hands_dataset_val,self.config.batch_size)
+            feet_dataset_val = _prepare_for_training(feet_dataset_val,self.config.batch_size)
         # here apply augmentation
+        # apply only to training?
+        # alternative is don't reshape the images earlier, then call augmentation in _prepare_for_training, so that you augment after caching
 
-        
-        return hands_dataset,feet_dataset
+        if self.config.have_val:
+            return hands_dataset,feet_dataset,hands_dataset_val,feet_dataset_val
+        else:
+            return hands_dataset,feet_dataset
 
     def get_dataframes(self,training_csv):
         info = pd.read_csv(training_csv)
@@ -107,6 +123,8 @@ class train_dataset():
             img = tf.image.decode_jpeg(img, channels=1)
             img = tf.image.convert_image_dtype(img, tf.float32)
             img = tf.image.resize(img, [ self.config.feet_height,self.config.feet_width])
+            if "RF" in str(file):
+                img = tf.image.flip_left_right(img)
             return img, y
         dataset = tf.data.Dataset.from_tensor_slices((self.data_feet["Patient_ID"].values, self.data_feet.loc[:, self.data_feet.columns != 'Patient_ID'].values))
         dataset = dataset.map(load_images, num_parallel_calls=AUTOTUNE)
@@ -120,8 +138,10 @@ class train_dataset():
             img = tf.image.decode_jpeg(img, channels=1)
             img = tf.image.convert_image_dtype(img, tf.float32)
             img = tf.image.resize(img, [ self.config.hands_height,self.config.hands_width])
+            if "RH" in str(file):
+                img = tf.image.flip_left_right(img)
             return img, y
         dataset = tf.data.Dataset.from_tensor_slices((self.data_hands["Patient_ID"].values, self.data_hands.loc[:, self.data_hands.columns != 'Patient_ID'].values))
-        dataset = dataset.map(load_images, ) # num_parallel_calls="AUTOTUNE"
+        dataset = dataset.map(load_images, num_parallel_calls=AUTOTUNE)
         return dataset
 
