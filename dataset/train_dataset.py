@@ -56,6 +56,8 @@ class train_dataset():
         self.data_hands,self.data_feet = self.get_dataframes(training_csv_file)
         # here manage copy over to localscratch
 
+        # here separate validation set
+
         # get dataset for hands
         hands_dataset = self.init_hands()
         # get dataset for feet
