@@ -97,6 +97,8 @@ class train_dataset():
         # function that augments datasets
         pass
 
+
+    # THESE TWO FUNCTIONS LACK THE FLIPPING BASED ON FILENAME!!!!
     def init_feet(self):
         # make feet dataset
         def load_images(file,y):
