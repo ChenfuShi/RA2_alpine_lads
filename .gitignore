@@ -7,4 +7,4 @@ __pycache__/
 .vscode/*
 
 
-./utils/stadlerm_config.json
+stadlerm_config.json
