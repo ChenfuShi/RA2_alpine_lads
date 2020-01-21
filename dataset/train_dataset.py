@@ -18,30 +18,6 @@ from tensorflow import keras
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-def _prepare_for_training(ds, batch_size=16, cache=True, shuffle_buffer_size=200):
-    """ copied from tensorflow tutorial """
-    # This is a small dataset, only load it once, and keep it in memory.
-    # use `.cache(filename)` to cache preprocessing work for datasets that don't
-    # fit in memory.
-    if cache:
-        if isinstance(cache, str):
-            ds = ds.cache(cache)
-        else:
-            ds = ds.cache()
-
-    ds = ds.shuffle(buffer_size=shuffle_buffer_size)
-
-    # Repeat forever
-    ds = ds.repeat()
-
-    ds = ds.batch(batch_size)
-
-    # `prefetch` lets the dataset fetch batches in the background while the model
-    # is training.
-    ds = ds.prefetch(buffer_size=AUTOTUNE)
-
-    return ds
-
 
 class train_dataset():
     """
@@ -54,15 +30,13 @@ class train_dataset():
     def initialize_pipeline(self):    
         training_csv_file = os.path.join(self.config.train_location,"training.csv")
         self.data_hands,self.data_feet = self.get_dataframes(training_csv_file)
-        # here manage copy over to localscratch# no need for this, just set the cache correctly
-
 
         # get dataset for hands
-        hands_dataset = self.init_hands()
+        hands_dataset = self.init_dataset(self.data_hands,"RF")
         # get dataset for feet
-        feet_dataset = self.init_feet()
-        # here separate validation set
+        feet_dataset = self.init_dataset(self.data_feet,"RH")
 
+        # here separate validation set
         if self.config.have_val:
             # shuffle to get random split every time. Be careful about this!
             # hands_dataset = hands_dataset.shuffle()
@@ -71,17 +45,14 @@ class train_dataset():
             hands_dataset = hands_dataset.skip(50)
             feet_dataset_val = feet_dataset.take(50) 
             feet_dataset = feet_dataset.skip(50)
-        # basic dataset processing
-
-        # NEED CACHE LOCATION
-        hands_dataset = _prepare_for_training(hands_dataset,self.config.batch_size)
-        feet_dataset = _prepare_for_training(feet_dataset,self.config.batch_size)
+        
+        # data processing
+        # augmentation happens here
+        hands_dataset = self._prepare_for_training(hands_dataset,self.config.augment,self.config.cache_loc + "hands")
+        feet_dataset = self._prepare_for_training(feet_dataset,self.config.augment,self.config.cache_loc + "feet")
         if self.config.have_val:
-            hands_dataset_val = _prepare_for_training(hands_dataset_val,self.config.batch_size)
-            feet_dataset_val = _prepare_for_training(feet_dataset_val,self.config.batch_size)
-        # here apply augmentation
-        # apply only to training?
-        # alternative is don't reshape the images earlier, then call augmentation in _prepare_for_training, so that you augment after caching
+            hands_dataset_val = self._prepare_for_training(hands_dataset_val,False)
+            feet_dataset_val = self._prepare_for_training(feet_dataset_val,False)
 
         if self.config.have_val:
             return hands_dataset,feet_dataset,hands_dataset_val,feet_dataset_val
@@ -105,43 +76,67 @@ class train_dataset():
         data_feet = pd.concat((dataframes["RF"],dataframes["LF"]))
         return data_hands,data_feet
 
-    def copy_over(self):
-        # function that takes care of moving dataset to localscratch
-        pass
-
-    def augment(self):
-        # function that augments datasets
-        pass
-
-
-    # THESE TWO FUNCTIONS LACK THE FLIPPING BASED ON FILENAME!!!!
-    def init_feet(self):
-        # make feet dataset
+    def init_dataset(self,df_data,flip_str):
         def load_images(file,y):
             path = self.config.train_location+"/"+file+".jpg"
             img = tf.io.read_file(path)
             img = tf.image.decode_jpeg(img, channels=1)
             img = tf.image.convert_image_dtype(img, tf.float32)
-            img = tf.image.resize(img, [ self.config.feet_height,self.config.feet_width])
-            if "RF" in str(file):
+            if flip_str in str(file):
                 img = tf.image.flip_left_right(img)
             return img, y
-        dataset = tf.data.Dataset.from_tensor_slices((self.data_feet["Patient_ID"].values, self.data_feet.loc[:, self.data_feet.columns != 'Patient_ID'].values))
+        dataset = tf.data.Dataset.from_tensor_slices((df_data["Patient_ID"].values, df_data.loc[:, df_data.columns != 'Patient_ID'].values))
         dataset = dataset.map(load_images, num_parallel_calls=AUTOTUNE)
         return dataset
 
-    def init_hands(self):
-        # make hands dataset
-        def load_images(file,y):
-            path = self.config.train_location+"/"+file+".jpg"
-            img = tf.io.read_file(path)
-            img = tf.image.decode_jpeg(img, channels=1)
-            img = tf.image.convert_image_dtype(img, tf.float32)
-            img = tf.image.resize(img, [ self.config.hands_height,self.config.hands_width])
-            if "RH" in str(file):
-                img = tf.image.flip_left_right(img)
-            return img, y
-        dataset = tf.data.Dataset.from_tensor_slices((self.data_hands["Patient_ID"].values, self.data_hands.loc[:, self.data_hands.columns != 'Patient_ID'].values))
-        dataset = dataset.map(load_images, num_parallel_calls=AUTOTUNE)
-        return dataset
+    def _prepare_for_training(self,ds, augment,cache=True, shuffle_buffer_size=200):
+        """ copied from tensorflow tutorial """
+        # This is a small dataset, only load it once, and keep it in memory.
+        # use `.cache(filename)` to cache preprocessing work for datasets that don't
+        # fit in memory.
+        def augment(img,y):
+            # function that augments datasets THEN resizes the image
+            img = tf.image.random_brightness(img, max_delta=0.3)
+            img = tf.image.random_contrast(img, 0,10)
 
+            # other things to add:
+            # random small rotation
+            # add random gradients on image
+
+            img = tf.image.resize(img, [ self.config.img_height,self.config.img_width])
+            return img, y
+            
+        def resize_anyway(img,y):
+            # function that just resizes the image
+            img = tf.image.resize(img, [ self.config.img_height,self.config.img_width])
+            return img, y
+
+        if cache:
+            if isinstance(cache, str):
+                try:
+                    os.makedirs(os.path.expanduser(cache),exist_ok=True)
+                    ds = ds.cache(os.path.expanduser(cache))
+                except FileNotFoundError:
+                    # this means that we are not on a CSF node and we are not allowed to make this folder
+                    pass
+            else:
+                ds = ds.cache()
+
+        ds = ds.shuffle(buffer_size=shuffle_buffer_size)
+
+        # Repeat forever
+        ds = ds.repeat()
+        # augment
+        if augment:
+            ds = ds.map(augment, num_parallel_calls=AUTOTUNE)
+        else:
+            # resize anyway because we are doing resizing after augmentation
+            ds = ds.map(resize_anyway, num_parallel_calls=AUTOTUNE)
+        # batch
+        ds = ds.batch(self.config.batch_size)
+
+        # `prefetch` lets the dataset fetch batches in the background while the model
+        # is training.
+        ds = ds.prefetch(buffer_size=AUTOTUNE)
+
+        return ds

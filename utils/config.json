@@ -1,13 +1,11 @@
 {
     "train_location": "data/train",
     "output_dir": "logs",
-    "move_files": False,
-    "move_location": "~/localscratch/RA_challenge_scratch",
-    "feet_height": 150,
-    "feet_width": 105,
-    "hands_height": 250,
-    "hands_width": 105,
+    "cache_loc": "~/localscratch/RA_challenge_scratch",
+    "img_height": 512,
+    "img_width": 378,
     "CPU_threads": 8,
-    "batch_size": 16,
-    "have_val": True
+    "batch_size": 25,
+    "augment":true,
+    "have_val": true
 }
