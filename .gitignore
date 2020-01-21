@@ -3,6 +3,8 @@ logs/
 *.pyc
 */__pycache__/
 __pycache__/
-.vscode/
-.vscode/settings.json
+.vscode
+.vscode/*
 
+
+stadlerm_config.json

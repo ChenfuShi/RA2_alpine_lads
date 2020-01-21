@@ -8,46 +8,28 @@
 import logging
 import datetime
 
+import json
 
 class Config:
     """
     Class containing the parameters 
     """
-
-    # data directories
-
-    pretrain_location = ""
-
-    train_location = "data/train"
-
-    val_location = ""
-
-    test_location = ""
-
-    output_dir = "logs"
-
-    # move files 
-    move_files = False
-    move_location = "~/localscratch/RA_challenge_scratch"
-
-    # image settings
-    feet_height = 150
-    feet_width = 105
-    hands_height = 250 # random number
-    hands_width = 105
-
-    # other options
-    CPU_threads = 8
-    batch_size = 16
-    have_val = True
     
-    # Create logging file. prints both to screen and to log file
-    cur_date = datetime.datetime.now()
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s - %(message)s",
-        handlers=[
-        logging.FileHandler("{0}/{1}.log".format(output_dir, f"{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}"), mode="a"),
-        logging.StreamHandler()
-    ]
-    )    
+    def __init__(self, config_path = './utils/config.json'):
+        with open(config_path) as config_file:
+            config_data = json.load(config_file)
+            
+            for key in config_data:
+                setattr(self, key, config_data[key])
+                
+        self._init_logging()
+        
+    def _init_logging(self):
+        cur_date = datetime.datetime.now()
+        
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler("{0}/{1}.log".format(self.output_dir, f"{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}"), mode="a"),
+                logging.StreamHandler()]) 
