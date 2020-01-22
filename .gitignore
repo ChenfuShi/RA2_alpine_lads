@@ -6,5 +6,5 @@ __pycache__/
 .vscode
 .vscode/*
 
-
 stadlerm_config.json
+*-checkpoint.ipynb
