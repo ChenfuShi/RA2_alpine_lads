@@ -16,9 +16,22 @@ for i, scale in enumerate(scales):
     x2 = y2 = 0.5 + (0.5 * scale)
     boxes[i] = [x1, y1, x2, y2]
 
+def _randomly_augment_dataset(dataset):
+    for aug in self.augments:
+        dataset = _apply_random_augment(dataset, aug)
+
+    # After augmentations, scale values back to lie between 0 & 1
+    dataset = dataset.map(lambda x: tf.clip_by_value(x, 0, 1), num_parallel_calls=AUTOTUNE)
+
+    return dataset
+
+def _apply_random_augment(dataset, aug, cutoff = 0.75):
+    # Randomly apply each augmentation 1 - cutoff% of the time
+    return dataset.map(lambda x: tf.cond(tf.random_uniform([], 0, 1) > cutoff, lambda: aug(x), lambda: x), num_parallel_calls=AUTOTUNE)
+
 def random_brightness_and_contrast(img, y):
     img = tf.image.random_brightness(img, max_delta=0.3)
-    img = tf.image.random_contrast(img, 0, 10)
+    img = tf.image.random_contrast(img, 0, 0.2)
     
     logging.info("Applied random_brightness_and_contrast")
     

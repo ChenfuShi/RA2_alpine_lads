@@ -13,4 +13,4 @@ def load_and_orient_image(file):
     # Convert image to grayscale
     img = PIL.ImageOps.grayscale(img)
     
-    return tf.convert_to_tensor(np.asarray(img))
+    return img
