@@ -13,19 +13,21 @@ import numpy as np
 import os
 from utils.config import Config
 from PIL import Image
-from tensorflow import keras 
+from tensorflow import keras
 
+import augments as aug
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-
 
 class train_dataset():
     """
     Dataset class for train and validation split
     """
+
     def __init__(self,config):
-        
         self.config = config
+
+        self.augments = [aug.random_brightness_and_contrast, aug.random_crop, aug.random_rotation]
 
     def initialize_pipeline(self):    
         training_csv_file = os.path.join(self.config.train_location,"training.csv")
@@ -80,8 +82,13 @@ class train_dataset():
         def load_images(file,y):
             path = self.config.train_location+"/"+file+".jpg"
             img = tf.io.read_file(path)
-            img = tf.image.decode_jpeg(img, channels=1)
+            
+            img_or = tfio.experimental.image.decode_jpeg_exif(img)
+            img = tfa.image.rotate(img, img_or)
+            
+            img = tf.image.decode_jepg(img, channels=1)
             img = tf.image.convert_image_dtype(img, tf.float32)
+            
             if flip_str in str(file):
                 img = tf.image.flip_left_right(img)
             return img, y
@@ -89,24 +96,8 @@ class train_dataset():
         dataset = dataset.map(load_images, num_parallel_calls=AUTOTUNE)
         return dataset
 
-    def _prepare_for_training(self,ds, augment,cache=True, shuffle_buffer_size=200):
-        """ copied from tensorflow tutorial """
-        # This is a small dataset, only load it once, and keep it in memory.
-        # use `.cache(filename)` to cache preprocessing work for datasets that don't
-        # fit in memory.
-        def augment(img,y):
-            # function that augments datasets THEN resizes the image
-            img = tf.image.random_brightness(img, max_delta=0.3)
-            img = tf.image.random_contrast(img, 0,10)
-
-            # other things to add:
-            # random small rotation
-            # add random gradients on image
-
-            img = tf.image.resize(img, [ self.config.img_height,self.config.img_width])
-            return img, y
-            
-        def resize_anyway(img,y):
+    def _prepare_for_training(self,ds, augment,cache=True, shuffle_buffer_size=200):            
+        def resize_img(img,y):
             # function that just resizes the image
             img = tf.image.resize(img, [ self.config.img_height,self.config.img_width])
             return img, y
@@ -126,12 +117,13 @@ class train_dataset():
 
         # Repeat forever
         ds = ds.repeat()
-        # augment
+
         if augment:
-            ds = ds.map(augment, num_parallel_calls=AUTOTUNE)
-        else:
-            # resize anyway because we are doing resizing after augmentation
-            ds = ds.map(resize_anyway, num_parallel_calls=AUTOTUNE)
+            dataset = _randomly_augment_dataset(dataset)
+
+        # Resize image after random augmentation
+        ds = ds.map(resize_img, num_parallel_calls=AUTOTUNE)
+
         # batch
         ds = ds.batch(self.config.batch_size)
 
@@ -140,3 +132,16 @@ class train_dataset():
         ds = ds.prefetch(buffer_size=AUTOTUNE)
 
         return ds
+
+    def _randomly_augment_dataset(dataset):
+        for aug in self.augments:
+                dataset = _apply_random_augment(dataset, aug)
+
+        # After augmentations, scale values back to lie between 0 & 1
+        dataset = dataset.map(lambda x: tf.clip_by_value(x, 0, 1), num_parallel_calls=AUTOTUNE)
+
+        return dataset
+
+    def _apply_random_augment(dataset, aug, cutoff = 0.75):
+        # Randomly apply each augmentation 1 - cutoff% of the time
+        return dataset.map(lambda x: tf.cond(tf.random_uniform([], 0, 1) > cutoff, lambda: aug(x), lambda: x), num_parallel_calls=AUTOTUNE)
