@@ -8,3 +8,5 @@ __pycache__/
 
 stadlerm_config.json
 *-checkpoint.ipynb
+*-checkpoint.py
+*-checkpoint.json
