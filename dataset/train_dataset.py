@@ -15,8 +15,6 @@ from utils.config import Config
 from PIL import Image
 from tensorflow import keras
 
-import augments as aug
-
 from augmentation import image_augmentor as augmentor, augments as augs
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
