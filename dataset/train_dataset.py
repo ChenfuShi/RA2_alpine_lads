@@ -15,7 +15,8 @@ from utils.config import Config
 from PIL import Image
 from tensorflow import keras
 
-from augmentation import image_augmentor as augmentor, augments as augs
+import logging
+import dataset.dataset_ops as ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -27,18 +28,15 @@ class train_dataset():
     def __init__(self,config):
         self.config = config
 
-        # Init augments that should be applied to the dataset
-        self.augments = [augs.random_brightness_and_contrast, augs.random_crop, augs.random_rotation]
-
     def initialize_pipeline(self):    
         training_csv_file = os.path.join(self.config.train_location,"training.csv")
         
         self.data_hands, self.data_feet = _get_dataframes(training_csv_file)
 
         # get dataset for hands
-        hands_dataset = _init_dataset(self.data_hands, self.config.train_location, "RF")
+        hands_dataset = _init_dataset(self.data_hands, self.config.train_location, self.config.fixed_directory, "RF")
         # get dataset for feet
-        feet_dataset = _init_dataset(self.data_feet, self.config.train_location, "RH")
+        feet_dataset = _init_dataset(self.data_feet, self.config.train_location, self.config.fixed_directory, "RH")
 
         # here separate validation set
         if self.config.have_val:
@@ -53,42 +51,36 @@ class train_dataset():
         feet_dataset = self._prepare_for_training(feet_dataset,self.config.augment,self.config.cache_loc + "feet")
 
         if self.config.have_val:
-            hands_dataset_val = self._prepare_for_training(hands_dataset_val,False)
-            feet_dataset_val = self._prepare_for_training(feet_dataset_val,False)
+            hands_dataset_val = self._prepare_for_training(hands_dataset_val, False)
+            feet_dataset_val = self._prepare_for_training(feet_dataset_val, False)
 
-        if self.config.have_val:
-            return hands_dataset,feet_dataset,hands_dataset_val,feet_dataset_val
+            return hands_dataset, feet_dataset, hands_dataset_val, feet_dataset_val
         else:
-            return hands_dataset,feet_dataset
+            return hands_dataset, feet_dataset
 
-    def _prepare_for_training(self,ds, augment,cache=True, shuffle_buffer_size=200):            
+    def _prepare_for_training(self, ds, augment, cache=True, shuffle_buffer_size=200):            
         if cache:
             if isinstance(cache, str):
                 try:
                     os.makedirs(os.path.expanduser(cache),exist_ok=True)
                     ds = ds.cache(os.path.expanduser(cache))
                 except FileNotFoundError:
-                    # this means that we are not on a CSF node and we are not allowed to make this folder
-                    pass
+                    logging.warn("Missing permissions to create directory for caching!")
+
+                    pass                                                                                            # Missing permission to create cache folder
             else:
                 ds = ds.cache()
 
-        ds = ds.shuffle(buffer_size=shuffle_buffer_size)
-
-        # Repeat forever
-        ds = ds.repeat()
+        ds = ds.shuffle(buffer_size=shuffle_buffer_size)                                                            # Shuffle dataset
+        ds = ds.repeat()                                                                                            # Repeat dataset entries
 
         if augment:
-            dataset = augmentor.randomly_augment_dataset(dataset, self.augments)
+            ds = _augment_images(ds)
 
-        dataset = _resize_img(dataset, self.config.img_height, self.config.img_width)
+        ds = _resize_images(ds, self.config.img_width, self.config.img_height)
 
-        # batch
-        ds = ds.batch(self.config.batch_size)
-
-        # `prefetch` lets the dataset fetch batches in the background while the model
-        # is training.
-        ds = ds.prefetch(buffer_size=AUTOTUNE)
+        ds = ds.batch(self.config.batch_size)                                                                       # Enable batching
+        ds = ds.prefetch(buffer_size=AUTOTUNE)                                                                      # Fetch batches in background while model is training
 
         return ds
     
@@ -112,33 +104,15 @@ def _get_dataframes(training_csv):
         
     return data_hands, data_feet
 
-def _init_dataset(df_data, train_location, flip_str):
+def _init_dataset(df_data, train_location, fixed_directory, flip_str):
     dataset = tf.data.Dataset.from_tensor_slices((df_data["Patient_ID"].values, df_data.loc[:, df_data.columns != 'Patient_ID'].values))
 
-    dataset = _load_images(dataset, train_location, flip_str)
+    dataset = ops.load_images(dataset, os.path.join(train_location, fixed_directory), flip_str)
         
     return dataset
 
-def _load_images(dataset, train_location, flip_str):
-    def __load(file, y):
-        file_path = train_location + "/fixed/" + file + ".jpg"
-    
-        img = tf.io.read_file(file_path)
-            
-        img = tf.image.decode_jpeg(img, channels=1)
-        img = tf.image.convert_image_dtype(img, tf.float32)
-            
-        if flip_str in str(file):
-            img = tf.image.flip_left_right(img)
-                
-        return img, y
+def _augment_images(ds):
+    return ops.randomly_augment_images(ds)
 
-    return dataset.map(__load, num_parallel_calls=AUTOTUNE)
-
-def _resize_img(dataset, img_height, img_width):
-    def __resize(img, y):
-        img = tf.image.resize(img, [ img_height, img_width])
-
-        return img, y
-
-    return dataset.map(__resize, num_parallel_calls=AUTOTUNE)
+def _resize_images(ds, img_width, img_height):
+    return ops.resize_images(ds, img_width, img_height)
