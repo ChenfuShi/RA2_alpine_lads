@@ -34,9 +34,9 @@ class train_dataset():
         self.data_hands, self.data_feet = _get_dataframes(training_csv_file)
 
         # get dataset for hands
-        hands_dataset = _init_dataset(self.data_hands, self.config.train_location, self.config.fixed_directory, "RF")
+        hands_dataset = _init_dataset(self.data_hands, self.config.train_location, self.config.fixed_dir, "RF")
         # get dataset for feet
-        feet_dataset = _init_dataset(self.data_feet, self.config.train_location, self.config.fixed_directory, "RH")
+        feet_dataset = _init_dataset(self.data_feet, self.config.train_location, self.config.fixed_dir, "RH")
 
         # here separate validation set
         if self.config.have_val:
