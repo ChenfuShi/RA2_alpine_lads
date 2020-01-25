@@ -31,7 +31,7 @@ def pretrain_NIH_chest(model,data_train,data_val,config):
 
 def _split_dataset_outputs(x,y):
     # split outputs of dataset for multioutput
-    return x,(tf.split(y,[1,16],1)[1],tf.split(y,[1,16],1)[0])
+    return x,(tf.split(y,[1,1,14],1)[2],tf.split(y,[1,1,14],1)[1],tf.split(y,[1,1,14],1)[0])
 
 
 class CustomSaver(keras.callbacks.Callback):
@@ -39,5 +39,5 @@ class CustomSaver(keras.callbacks.Callback):
         logging.info(logs)
         cur_date = datetime.datetime.now()
         logging.info(f"{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}")
-        if epoch // 25 == 0:  # save every 25 epochs
+        if epoch % 25 == 0:  # save every 25 epochs
             self.model.save_weights(os.path.join("weights","NIH_chest_NASnet_model_{}".format(epoch)))

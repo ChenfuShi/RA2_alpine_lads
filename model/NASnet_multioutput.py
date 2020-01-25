@@ -24,22 +24,23 @@ def create_NASnet_multioutupt(config):
     common_part =  tf.keras.layers.GlobalAveragePooling2D()(common_part)
 
     # split into two parts
-    disease_gender = keras.layers.Dense(16, activation='sigmoid', name='disease_gend_pred')(common_part)
-
+    disease = keras.layers.Dense(14, activation='sigmoid', name='disease_pred')(common_part)
+    sex = keras.layers.Dense(1, activation='softmax', name='sex_pred')(common_part)
     age = keras.layers.Dense(1,activation="linear",name="age_pred")(common_part)
 
     # get final model
     model = keras.models.Model(
         inputs=inputs,
-        outputs=[disease_gender, age],
+        outputs=[disease,sex, age],
         name="NASnet_multiout")
 
     losses = {
-    "disease_gend_pred": "binary_crossentropy",
+    "disease_pred": "binary_crossentropy",
+    "sex_pred" : "binary_crossentropy",
     "age_pred": "mean_squared_error",
     }
-    lossWeights = {"disease_gend_pred": 1.0, "age_pred": 0.001}
+    lossWeights = {"disease_pred": 1.0,"sex_pred" :1.0,"age_pred": 0.001}
 
-    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics={"disease_gend_pred":"binary_accuracy","age_pred":"mae"})
+    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics={"disease_pred":"binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"})
 
     return model
