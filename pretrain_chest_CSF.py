@@ -13,6 +13,7 @@ import logging
 import dataset.pretrain_dataset as dpd
 from model import NASnet_multioutput
 from utils.pretrain import pretrain_NIH_chest
+from tensorflow.keras.models import load_model
 
 if __name__ == '__main__':
 
@@ -30,11 +31,13 @@ if __name__ == '__main__':
     logging.info("datasets prepared")
     # define model
 
-    # check if there is weights to load
+
 
     # no weights then go for new model
     model = NASnet_multioutput.create_NASnet_multioutupt(configuration)
-
+    # check if there is weights to load
+    # model = model.load_weights('model.h5')
+    logging.info("model prepared")
     # train
-
+    logging.info("starting training")
     pretrain_NIH_chest(model,chest_dataset,chest_dataset_val,configuration)

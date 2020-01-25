@@ -16,10 +16,10 @@ import tensorflow_addons as tfa
 
 def create_NASnet_multioutupt(config):
     # load base model
-    NASnet_model = keras.applications.NASNetMobile(input_shape=[test_config.img_height,test_config.img_width,1], include_top=False,weights=None,)
+    NASnet_model = keras.applications.NASNetMobile(input_shape=[config.img_height,config.img_width,1], include_top=False,weights=None,)
     
     # create new model with common part
-    inputs = keras.layers.Input(shape=[test_config.img_height,test_config.img_width,1])
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
     common_part = NASnet_model(inputs)
     common_part =  tf.keras.layers.GlobalAveragePooling2D()(common_part)
 
@@ -40,6 +40,6 @@ def create_NASnet_multioutupt(config):
     }
     lossWeights = {"disease_gend_pred": 1.0, "age_pred": 0.001}
 
-    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics=["binary_accuracy","mae"])
+    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics={"disease_gend_pred":"binary_accuracy","age_pred":"mae"})
 
     return model
