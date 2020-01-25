@@ -36,8 +36,8 @@ class pretrain_dataset_NIH_chest():
         chest_dataset = _init_dataset(self.data_info,self.config.pretrain_NIH_chest_location)
 
         # here separate validation set
-        chest_dataset_val = chest_dataset.take(500) 
-        chest_dataset = chest_dataset.skip(500)
+        chest_dataset_val = chest_dataset.take(5000) 
+        chest_dataset = chest_dataset.skip(5000)
 
         # data processing
         # augmentation happens here

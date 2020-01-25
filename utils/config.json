@@ -3,6 +3,7 @@
     "fixed_dir": "fixed",
     "pretrain_NIH_chest_location": "data/pretrain",
     "pretrain_NIH_chest_info": "data/pretrain_data.csv",
+    "weights_location":"weights",
     "output_dir": "logs",
     "cache_loc": "~/localscratch/RA_challenge_scratch",
     "img_height": 512,

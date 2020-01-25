@@ -5,7 +5,7 @@ logs/
 __pycache__/
 .vscode
 .vscode/*
-
+weights/
 stadlerm_config.json
 *-checkpoint.ipynb
 *-checkpoint.py
