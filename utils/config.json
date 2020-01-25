@@ -1,5 +1,6 @@
 {
     "train_location": "data/train",
+    "fixed_dir": "fixed",
     "output_dir": "logs",
     "cache_loc": "~/localscratch/RA_challenge_scratch",
     "img_height": 512,
