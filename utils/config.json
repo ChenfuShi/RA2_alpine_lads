@@ -1,6 +1,8 @@
 {
     "train_location": "data/train",
     "fixed_dir": "fixed",
+    "pretrain_NIH_chest_location": "data/pretrain",
+    "pretrain_NIH_chest_info": "data/pretrain_data.csv",
     "output_dir": "logs",
     "cache_loc": "~/localscratch/RA_challenge_scratch",
     "img_height": 512,

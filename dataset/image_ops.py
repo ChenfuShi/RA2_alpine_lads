@@ -28,7 +28,7 @@ def load_image(file, directory, flip_str):
     return img
 
 def resize_image(img, img_width, img_height):
-    img = tf.image.resize(img, [ img_height, img_width])
+    img = tf.image.resize_with_pad(img, img_height, img_width)
 
     return img
 
