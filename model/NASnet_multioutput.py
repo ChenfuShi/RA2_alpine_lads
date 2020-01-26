@@ -25,7 +25,7 @@ def create_NASnet_multioutupt(config):
 
     # split into two parts
     disease = keras.layers.Dense(14, activation='sigmoid', name='disease_pred')(common_part)
-    sex = keras.layers.Dense(1, activation='softmax', name='sex_pred')(common_part)
+    sex = keras.layers.Dense(1, activation='sigmoid', name='sex_pred')(common_part)
     age = keras.layers.Dense(1,activation="linear",name="age_pred")(common_part)
 
     # get final model
