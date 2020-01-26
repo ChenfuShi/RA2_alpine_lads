@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # no weights then go for new model
     model = NASnet_multioutput.create_NASnet_multioutupt(configuration)
     # check if there is weights to load
-    # model = model.load_weights('model.h5')
+    model.load_weights("weights/NIH_chest_NASnet_model_325")
     logging.info("model prepared")
     # train
     logging.info("starting training")

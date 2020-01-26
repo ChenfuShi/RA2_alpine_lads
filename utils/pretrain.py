@@ -40,4 +40,4 @@ class CustomSaver(keras.callbacks.Callback):
         cur_date = datetime.datetime.now()
         logging.info(f"{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}")
         if epoch % 25 == 0:  # save every 25 epochs
-            self.model.save_weights(os.path.join("weights","NIH_chest_NASnet_model_{}".format(epoch)))
+            self.model.save_weights(os.path.join("weights","NIH_chest_NASnet_model_{}_step2".format(epoch)))
