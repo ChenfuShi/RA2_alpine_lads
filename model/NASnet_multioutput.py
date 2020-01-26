@@ -35,15 +35,15 @@ def create_NASnet_multioutupt(config):
         name="NASnet_multiout")
 
     losses = {
-    "disease_pred": "binary_crossentropy",
+    "disease_pred": tfa.losses.focal_loss.SigmoidFocalCrossEntropy(),
     "sex_pred" : "binary_crossentropy",
     "age_pred": "mean_squared_error",
     }
-    lossWeights = {"disease_pred": 1.0,"sex_pred" :0.5,"age_pred": 0.005}
+    lossWeights = {"disease_pred": 2.0,"sex_pred" :0.5,"age_pred": 0.005}
 
-    cl_weights = { 'disease_pred': {0: 0.1 , 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1}}
+    #cl_weights = { 'disease_pred': {0: 1 , 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1}}
 
-    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics={"disease_pred":"binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"},
-    class_weight = cl_weights)
+    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics={"disease_pred":"binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"},)
+    #class_weight = cl_weights)
 
     return model
