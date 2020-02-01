@@ -44,7 +44,7 @@ def clip_image(img):
 
 def random_brightness_and_contrast(img, max_delta = 0.2, max_contrast = 0.2):
     img = tf.image.random_brightness(img, max_delta=max_delta)
-    img = tf.image.random_contrast(img, 0, max_contrast)
+    img = tf.image.random_contrast(img, 1-max_contrast, 1+max_contrast)
     
     return img
     

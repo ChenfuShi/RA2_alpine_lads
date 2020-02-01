@@ -36,8 +36,8 @@ class pretrain_dataset_NIH_chest():
         chest_dataset = _init_dataset(self.data_info,self.config.pretrain_NIH_chest_location)
 
         # here separate validation set
-        chest_dataset_val = chest_dataset.take(500) 
-        chest_dataset = chest_dataset.skip(500)
+        chest_dataset_val = chest_dataset.take(5000) 
+        chest_dataset = chest_dataset.skip(5000)
 
         # data processing
         # augmentation happens here
@@ -81,9 +81,9 @@ def _get_dataframes(file_csv):
     all_labels = [x for x in all_labels if len(x)>0]   
     for c_label in all_labels:
         pretrain_NIH_info[c_label] = pretrain_NIH_info['Finding Labels'].map(lambda finding: 1.0 if c_label in finding else 0)
-    for c_label,g in zip(["Gender_M","Gender_F"],["M","F"]):
-        pretrain_NIH_info[c_label] = pretrain_NIH_info['Patient Gender'].map(lambda gen: 1.0 if g in gen else 0)
-    useful_cols=["Image Index","Patient Age","Gender_M","Gender_F"] + all_labels
+
+    pretrain_NIH_info["Gender_M"] = pretrain_NIH_info['Patient Gender'].map(lambda gen: 1.0 if "M" in gen else 0)
+    useful_cols=["Image Index","Patient Age","Gender_M"] + all_labels
 
     return pretrain_NIH_info[useful_cols]
 

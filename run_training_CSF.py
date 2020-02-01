@@ -36,7 +36,7 @@ if __name__ == '__main__':
     hands_dataset,feet_dataset,hands_dataset_val,feet_dataset_val = dataset.initialize_pipeline()
 
     # define model
-
+    
 
     # train
 
