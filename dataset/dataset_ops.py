@@ -1,12 +1,26 @@
+import numpy as np
 import tensorflow as tf
+
 import dataset.image_ops as ops
+import dataset.landmark_ops as lm_ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-def load_images(dataset, directory, flip_str = ""):
+def load_images(dataset, directory, update_labels, flip_str = ""):
     def __load(file, y):
-        img = ops.load_image(file, directory, flip_str)
+        file_name = file[0]
+        flip = file[1]
         
+        flip_img = flip == 'Y'
+        
+        img = ops.load_image(file_name, directory, flip_img)
+        
+        if flip_img:
+            if update_labels:
+                img_shape = tf.shape(img)
+            
+                y = lm_ops.flip_landmarks(y, img_shape)
+            
         return img, y
 
     return dataset.map(__load, num_parallel_calls=AUTOTUNE)

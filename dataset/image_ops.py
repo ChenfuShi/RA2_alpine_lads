@@ -1,5 +1,5 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 import numpy as np
 import logging
 import math
@@ -15,14 +15,14 @@ def _create_boxes(scales = np.arange(0.8, 1, 0.01)):
         
     return boxes
 
-def load_image(file, directory, flip_str):
+def load_image(file, directory, flip_img):
     file_path = directory + "/" + file + ".jpg"
     
     img = tf.io.read_file(file_path)    
     img = tf.image.decode_jpeg(img, channels=1)
     img = tf.image.convert_image_dtype(img, tf.float32)
-            
-    if flip_str in str(file):
+    
+    if flip_img:
         img = tf.image.flip_left_right(img)
                 
     return img
