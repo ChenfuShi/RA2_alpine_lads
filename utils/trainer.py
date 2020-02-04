@@ -23,3 +23,5 @@
 
 
 # send model to tester to predict test dataset
+
+# get landmarks with model, then the testdataset that already has landmarks will use those. all of these do not need to be tf.dataset. and won't be
