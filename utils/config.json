@@ -1,14 +1,15 @@
 {
-    "train_location": "data/train",
+    "train_location": "../train",
     "fixed_dir": "fixed",
     "pretrain_NIH_chest_location": "data/pretrain",
     "pretrain_NIH_chest_info": "data/pretrain_data.csv",
     "output_dir": "logs",
-    "cache_loc": "~/localscratch/RA_challenge_scratch",
+    "cache_loc": "~/localscratch/RA_challenge_scratch/",
     "img_height": 512,
     "img_width": 378,
     "CPU_threads": 8,
     "batch_size": 25,
     "augment":true,
-    "have_val": true
+    "have_val": true,
+    "landmarks_location": "./data/landmarks"
 }
