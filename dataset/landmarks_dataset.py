@@ -27,7 +27,7 @@ class landmarks_dataset(base_dataset):
         
         dataset = super()._create_dataset(x, y, self.config.train_location, update_labels = True)
 
-        return super()._prepare_for_training(dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'landmarks_cache', update_labels = True)
+        return super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'landmarks_cache', update_labels = True)
 
 def _create_landmarks_dataframe(landmarks_location):
     landmark_files = os.listdir(landmarks_location)

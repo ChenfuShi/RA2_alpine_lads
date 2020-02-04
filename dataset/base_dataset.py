@@ -18,7 +18,7 @@ class base_dataset():
 
         return dataset, val_dataset
 
-    def _prepare_for_training(self, dataset, image_width, image_height, batch_size = 128, cache = True, update_labels = False, augment = True):
+    def _prepare_for_training(self, dataset, image_width, image_height, batch_size = 25, cache = True, update_labels = False, augment = True):
         dataset = ops.cache_dataset(dataset, cache)
         dataset = ops.shuffle_and_repeat_dataset(dataset)
 

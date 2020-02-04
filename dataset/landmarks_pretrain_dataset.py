@@ -15,85 +15,52 @@ from utils.config import Config
 from PIL import Image
 from tensorflow import keras
 
+from dataset.base_dataset import base_dataset
 import logging
 import dataset.dataset_ops as ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
-class landmark_pretrain_faces_dataset():
+class landmark_pretrain_faces_dataset(base_dataset):
     """
-    Dataset class for pretrain dataset NIH
+    Dataset class for pretrain dataset faces celeb_a
     """
+    def __init__(self, config):
+        super().__init__(config)
 
-    def __init__(self,config):
-        self.config = config
-
-    def initialize_pipeline(self):    
+    def create_train_dataset(self):    
         
-        self.data_info =  pd.read_csv(landmark_info,sep="\s+|\t+|\s+\t+|\t+\s+",skiprows=1)
+        self.data_info =  pd.read_csv(self.config.landmarks_faces_info,sep="\s+|\t+|\s+\t+|\t+\s+",skiprows=1,engine="python")
 
         # get dataset 
-        faces = _init_dataset(self.data_info,self.config.landmarks_faces_location)
+        faces = self._init_dataset(self.data_info,self.config.landmarks_faces_location)
 
         # here separate validation set
-        dataset_val = dataset.take(5000) 
-        dataset = dataset.skip(5000)
+        dataset, dataset_val = super()._create_validation_split(faces,5000)
 
         # data processing
         # augmentation happens here
-        dataset = self._prepare_for_training(dataset,self.config.augment,self.config.cache_loc + "faces")
-        dataset_val = self._prepare_for_training(dataset_val,False,self.config.cache_loc + "faces_val")
+        dataset = super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, 
+            batch_size = self.config.batch_size, cache = self.config.cache_loc + 'faces',update_labels=True)
+        dataset_val =super()._prepare_for_training(dataset_val, self.config.landmarks_img_width, self.config.landmarks_img_height, 
+            batch_size = self.config.batch_size, cache = self.config.cache_loc + 'faces_val',update_labels=True)
+        
         return dataset, dataset_val
 
+    def _init_dataset(self,df_data, pretrain_location):
+        def __load_image(file, y):
+            file_path = self.config.landmarks_faces_location + file 
 
+            img = tf.io.read_file(file_path)    
+            img = tf.image.decode_jpeg(img, channels=1)
+            img = tf.image.convert_image_dtype(img, tf.float32)
+            y = tf.cast(y,dtype=tf.float64)
+            return img, y
 
-    def _prepare_for_training(self, ds, augment, cache=True, shuffle_buffer_size=200):            
-        if cache:
-            if isinstance(cache, str):
-                try:
-                    os.makedirs(os.path.expanduser(cache),exist_ok=True)
-                    ds = ds.cache(os.path.expanduser(cache))
-                except FileNotFoundError:
-                    logging.warn("Missing permissions to create directory for caching!")
+        dataset =  tf.data.Dataset.from_tensor_slices((self.data_info.index.values, self.data_info.values))
 
-                    pass                                                                                            # Missing permission to create cache folder
-            else:
-                ds = ds.cache()
+        dataset = dataset.map(__load_image, num_parallel_calls=AUTOTUNE)
+            
+        return dataset
 
-        ds = ds.shuffle(buffer_size=shuffle_buffer_size)                                                            # Shuffle dataset
-        ds = ds.repeat()                                                                                            # Repeat dataset entries
-
-        ## this bit change with stuff needed for landmarks scaling
-        # if augment:
-        #     ds = _augment_images(ds)
-
-        # ds = _resize_images(ds, self.config.landmarks_img_width, self.config.landmarks_img_height)
-
-        ds = ds.batch(self.config.batch_size)                                                                       # Enable batching
-        ds = ds.prefetch(buffer_size=AUTOTUNE)                                                                      # Fetch batches in background while model is training
-
-        return ds
-    
-
-def _init_dataset(df_data, pretrain_location):
-    def __load_image(file, y):
-        file_path = self.config.landmarks_faces_location + file 
-
-        img = tf.io.read_file(file_path)    
-        img = tf.image.decode_jpeg(img, channels=1)
-        img = tf.image.convert_image_dtype(img, tf.float32)
-
-        return img, y
-
-    dataset =  tf.data.Dataset.from_tensor_slices((self.data_info.index.values, self.data_info.values))
-
-    dataset = dataset.map(__load_image, num_parallel_calls=AUTOTUNE)
-        
-    return dataset
-
-def _augment_images(ds):
-    return ops.randomly_augment_images(ds)
-
-def _resize_images(ds, img_width, img_height):
-    return ops.resize_images(ds, img_width, img_height)

@@ -22,7 +22,6 @@ from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-from dataset.base_dataset import base_dataset
 
 class train_dataset(base_dataset):
     def __init__(self, config):
@@ -43,7 +42,7 @@ class train_dataset(base_dataset):
             feet_dataset, feet_dataset_val = super()._create_validation_split(feet_dataset)
 
         hands_dataset = super()._prepare_for_training(hands_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'hands')
-        feet_dataset = super()._prepare_for_training(feet_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'hands')
+        feet_dataset = super()._prepare_for_training(feet_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'feet')
 
         if self.config.have_val:
             hands_dataset_val = super()._prepare_for_training(hands_dataset_val, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, augment = False)
