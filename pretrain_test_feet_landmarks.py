@@ -30,23 +30,21 @@ if __name__ == '__main__':
     faces, faces_val = dataset.create_train_dataset()
 
     logging.info("datasets prepared")
+
     # define model
-
-
-
-    # no weights then go for new model
     model = landmarks_model.landmarks_model_pretrain(configuration)
-    # check if there is weights to load
-    #model.load_weights("weights/NIH_chest_NASnet_model_325")
+    model.summary()
+
     logging.info("model prepared")
     # train
     logging.info("starting training")
-    pretrain_faces(model,faces,faces_val,configuration,"FACE_LANDMARK_medium")
+    pretrain_faces(model,faces,faces_val,configuration,"FACE_LANDMARK_big_kernel_long")
+
 
     logging.info("starting step 2 of feet training")
-    joints_model = landmarks_model.landmarks_model_feet(configuration,"weights/FACE_LANDMARK_medium_model_epoch_30")
+    joints_model = landmarks_model.landmarks_model_feet(configuration,"weights/FACE_LANDMARK_big_kernel_long_model_50")
+    joints_model.summary()
 
+    landmark_dataset = ld_dataset.landmarks_dataset(configuration).create_landmarks_dataset()
 
-    landmark_dataset = ld_dataset(configuration).create_landmarks_dataset()
-
-    pretrain_landmarks_no_val(model,landmark_dataset,faces_val,configuration,"FEET_LANDMARK_medium")
+    pretrain_landmarks_no_val(joints_model,landmark_dataset,configuration,"FEET_LANDMARK_big_kernel_long")

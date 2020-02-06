@@ -62,7 +62,7 @@ def landmarks_model_hands(config,weights=None):
     pass
 
 def _landmarks_base(config):
-
+    # original, the one i don't know how many epochs i did
     # model = keras.models.Sequential([
     #     keras.layers.Conv2D(filters = 16, kernel_size=(3,3),activation="relu",input_shape=[config.landmarks_img_height,config.landmarks_img_width,1]),
     #     keras.layers.BatchNormalization(),
@@ -88,32 +88,78 @@ def _landmarks_base(config):
 
     # ])
 
-    # try something bigger
+    # try something bigger (medium)
+    # model = keras.models.Sequential([
+    #     keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation="relu",input_shape=[config.landmarks_img_height,config.landmarks_img_width,1]),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 256, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 256, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Flatten(),
+
+    # ])
+
+    # try something much shallower
+    # model = keras.models.Sequential([
+    #     keras.layers.Conv2D(filters = 16, kernel_size=(3,3),activation="relu",input_shape=[config.landmarks_img_height,config.landmarks_img_width,1]),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation="relu"),
+    #     keras.layers.BatchNormalization(),
+    #     keras.layers.MaxPooling2D((2,2)),
+    #     keras.layers.Flatten(),
+    # ])
+
+    # last try with bigger kernels 
+    # ok this one seems best but i've changed it to include more filters and train for much longer
     model = keras.models.Sequential([
-        keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation="relu",input_shape=[config.landmarks_img_height,config.landmarks_img_width,1]),
+        keras.layers.Conv2D(filters = 20, kernel_size=(5,5),activation="relu",input_shape=[config.landmarks_img_height,config.landmarks_img_width,1]),
         keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation="relu"),
+        keras.layers.Conv2D(filters = 20, kernel_size=(5,5),activation="relu"),
         keras.layers.BatchNormalization(),
         keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation="relu"),
+        keras.layers.Conv2D(filters = 40, kernel_size=(5,5),activation="relu"),
         keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 256, kernel_size=(3,3),activation="relu"),
+        keras.layers.Conv2D(filters = 40, kernel_size=(5,5),activation="relu"),
         keras.layers.BatchNormalization(),
         keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 256, kernel_size=(3,3),activation="relu"),
+        keras.layers.Conv2D(filters = 80, kernel_size=(3,3),activation="relu"),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 80, kernel_size=(3,3),activation="relu"),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Conv2D(filters = 160, kernel_size=(3,3),activation="relu"),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 160, kernel_size=(3,3),activation="relu"),
         keras.layers.BatchNormalization(),
         keras.layers.MaxPooling2D((2,2)),
         keras.layers.Flatten(),
 
     ])
-
 
     return model
