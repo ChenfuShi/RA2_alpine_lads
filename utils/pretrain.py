@@ -42,12 +42,12 @@ def pretrain_faces(model,data_train,data_val,config,model_name):
     # declare tensorboard
     log_dir="logs/tensorboard/" + model_name + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    # fit model for 50 epochs, then we can choose
+    # fit model for 70 epochs, then we can choose
     H = model.fit(data_train, validation_data=data_val,
     epochs=71,steps_per_epoch=2000,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
 
 
-def pretrain_landmarks_no_val(model,data_train,config,model_name):
+def pretrain_landmarks(model,data_train,data_val,config,model_name):
     # temporary because we currently do not have validation set
     # also this should be in trainer i think because we are actually training on images?
     saver = CustomSaver(model_name,n=5)
@@ -55,9 +55,9 @@ def pretrain_landmarks_no_val(model,data_train,config,model_name):
     # declare tensorboard
     log_dir="logs/tensorboard/" + model_name + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    # fit model for 150 epochs, then we can choose
-    H = model.fit(data_train,
-    epochs=500,steps_per_epoch=20,verbose=2,callbacks=[saver,tensorboard_callback])
+    # fit model for 500 epochs, then we can choose
+    H = model.fit(data_train, validation_data=data_val,
+    epochs=501,steps_per_epoch=20,verbose=2,validation_steps=5,callbacks=[saver,tensorboard_callback])
 
 
 def _split_dataset_outputs(x,y):

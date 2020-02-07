@@ -59,7 +59,33 @@ def landmarks_model_feet(config,weights=None):
     return model
 
 def landmarks_model_hands(config,weights=None):
-    pass
+    # model for hands
+    # weights are only the pretrain weights. if you have normal weights please load them afterwards
+    if weights == None:
+        model = _landmarks_base(config)
+        model.add(keras.layers.Dense(256, activation='relu'))
+        model.add(keras.layers.BatchNormalization())
+        model.add(keras.layers.Dense(26, activation='linear'))
+
+        model.compile(optimizer='adam',
+                loss='mean_squared_error',
+                metrics=['mae'])
+
+    else:
+        pretrained_model = landmarks_model_pretrain(config)
+        pretrained_model.load_weights(weights)
+        model=keras.models.Sequential()
+        # remove three layers from pretrain model
+        for layer in pretrained_model.layers[:-3]:
+            model.add(layer)
+        # add the layers back
+        model.add(keras.layers.Dense(256, activation='relu'))
+        model.add(keras.layers.BatchNormalization())
+        model.add(keras.layers.Dense(26, activation='linear'))
+        model.compile(optimizer='adam',
+                loss='mean_squared_error',
+                metrics=['mae'])
+    return model
 
 def _landmarks_base(config):
     # original, the one i don't know how many epochs i did

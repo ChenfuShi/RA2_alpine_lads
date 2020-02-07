@@ -1,10 +1,10 @@
 {
-    "train_location": "C:\\Users\\CrankMuffler\\Development\\Dream\\training_v2020_01_13",
+    "train_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
     "fixed_dir": "fixed",
     "pretrain_NIH_chest_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/NIH_chest_X_ray/pretrain",
     "pretrain_NIH_chest_info": "data/pretrain_data.csv",
-    "landmarks_feet_images_location": "C:\\Users\\CrankMuffler\\Development\\Dream\\training_v2020_01_13\\Feet",
-    "landmarks_hands_images_location": "C:\\Users\\CrankMuffler\\Development\\Dream\\training_v2020_01_13\\Hands",
+    "landmarks_feet_images_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
+    "landmarks_hands_images_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
     "landmarks_faces_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/faces_landmarks/img_celeba/",
     "landmarks_faces_info": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/faces_landmarks/list_landmarks_celeba.txt",
     "landmarks_img_height": 512,

@@ -12,25 +12,6 @@ from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-class feet_landmarks_dataset(landmarks_dataset):
-    def __init__(self, config):
-        super().__init__(config)
-
-    def create_landmarks_dataset(self, create_val = False):
-        image_location = self.config.landmarks_feet_images_location
-        landmarks_location = os.path.join(self.config.landmarks_location, 'feet')
-
-        return self._create_landmarks_dataset(image_location, landmarks_location, create_val)
-
-class hands_landmarks_dataset(landmarks_dataset):
-    def __init__(self, config):
-        super().__init__(config)
-
-    def create_landmarks_dataset(self, create_val = False):
-        image_location = self.config.landmarks_hands_images_location
-        landmarks_location = os.path.join(self.config.landmarks_location, 'hands')
-
-        return self._create_landmarks_dataset(image_location, landmarks_location, create_val)
 
 class landmarks_dataset(base_dataset):
     def __init__(self, config):
@@ -59,6 +40,27 @@ class landmarks_dataset(base_dataset):
 
         return dataset
 
+class feet_landmarks_dataset(landmarks_dataset):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def create_landmarks_dataset(self, create_val = False):
+        image_location = os.path.join(self.config.landmarks_feet_images_location , self.config.fixed_dir)
+        landmarks_location = os.path.join(self.config.landmarks_location, 'feet')
+
+        return self._create_landmarks_dataset(image_location, landmarks_location, create_val)
+
+class hands_landmarks_dataset(landmarks_dataset):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def create_landmarks_dataset(self, create_val = False):
+        image_location = os.path.join(self.config.landmarks_hands_images_location , self.config.fixed_dir)
+        landmarks_location = os.path.join(self.config.landmarks_location, 'hands')
+
+        return self._create_landmarks_dataset(image_location, landmarks_location, create_val)
+
+
 def _create_landmarks_dataframe(landmarks_location):
     landmark_files = os.listdir(landmarks_location)
     
@@ -75,7 +77,7 @@ def _create_landmarks_dataframe(landmarks_location):
                 sample_id = landmark_file.split('.')[0]
                 labels_dict['sample_id'] = sample_id
                 
-                if 'RF' in sample_id:
+                if 'RF' in sample_id or 'RH' in sample_id:
                     labels_dict['flip'] = 'Y'
                 else:
                     labels_dict['flip'] = 'N'
