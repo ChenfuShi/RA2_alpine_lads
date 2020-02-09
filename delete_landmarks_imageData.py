@@ -3,10 +3,10 @@ import os
 import pickle
 
 
-PATH = 'C:\\Users\\CrankMuffler\\Documents\\GitHub\\RA2_alpine_lads'
-os.chdir(PATH)
+# PATH = 'C:\\Users\\CrankMuffler\\Documents\\GitHub\\RA2_alpine_lads'
+# os.chdir(PATH)
 
-source_dir = 'C:\\Users\\CrankMuffler\\Documents\\GitHub\\RA2_alpine_lads\\data\\landmarks'
+source_dir = 'C:\\Users\\chenfu\\Documents\\GitHub\\subset_training_rsna'
 
 dir_path = '.\\data\\landmarks\\hands'
 

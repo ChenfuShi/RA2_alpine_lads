@@ -41,17 +41,17 @@ if __name__ == '__main__':
     # logging.info("starting training")
     # pretrain_faces(model,faces,faces_val,configuration,"FACE_LANDMARK_big_kernel_long")
     
-    # logging.info("doing preprocessing")
-    # fix_images(configuration)
-    # logging.info("preprocessing done")
+    logging.info("doing preprocessing")
+    fix_images(configuration)
+    logging.info("preprocessing done")
 
     # logging.info("starting step 2 of feet training")
-    joints_model = landmarks_model.landmarks_model_feet(configuration,"weights/FACE_LANDMARK_big_kernel_long_model_70")
-    joints_model.summary()
+    # joints_model = landmarks_model.landmarks_model_feet(configuration,"weights/FACE_LANDMARK_big_kernel_long_model_70")
+    # joints_model.summary()
 
-    landmark_dataset, landmark_dataset_val = ld_dataset.feet_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
+    # landmark_dataset, landmark_dataset_val = ld_dataset.feet_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
 
-    pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"FEET_LANDMARK_big_kernel_long")
+    # pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"FEET_LANDMARK_big_kernel_long")
 
 
     # logging.info("starting step 2 of feet training")
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # pretrain_landmarks(model,landmark_dataset,landmark_dataset_val,configuration,"FEET_LANDMARK_test_with_hand_pretrain")
 
 
-    landmark_dataset, landmark_dataset_val = ld_dataset.hands_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
+    landmark_dataset, landmark_dataset_val = ld_dataset.hands_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True, shuffle_before_val=True)
 
     joints_model = landmarks_model.landmarks_model_feet(configuration)
     joints_model.load_weights("weights/FEET_LANDMARK_big_kernel_long_model_495")
@@ -94,4 +94,4 @@ if __name__ == '__main__':
     model.compile(optimizer='adam',
             loss='mean_squared_error',
             metrics=['mae'])
-    pretrain_landmarks(model,landmark_dataset,landmark_dataset_val,configuration,"HANDS_LANDMARK_test_with_feet_pretrain")
+    pretrain_landmarks(model,landmark_dataset,landmark_dataset_val,configuration,"HANDS_LANDMARK_test_with_feet_pretrain_extra_rsna")
