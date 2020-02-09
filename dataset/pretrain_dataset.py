@@ -18,15 +18,17 @@ from tensorflow import keras
 import logging
 import dataset.dataset_ops as ops
 
+from dataset.base_dataset import base_dataset
+
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-class pretrain_dataset_NIH_chest():
+class pretrain_dataset_NIH_chest(base_dataset):
     """
     Dataset class for pretrain dataset NIH
     """
 
-    def __init__(self,config):
-        self.config = config
+    def __init__(self, config):
+        super().__init__(config)
 
     def initialize_pipeline(self):    
         
@@ -34,44 +36,17 @@ class pretrain_dataset_NIH_chest():
 
         # get dataset 
         chest_dataset = _init_dataset(self.data_info,self.config.pretrain_NIH_chest_location)
-
+        
         # here separate validation set
-        chest_dataset_val = chest_dataset.take(5000) 
-        chest_dataset = chest_dataset.skip(5000)
+        chest_dataset, chest_dataset_val = super()._create_validation_split(chest_dataset)
 
         # data processing
         # augmentation happens here
-        chest_dataset = self._prepare_for_training(chest_dataset,self.config.augment,self.config.cache_loc + "chest")
-        chest_dataset_val = self._prepare_for_training(chest_dataset_val,False,self.config.cache_loc + "chest_val")
+
+        chest_dataset = super()._prepare_for_training(chest_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'chest')
+        chest_dataset = super()._prepare_for_training(chest_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'chest_val')
+
         return chest_dataset, chest_dataset_val
-
-
-
-    def _prepare_for_training(self, ds, augment, cache=True, shuffle_buffer_size=200):            
-        if cache:
-            if isinstance(cache, str):
-                try:
-                    os.makedirs(os.path.expanduser(cache),exist_ok=True)
-                    ds = ds.cache(os.path.expanduser(cache))
-                except FileNotFoundError:
-                    logging.warn("Missing permissions to create directory for caching!")
-
-                    pass                                                                                            # Missing permission to create cache folder
-            else:
-                ds = ds.cache()
-
-        ds = ds.shuffle(buffer_size=shuffle_buffer_size)                                                            # Shuffle dataset
-        ds = ds.repeat()                                                                                            # Repeat dataset entries
-
-        if augment:
-            ds = _augment_images(ds)
-
-        ds = _resize_images(ds, self.config.img_width, self.config.img_height)
-
-        ds = ds.batch(self.config.batch_size)                                                                       # Enable batching
-        ds = ds.prefetch(buffer_size=AUTOTUNE)                                                                      # Fetch batches in background while model is training
-
-        return ds
     
 def _get_dataframes(file_csv):
     pretrain_NIH_info = pd.read_csv(file_csv)
@@ -103,8 +78,3 @@ def _init_dataset(df_data, pretrain_location):
         
     return dataset
 
-def _augment_images(ds):
-    return ops.randomly_augment_images(ds)
-
-def _resize_images(ds, img_width, img_height):
-    return ops.resize_images(ds, img_width, img_height)

@@ -12,12 +12,13 @@ from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
+
 class landmarks_dataset(base_dataset):
     def __init__(self, config):
         super().__init__(config)
         
-    def create_landmarks_dataset(self):
-        landmarks_dataframe = _create_landmarks_dataframe(self.config.landmarks_location)
+    def _create_landmarks_dataset(self, image_location, landmarks_location, create_val, shuffle_before_val = False):
+        landmarks_dataframe = _create_landmarks_dataframe(landmarks_location)
         
         self.landmarks_dataframe = landmarks_dataframe
         
@@ -25,9 +26,42 @@ class landmarks_dataset(base_dataset):
         x = landmarks_dataframe[['sample_id', 'flip']].values
         y = landmarks_dataframe.loc[:, label_idx].values
         
-        dataset = super()._create_dataset(x, y, self.config.train_location, update_labels = True)
+        dataset = super()._create_dataset(x, y, image_location, update_labels = True)
 
-        return super()._prepare_for_training(dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'landmarks_cache', update_labels = True)
+        if create_val:
+            if shuffle_before_val:
+                dataset = dataset.shuffle()
+            dataset, val_dataset = super()._create_validation_split(dataset)
+
+        dataset = super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True)
+
+        if create_val:
+            val_dataset = super()._prepare_for_training(val_dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True, augment = False)
+
+            return dataset, val_dataset
+
+        return dataset
+
+class feet_landmarks_dataset(landmarks_dataset):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def create_landmarks_dataset(self, create_val = False, shuffle_before_val = False):
+        image_location = os.path.join(self.config.landmarks_feet_images_location , self.config.fixed_dir)
+        landmarks_location = os.path.join(self.config.landmarks_location, 'feet')
+
+        return self._create_landmarks_dataset(image_location, landmarks_location, create_val, shuffle_before_val)
+
+class hands_landmarks_dataset(landmarks_dataset):
+    def __init__(self, config):
+        super().__init__(config)
+
+    def create_landmarks_dataset(self, create_val = False, shuffle_before_val = False):
+        image_location = os.path.join(self.config.landmarks_hands_images_location , self.config.fixed_dir)
+        landmarks_location = os.path.join(self.config.landmarks_location, 'hands')
+
+        return self._create_landmarks_dataset(image_location, landmarks_location, create_val, shuffle_before_val)
+
 
 def _create_landmarks_dataframe(landmarks_location):
     landmark_files = os.listdir(landmarks_location)
@@ -45,7 +79,7 @@ def _create_landmarks_dataframe(landmarks_location):
                 sample_id = landmark_file.split('.')[0]
                 labels_dict['sample_id'] = sample_id
                 
-                if 'RF' in sample_id:
+                if 'RF' in sample_id or 'RH' in sample_id:
                     labels_dict['flip'] = 'Y'
                 else:
                     labels_dict['flip'] = 'N'

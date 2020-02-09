@@ -15,9 +15,9 @@ nvidia-smi
 ## activate conda environment
 # this also includes cuda and cuda toolkits
 
-source activate ~/communal_software/tensorflow_gpu
+source activate /mnt/iusers01/jw01/mdefscs4/ra_challenge/tensorflow2.0_gpu
 
 rm ~/localscratch/* -r
 # run python training script
 
-python pretrain_chest_CSF.py
+python pretrain_test_feet_landmarks.py
