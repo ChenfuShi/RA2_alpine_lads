@@ -6,7 +6,6 @@ import tensorflow as tf
 
 import dataset.image_ops as ops
 
-
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 def load_images(dataset, directory, update_labels = False):

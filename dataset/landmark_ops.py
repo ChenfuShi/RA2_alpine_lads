@@ -75,9 +75,35 @@ def crop_landmarks(y, box, original_img_shape):
 
     updated_y = tf.tensor_scatter_nd_update(y, x_coord_updates_idx, x_coord_updates)
     updated_y = tf.tensor_scatter_nd_update(updated_y, y_coord_updates_idx, y_coord_updates)
-
+    
     # Then resize to new size
     return resize_landmarks(updated_y, inner_image_shape, original_img_shape)
+
+def upscale_detected_landmarks(y, current_img_shape, target_img_shape):
+    upscale_x_ratio = target_img_shape[1] / current_img_shape[1]
+    upscale_y_ratio = target_img_shape[0] / current_img_shape[0]
+    
+    if upscale_x_ratio > upscale_y_ratio:
+        x_coord_updates = y[0::2] * upscale_x_ratio
+        
+        y_coord_updates = y[1::2] * upscale_x_ratio
+        scaled = current_img_shape[0] * upscale_x_ratio
+        
+        y_coord_updates = y_coord_updates + (target_img_shape[0] - scaled) / 2
+    else:
+        y_coord_updates = y[1::2] * upscale_y_ratio
+        
+        x_coord_updates = y[0::2] * upscale_y_ratio
+        scaled = current_img_shape[1] * upscale_y_ratio
+        
+        x_coord_updates = x_coord_updates + (target_img_shape[1] - scaled) / 2
+        
+    x_coord_updates_idx, y_coord_updates_idx = _get_update_idx(y)
+    
+    updated_y = tf.tensor_scatter_nd_update(y, x_coord_updates_idx, x_coord_updates)
+    updated_y = tf.tensor_scatter_nd_update(updated_y, y_coord_updates_idx, y_coord_updates)
+
+    return updated_y
 
 def _get_update_idx(y):
     n_y = tf.shape(y)[0]
