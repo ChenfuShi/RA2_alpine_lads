@@ -33,10 +33,13 @@ def load_image(file, y, update_labels, directory, flip_img):
                 
     return img, y
 
-def resize_image(img, y, update_labels, img_width, img_height):
+def resize_image(img, y, update_labels, img_width, img_height, pad_resize = True):
     old_shape = tf.shape(img)
     
-    img = tf.image.resize_with_pad(img, img_height, img_width)
+    if pad_resize:
+        img = tf.image.resize_with_pad(img, img_height, img_width)
+    else:
+        img = tf.image.resize(img, (img_height, img_width))
 
     if(update_labels):
         new_shape = tf.shape(img)

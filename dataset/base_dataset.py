@@ -18,14 +18,14 @@ class base_dataset():
 
         return dataset, val_dataset
 
-    def _prepare_for_training(self, dataset, image_width, image_height, batch_size = 25, cache = True, update_labels = False, augment = True):
+    def _prepare_for_training(self, dataset, image_width, image_height, batch_size = 25, cache = True, update_labels = False, augment = True, pad_resize = True):
         dataset = ds_ops.cache_dataset(dataset, cache)
         dataset = ds_ops.shuffle_and_repeat_dataset(dataset)
 
         if(augment):
             dataset = ds_ops.randomly_augment_images(dataset, update_labels = update_labels)
 
-        dataset = ds_ops.resize_images(dataset, image_width, image_height, update_labels = update_labels)
+        dataset = ds_ops.resize_images(dataset, image_width, image_height, update_labels = update_labels, pad_resize = pad_resize)
     
         dataset = ds_ops.batch_and_prefetch_dataset(dataset, batch_size)
         
