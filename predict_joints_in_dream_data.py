@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     joint_detector = dream_joint_detector(config, hand_detector, foot_detector)
 
-    hand_dataframe, feet_dataframe = joint_detector.create_dream_dataframes()
+    hand_dataframe, feet_dataframe = joint_detector.create_dream_datasets()
 
     hand_dataframe.to_csv('./data/hand_joint_data.csv')
     feet_dataframe.to_csv('./data/feet_joint_data.csv')
