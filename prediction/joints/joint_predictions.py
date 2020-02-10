@@ -4,11 +4,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from prediction.joints import joint_detector
-
-import dataset.image_ops as img_ops
-import dataset.landmark_ops as lm_ops
-import dataset.joint_dataset as joint_ops
+import dataset.ops.image_ops as img_ops
+import dataset.ops.landmark_ops as lm_ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -38,9 +35,11 @@ feet_mapping = {
     'mtp_5': [[10, 12], ['{part}_mtp_J__5'], ['{part}_mtp_E__5']]
 }
 
-class dream_joint_detector(joint_detector):
+class dream_joint_detector():
     def __init__(self, config, hand_joint_detector, feet_joint_detector):
-        super().__init__(config.train_location, config.landmarks_img_width, config.landmarks_img_height)
+        self.image_directory = config.train_location
+        self.img_width = config.landmarks_img_width
+        self.img_height = config.landmarks_img_height
 
         self.hand_joint_detector = hand_joint_detector
         self.feet_joint_detector = feet_joint_detector

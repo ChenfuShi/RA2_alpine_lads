@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-import dataset.image_ops as img_ops
+import dataset.ops.image_ops as img_ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 

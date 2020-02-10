@@ -1,9 +1,7 @@
 import pandas as pd
 import tensorflow as tf
 
-import dataset.dataset_ops as ops
 import dataset.ops.joint_ops as joint_ops
-import dataset.image_ops as img_ops
 
 from dataset.base_dataset import base_dataset
 

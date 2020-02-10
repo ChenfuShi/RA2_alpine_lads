@@ -4,7 +4,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-import dataset.image_ops as ops
+import dataset.ops.image_ops as img_ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -15,7 +15,7 @@ def load_images(dataset, directory, update_labels = False):
         
         flip_img = flip == 'Y'
         
-        return ops.load_image(file_name, y, update_labels, directory, flip_img)
+        return img_ops.load_image(file_name, y, update_labels, directory, flip_img)
 
     return dataset.map(__load, num_parallel_calls=AUTOTUNE)
 
@@ -46,13 +46,13 @@ def batch_and_prefetch_dataset(dataset, batch_size = 128):
 
 def resize_images(dataset, img_width, img_height, update_labels = False):
     def __resize(img, y):
-        return ops.resize_image(img, y, update_labels, img_width, img_height)
+        return img_ops.resize_image(img, y, update_labels, img_width, img_height)
 
     return dataset.map(__resize, num_parallel_calls=AUTOTUNE)
 
-def randomly_augment_images(dataset, augments = [ops.random_rotation, ops.random_brightness_and_contrast, ops.random_crop], update_labels = False):
+def randomly_augment_images(dataset, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop], update_labels = False):
     def __clip_image(img, y):
-        img = ops.clip_image(img)
+        img = img_ops.clip_image(img)
 
         return img, y
 
@@ -64,6 +64,6 @@ def randomly_augment_images(dataset, augments = [ops.random_rotation, ops.random
 
 def _apply_random_augment(dataset, aug, update_labels):
     def __apply_random_augment(img, y):
-        return ops.apply_augment(img, y, aug, update_labels = update_labels)
+        return img_ops.apply_augment(img, y, aug, update_labels = update_labels)
     
     return dataset.map(__apply_random_augment, num_parallel_calls=AUTOTUNE)

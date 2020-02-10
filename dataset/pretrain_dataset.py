@@ -16,7 +16,6 @@ from PIL import Image
 from tensorflow import keras
 
 import logging
-import dataset.dataset_ops as ops
 
 from dataset.base_dataset import base_dataset
 

@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 import numpy as np
 import logging
 import math
-import dataset.landmark_ops as lm_ops
+import dataset.ops.landmark_ops as lm_ops
 
 def _create_boxes(scales = np.arange(0.9, 1, 0.01)):
     boxes = np.zeros((scales.size, 4))

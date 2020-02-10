@@ -17,7 +17,6 @@ from tensorflow import keras
 
 from dataset.base_dataset import base_dataset
 import logging
-import dataset.dataset_ops as ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 

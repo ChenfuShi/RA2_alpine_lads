@@ -16,12 +16,10 @@ from PIL import Image
 from tensorflow import keras
 
 import logging
-import dataset.dataset_ops as ops
 
 from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-
 
 class train_dataset(base_dataset):
     def __init__(self, config):

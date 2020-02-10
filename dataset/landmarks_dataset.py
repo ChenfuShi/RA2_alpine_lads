@@ -5,13 +5,9 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-import dataset.dataset_ops as ops
-import dataset.image_ops as img_ops
-
 from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-
 
 class landmarks_dataset(base_dataset):
     def __init__(self, config):
