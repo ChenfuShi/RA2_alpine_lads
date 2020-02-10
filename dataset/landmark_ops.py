@@ -80,6 +80,9 @@ def crop_landmarks(y, box, original_img_shape):
     return resize_landmarks(updated_y, inner_image_shape, original_img_shape)
 
 def upscale_detected_landmarks(y, current_img_shape, target_img_shape):
+    current_img_shape = tf.cast(current_img_shape, dtype = tf.float64)
+    target_img_shape = tf.cast(target_img_shape, dtype = tf.float64)
+    
     upscale_x_ratio = target_img_shape[1] / current_img_shape[1]
     upscale_y_ratio = target_img_shape[0] / current_img_shape[0]
     

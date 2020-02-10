@@ -2,8 +2,15 @@ import os
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 from prediction.joints import joint_detector
+
+import dataset.image_ops as img_ops
+import dataset.landmark_ops as lm_ops
+import dataset.joint_dataset as joint_ops
+
+AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 # Map each joint, to its indicies in the predicted landmarks vector, and its outcome scores
 hand_mapping = {
@@ -38,67 +45,108 @@ class dream_joint_detector(joint_detector):
         self.hand_joint_detector = hand_joint_detector
         self.feet_joint_detector = feet_joint_detector
 
-    def create_dream_dataframes(self, source_file = 'training.csv'):
-        training_data = pd.read_csv(os.path.join(self.image_directory, source_file))
+    def create_dream_datasets(self, source_file = 'training.csv'):
+        data_hands, data_feet = self._get_dataframes(os.path.join(self.image_directory, source_file))
 
-        hands = ['LH', 'RH']
-        feet = ['LF', 'RF']
-        
-        hand_dirs = []
-        feet_dirs = []
+        data_hands = self._add_joint_predictions(data_hands, self.hand_joint_detector)
+        data_feet = self._add_joint_predictions(data_feet, self.feet_joint_detector)
 
-        for _, row in training_data.iterrows():
-            for part in hands:
-                hand_joints = self._locate_joints_and_outputs(row, part, self.hand_joint_detector, hand_mapping)
-                
-                hand_dirs.extend(hand_joints)
+        return self._create_output_dataframe(data_hands, hand_mapping), self._create_output_dataframe(data_feet, feet_mapping)
 
-            for part in feet:
-                foot_joints = self._locate_joints_and_outputs(row, part, self.feet_joint_detector, feet_mapping)
+    def _add_joint_predictions(self, data_frame, joint_detector):
+        joint_prediction_dataset = self._create_joint_prediction_dataset(data_frame)
 
-                feet_dirs.extend(foot_joints)
+        joint_predictions_list = []
+        for patient_id, landmark_image, original_image_shape in joint_prediction_dataset:
+            joint_predictions = joint_detector.predict(landmark_image)
 
-        hand_dataframe = pd.DataFrame(hand_dirs, index = np.arange(len(hand_dirs)))
-        feet_dataframe = pd.DataFrame(feet_dirs, index = np.arange(len(feet_dirs)))
-        
-        return hand_dataframe, feet_dataframe
-
-    # Given a row, and one part, this loads the image for this part, finds the joints, and collects the outputs
-    def _locate_joints_and_outputs(self, row, part, detector, joints_mapping):
-        patient_id = row['Patient_ID']
-        image_name = patient_id + f"-{part}"
-        
-        flip_img = 'R' in part
-
-        flip_flag = 'N'
-        if(flip_img):
-            flip_flag = 'Y'
-
-        predicted_landmarks = self._get_joint_landmark_coords(image_name, flip_img, detector)
-
-        joint_dicts = []
-        for key in joints_mapping:
-            joint_mapping = joints_mapping[key]
-
-            coord_idxs = joint_mapping[0]
-            joint_coords = predicted_landmarks[coord_idxs[0]:coord_idxs[1]].numpy()
-
-            joint_dict = {
-                'image_name': image_name,
-                'key': key,
-                'flip': flip_flag,
-                'coord_x': joint_coords[0],
-                'coord_y': joint_coords[1]
+            joint_prediction = {
+                'Patient_ID': patient_id.numpy().decode('UTF-8'),
+                'joint_locations': joint_predictions,
+                'original_shape': original_image_shape
             }
+
+            joint_predictions_list.append(joint_prediction)
+
+        joint_dataframe = pd.DataFrame(joint_predictions_list, index = np.arange(len(joint_predictions_list)))
+
+        return data_frame.merge(joint_dataframe, on = 'Patient_ID')
+
+    def _create_output_dataframe(self, data_frame, joints_mapping):
+        joint_dicts = []
+        
+        for _, row in data_frame.iterrows():
+            patient_id = row['Patient_ID']
+            part = patient_id.split('-')[1]
             
-            mapped_keys = [key_val.format(part = part) for key_val in joint_mapping[1]]
-            for idx, mapped_key in enumerate(mapped_keys):
-                joint_dict[f'narrowing_{idx}'] = row[mapped_key]
+            joint_locations = row['joint_locations'][0]
 
-            mapped_keys = [key_val.format(part = part) for key_val in joint_mapping[2]]
-            for idx, mapped_key in enumerate(mapped_keys):
-                joint_dict[f'erosion_{idx}'] = row[mapped_key]
+            joint_locations = lm_ops.upscale_detected_landmarks(joint_locations, (self.img_height, self.img_height), row['original_shape'])
 
-            joint_dicts.append(joint_dict)
+            for key in joints_mapping:
+                joint_mapping = joints_mapping[key]
 
-        return joint_dicts
+                coord_idxs = joint_mapping[0]
+                joint_coords = joint_locations[coord_idxs[0]:coord_idxs[1]].numpy()
+
+                joint_dict = {
+                    'image_name': row['Patient_ID'],
+                    'key': key,
+                    'coord_x': joint_coords[0],
+                    'coord_y': joint_coords[1]
+                }
+                
+                mapped_keys = [key_val.format(part = part) for key_val in joint_mapping[1]]
+                for idx, mapped_key in enumerate(mapped_keys):
+                    joint_dict[f'narrowing_{idx}'] = row[mapped_key]
+
+                mapped_keys = [key_val.format(part = part) for key_val in joint_mapping[2]]
+                for idx, mapped_key in enumerate(mapped_keys):
+                    joint_dict[f'erosion_{idx}'] = row[mapped_key]
+
+                joint_dicts.append(joint_dict)
+        
+        return pd.DataFrame(joint_dicts, np.arange(len(joint_dicts)))
+
+    def _create_joint_prediction_dataset(self, data_frame):
+        x = data_frame[['Patient_ID', 'flip']].to_numpy()
+
+        dataset = tf.data.Dataset.from_tensor_slices((x))
+        dataset = self.get_landmark_detection_image(dataset)
+        dataset = dataset.prefetch(buffer_size = AUTOTUNE)
+
+        return dataset 
+
+    def get_landmark_detection_image(self, dataset):
+        def __load_joints(file):
+            file_name = file[0]
+            flip = file[1]
+        
+            flip_img = flip == 'Y'
+
+            image, _ = img_ops.load_image(file_name, [], False, self.image_directory, flip_img)
+            landmark_detection_image, _ = img_ops.resize_image(image, [], False, self.img_width, self.img_height)
+
+            return file_name, tf.expand_dims(landmark_detection_image, 0), tf.shape(image)
+
+        return dataset.map(__load_joints, num_parallel_calls = AUTOTUNE)
+
+    def _get_dataframes(self, training_csv):
+        info = pd.read_csv(training_csv)
+        features = info.columns
+        parts = ["LH","RH","LF","RF"]
+        dataframes = {}
+        for part in parts:
+            flip = 'N'
+            if(part.startswith('R')):
+                flip = 'Y'
+            
+            dataframes[part] = info.loc[:,["Patient_ID"]+[s for s in features if part in s]].copy()
+            # dataframes[part]["total_fig_score"] = dataframes[part].loc[:,[s for s in features if part in s]].sum(axis=1)
+            dataframes[part]["Patient_ID"] = dataframes[part]["Patient_ID"].astype(str) + f"-{part}"
+            dataframes[part]["flip"] = flip
+            
+        data_hands = pd.concat((dataframes["RH"],dataframes["LH"]), sort = False)
+        data_feet = pd.concat((dataframes["RF"],dataframes["LF"]), sort = False)
+            
+        return data_hands, data_feet
