@@ -21,6 +21,7 @@ from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
+# TBD: can be deleted, now that the joint datasets exist
 class train_dataset(base_dataset):
     def __init__(self, config):
         super().__init__(config)
@@ -64,6 +65,7 @@ def _get_dataframes(training_csv):
         dataframes[part]["total_fig_score"] = dataframes[part].loc[:,[s for s in features if part in s]].sum(axis=1)
         dataframes[part]["Patient_ID"] = dataframes[part]["Patient_ID"].astype(str) + f"-{part}"
         dataframes[part]["flip"] = flip
+        dataframes[part]['file_type'] = 'jpg'
     
     # use left as reference
     # flip the Rights

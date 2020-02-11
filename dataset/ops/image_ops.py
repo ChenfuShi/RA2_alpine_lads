@@ -5,6 +5,9 @@ import logging
 import math
 import dataset.ops.landmark_ops as lm_ops
 
+PNG_EXTENSION_REGEX = '(?i).*png'
+JPG_EXTENSION_REGEX = '(?i).*jp[e]?g'
+
 def _create_boxes(scales = np.arange(0.9, 1, 0.01)):
     boxes = np.zeros((scales.size, 4))
     
@@ -16,13 +19,14 @@ def _create_boxes(scales = np.arange(0.9, 1, 0.01)):
         
     return boxes
 
-def load_image(file, y, update_labels, directory, flip_img):
-    file_path = directory + "/" + file + ".jpg"
-    
-    img = tf.io.read_file(file_path)    
-    img = tf.image.decode_jpeg(img, channels=1)
-    img = tf.image.convert_image_dtype(img, tf.float32)
-    
+def load_image(file_info, y, directory, update_labels = False):
+    file_name = file_info[0]
+    file_type = file_info[1]
+    flip_img = file_info[2] == 'Y'
+
+    img = tf.io.read_file(directory + '/' + file_name + '.' + file_type)
+    img = tf.io.decode_image(img, channels = 1, dtype = tf.float32)
+
     if flip_img:
         img = tf.image.flip_left_right(img)
 
@@ -30,10 +34,10 @@ def load_image(file, y, update_labels, directory, flip_img):
             img_shape = tf.shape(img)
             
             y = lm_ops.flip_landmarks(y, img_shape)
-                
+
     return img, y
 
-def resize_image(img, y, update_labels, img_width, img_height, pad_resize = True):
+def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels = False):
     old_shape = tf.shape(img)
     
     if pad_resize:

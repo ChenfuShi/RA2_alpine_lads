@@ -9,13 +9,8 @@ import dataset.ops.image_ops as img_ops
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 def load_images(dataset, directory, update_labels = False):
-    def __load(file, y):
-        file_name = file[0]
-        flip = file[1]
-        
-        flip_img = flip == 'Y'
-        
-        return img_ops.load_image(file_name, y, update_labels, directory, flip_img)
+    def __load(file_info, y):
+        return img_ops.load_image(file_info, y, directory, update_labels = update_labels)
 
     return dataset.map(__load, num_parallel_calls=AUTOTUNE)
 
@@ -46,7 +41,7 @@ def batch_and_prefetch_dataset(dataset, batch_size = 128):
 
 def resize_images(dataset, img_width, img_height, update_labels = False, pad_resize = True):
     def __resize(img, y):
-        return img_ops.resize_image(img, y, update_labels, img_width, img_height, pad_resize = pad_resize)
+        return img_ops.resize_image(img, y, img_height, img_width, pad_resize = pad_resize, update_labels = update_labels)
 
     return dataset.map(__resize, num_parallel_calls=AUTOTUNE)
 

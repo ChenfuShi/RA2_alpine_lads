@@ -44,13 +44,13 @@ class feet_joint_dataset(joint_dataset):
         flip_columns[flip_idx] = 'Y'
         feet_dataframe['flip'] = flip_columns
 
-        x = feet_dataframe[['image_name', 'flip', 'key']].values
+        feet_dataframe['file_type'] = 'jpg'
+
+        x = feet_dataframe[['image_name', 'file_type', 'flip', 'key']].values
         
         outcome_column = 'erosion_0'
         if(narrowing_flag):
             outcome_column = 'narrowing_0'
-
-        print(np.unique(feet_dataframe[outcome_column], return_counts = True))
 
         outcome = OneHotEncoder(categories='auto', sparse = False).fit_transform(feet_dataframe[outcome_column].values.reshape((-1, 1)) - 1)
 

@@ -7,17 +7,13 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 round_to_int = lambda x: tf.cast(tf.round(x), tf.int32)
 
 def load_joints(dataset, directory):
-    def __load_joints(file, y, z):
-        file_name = file[0]
-        flip = file[1]
-        joint_key = file[2]
+    def __load_joints(file_info, y, z):
+        joint_key = file_info[3]
 
         x_coord = y[0]
         y_coord = y[1]
 
-        flip_img = flip == 'Y'
-
-        full_img, _ = img_ops.load_image(file_name, [], False, directory, flip_img)
+        full_img, _ = img_ops.load_image(file_info, [], directory)
 
         #TODO: Use joint_key to decide on box dimensions
 

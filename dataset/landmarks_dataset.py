@@ -18,8 +18,8 @@ class landmarks_dataset(base_dataset):
         
         self.landmarks_dataframe = landmarks_dataframe
         
-        label_idx = np.logical_and(landmarks_dataframe.columns != 'sample_id', landmarks_dataframe.columns != 'flip')
-        x = landmarks_dataframe[['sample_id', 'flip']].values
+        label_idx = np.logical_and(landmarks_dataframe.columns != 'file_type', np.logical_and(landmarks_dataframe.columns != 'sample_id', landmarks_dataframe.columns != 'flip'))
+        x = landmarks_dataframe[['sample_id', 'file_type', 'flip']].values
         y = landmarks_dataframe.loc[:, label_idx].values
         
         dataset = super()._create_dataset(x, y, image_location, update_labels = True)
@@ -73,7 +73,13 @@ def _create_landmarks_dataframe(landmarks_location):
                 labels_dict = _get_labels_for_landmarks_json(landmark_json)
                 
                 sample_id = landmark_file.split('.')[0]
+
+                # last element of the stored img_path is the file type
+                img_path = landmark_json['imagePath'].split('.')
+                file_type = img_path[-1]
+
                 labels_dict['sample_id'] = sample_id
+                labels_dict['file_type'] = file_type
                 
                 if 'RF' in sample_id or 'RH' in sample_id:
                     labels_dict['flip'] = 'Y'
