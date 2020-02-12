@@ -77,6 +77,6 @@ class rsna_joint_dataset(joint_dataset):
         coords = joint_dataframe[['coord_x', 'coord_y']].values
 
         outcomes = joint_dataframe[['boneage', 'sex', 'key']]
-        outcomes = pd.get_dummies(outcomes, columns = ['key']).values
+        outcomes = pd.get_dummies(outcomes, columns = ['key'], dtype = np.float32).values
 
         return self._create_dataset(file_info, coords, outcomes, val_split = val_split) 

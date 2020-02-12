@@ -30,7 +30,7 @@ def _get_tensorboard_callback(model_name):
 
 def _split_outcomes(dataset, no_joint_types = 13):
     def __split_outcomes(x, y):
-        split_y = tf.split(y, [1, 1, no_joint_types])
+        split_y = tf.split(y, [1, 1, no_joint_types], 1)
 
         return x, (split_y[0], split_y[1], split_y[2])
 
