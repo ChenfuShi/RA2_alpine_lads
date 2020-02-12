@@ -75,6 +75,8 @@ class rsna_joint_dataset(joint_dataset):
 
         file_info = joint_dataframe[['image_name', 'file_type', 'flip', 'key']].astype(np.str).values
         coords = joint_dataframe[['coord_x', 'coord_y']].values
-        outcomes = joint_dataframe[['boneage', 'sex']].values
+
+        outcomes = joint_dataframe[['boneage', 'sex', 'key']]
+        outcomes = pd.get_dummies(outcomes, columns = ['key']).values
 
         return self._create_dataset(file_info, coords, outcomes, val_split = val_split) 
