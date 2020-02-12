@@ -2,6 +2,7 @@ import tensorflow as tf
 
 import dataset.ops.dataset_ops as ds_ops
 
+# TODO: Don't use config in constructor, but individual fields passed on from config
 class base_dataset():
     def __init__(self, config):
         self.config = config
