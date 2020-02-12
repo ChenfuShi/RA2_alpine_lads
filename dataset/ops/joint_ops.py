@@ -37,6 +37,12 @@ def _extract_joint_from_image(img, x, y):
     x_box = tf.math.maximum(x_box, 0)
     y_box = tf.math.maximum(y_box, 0)
 
+    if y_box + box_height > img_shape[0]:
+        box_height = img_shape[0] - y_box
+
+    if x_box + box_width > img_shape[1]:
+        box_width = img_shape[1] - x_box
+
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
 
     return img
