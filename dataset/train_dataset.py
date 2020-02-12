@@ -16,73 +16,40 @@ from PIL import Image
 from tensorflow import keras
 
 import logging
-import dataset.dataset_ops as ops
+
+from dataset.base_dataset import base_dataset
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-class train_dataset():
-    """
-    Dataset class for train and validation split
-    """
+# TBD: can be deleted, now that the joint datasets exist
+class train_dataset(base_dataset):
+    def __init__(self, config):
+        super().__init__(config)
 
-    def __init__(self,config):
-        self.config = config
+    def create_train_dataset(self):
+        training_csv_file = os.path.join(self.config.train_location, "training.csv")
 
-    def initialize_pipeline(self):    
-        training_csv_file = os.path.join(self.config.train_location,"training.csv")
-        
         self.data_hands, self.data_feet = _get_dataframes(training_csv_file)
 
-        # get dataset for hands
-        hands_dataset = _init_dataset(self.data_hands, self.config.train_location, self.config.fixed_dir, "RF")
-        # get dataset for feet
-        feet_dataset = _init_dataset(self.data_feet, self.config.train_location, self.config.fixed_dir, "RH")
+        data_dir = os.path.join(self.config.train_location, self.config.fixed_directory)
 
-        # here separate validation set
-        if self.config.have_val:
-            hands_dataset_val = hands_dataset.take(50) 
-            hands_dataset = hands_dataset.skip(50)
-            feet_dataset_val = feet_dataset.take(50) 
-            feet_dataset = feet_dataset.skip(50)
+        hands_dataset = super()._create_dataset(self.data_hands, data_dir)
+        feet_dataset = super()._create_dataset(self.data_feet, data_dir)
         
-        # data processing
-        # augmentation happens here
-        hands_dataset = self._prepare_for_training(hands_dataset,self.config.augment,self.config.cache_loc + "hands")
-        feet_dataset = self._prepare_for_training(feet_dataset,self.config.augment,self.config.cache_loc + "feet")
+        if self.config.have_val:
+            hands_dataset, hands_dataset_val = super()._create_validation_split(hands_dataset)
+            feet_dataset, feet_dataset_val = super()._create_validation_split(feet_dataset)
+
+        hands_dataset = super()._prepare_for_training(hands_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'hands')
+        feet_dataset = super()._prepare_for_training(feet_dataset, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'feet')
 
         if self.config.have_val:
-            hands_dataset_val = self._prepare_for_training(hands_dataset_val, False)
-            feet_dataset_val = self._prepare_for_training(feet_dataset_val, False)
+            hands_dataset_val = super()._prepare_for_training(hands_dataset_val, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, augment = False)
+            feet_dataset_val = super()._prepare_for_training(feet_dataset_val, self.config.img_width, self.config.img_height, batch_size = self.config.batch_size, augment = False)
 
             return hands_dataset, feet_dataset, hands_dataset_val, feet_dataset_val
         else:
             return hands_dataset, feet_dataset
-
-    def _prepare_for_training(self, ds, augment, cache=True, shuffle_buffer_size=200):            
-        if cache:
-            if isinstance(cache, str):
-                try:
-                    os.makedirs(os.path.expanduser(cache),exist_ok=True)
-                    ds = ds.cache(os.path.expanduser(cache))
-                except FileNotFoundError:
-                    logging.warn("Missing permissions to create directory for caching!")
-
-                    pass                                                                                            # Missing permission to create cache folder
-            else:
-                ds = ds.cache()
-
-        ds = ds.shuffle(buffer_size=shuffle_buffer_size)                                                            # Shuffle dataset
-        ds = ds.repeat()                                                                                            # Repeat dataset entries
-
-        if augment:
-            ds = _augment_images(ds)
-
-        ds = _resize_images(ds, self.config.img_width, self.config.img_height)
-
-        ds = ds.batch(self.config.batch_size)                                                                       # Enable batching
-        ds = ds.prefetch(buffer_size=AUTOTUNE)                                                                      # Fetch batches in background while model is training
-
-        return ds
     
 def _get_dataframes(training_csv):
     info = pd.read_csv(training_csv)
@@ -90,9 +57,15 @@ def _get_dataframes(training_csv):
     parts = ["LH","RH","LF","RF"]
     dataframes = {}
     for part in parts:
+        flip = 'N'
+        if(part.startswith('R')):
+            flip = 'Y'
+        
         dataframes[part] = info.loc[:,["Patient_ID"]+[s for s in features if part in s]].copy()
         dataframes[part]["total_fig_score"] = dataframes[part].loc[:,[s for s in features if part in s]].sum(axis=1)
         dataframes[part]["Patient_ID"] = dataframes[part]["Patient_ID"].astype(str) + f"-{part}"
+        dataframes[part]["flip"] = flip
+        dataframes[part]['file_type'] = 'jpg'
     
     # use left as reference
     # flip the Rights
@@ -103,16 +76,3 @@ def _get_dataframes(training_csv):
     data_feet = pd.concat((dataframes["RF"],dataframes["LF"]))
         
     return data_hands, data_feet
-
-def _init_dataset(df_data, train_location, fixed_directory, flip_str):
-    dataset = tf.data.Dataset.from_tensor_slices((df_data["Patient_ID"].values, df_data.loc[:, df_data.columns != 'Patient_ID'].values))
-
-    dataset = ops.load_images(dataset, os.path.join(train_location, fixed_directory), flip_str)
-        
-    return dataset
-
-def _augment_images(ds):
-    return ops.randomly_augment_images(ds)
-
-def _resize_images(ds, img_width, img_height):
-    return ops.resize_images(ds, img_width, img_height)
