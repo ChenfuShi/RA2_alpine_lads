@@ -14,6 +14,6 @@ if __name__ == '__main__':
 
     joint_detector = rsna_joint_detector(config, hand_detector)
 
-    hand_dataframe, feet_dataframe = joint_detector.create_rnsa_dataset()
+    hand_dataframe = joint_detector.create_rnsa_dataset()
 
     hand_dataframe.to_csv('./data/rsna_joint_data.csv')
