@@ -12,7 +12,7 @@ from model import create_bigger_kernel_base
 def create_rsna_NASnet_multioutupt(img_height, img_width, no_joints_types = 13):
     inputs = keras.layers.Input(shape=[img_height, img_width, 1])
     
-    base_model = create_bigger_kernel_base(img_height, img_width)(inputs)
+    base_model = create_bigger_kernel_base(inputs)
 
     dense_layer = Dense(512, activation = 'relu')(base_model)
     dense_layer = Dense(256, activation = 'relu')(dense_layer)
