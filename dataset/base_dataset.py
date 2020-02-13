@@ -13,7 +13,7 @@ class base_dataset():
     
         return dataset
 
-    def _create_validation_split(self, dataset, split_size = 50):
+    def _create_validation_split(self, dataset, split_size = 200):
         val_dataset = dataset.take(split_size)
         dataset = dataset.skip(split_size)
 
