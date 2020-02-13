@@ -20,4 +20,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm ~/localscratch/* -r
 
 # run python training script
-python rsna_multioutput_train_script.py
+python rsna_multioutput_train_script.py ${model_name}

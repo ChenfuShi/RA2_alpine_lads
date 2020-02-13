@@ -1,8 +1,6 @@
 from tensorflow import keras 
 
-def save_pretrained_model(pretrained_model, weights, no_layers_to_remove, model_name):
-    pretrained_model.load_weights(weights)
-
+def save_pretrained_model(pretrained_model, no_layers_to_remove, model_name):
     new_model = keras.models.Sequential()
         
     # remove the last x layers, by only adding layers before it to the new model
