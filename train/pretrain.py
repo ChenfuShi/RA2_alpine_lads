@@ -19,7 +19,7 @@ def pretrain_rnsa_multioutput_model(model_name, config, model_creator):
     model = model_creator(128, 256)
 
     model.fit(joint_dataset, validation_data = joint_val_dataset, 
-        epochs = 250, steps_per_epoch = 25, verbose = 2, validation_steps = 5, callbacks = [saver, tensorboard_callback])
+        epochs = 200, steps_per_epoch = 100, verbose = 2, validation_steps = 10, callbacks = [saver, tensorboard_callback])
 
 def _get_tensorboard_callback(model_name):
     log_dir = 'logs/tensorboard/' + model_name + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')

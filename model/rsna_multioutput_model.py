@@ -32,7 +32,7 @@ def create_rsna_NASnet_multioutupt(img_height, img_width, no_joints_types = 13):
         'sex_pred' : 'binary_crossentropy',
         'joint_type_pred': categorical_focal_loss(),
     }
-    lossWeights = {'boneage_pred': 1, 'sex_pred' :0.25, 'joint_type_pred': 2}
+    lossWeights = {'boneage_pred': 0.005, 'sex_pred': 0.5, 'joint_type_pred': 2}
 
     model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
         metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'binary_accuracy'})
