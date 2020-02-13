@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from utils.losses import categorical_focal_loss
+from utils import save_pretrained_model
 
 def create_rsna_NASnet_multioutupt(img_height, img_width, no_joints_types = 13):
     # load base model
@@ -16,7 +17,7 @@ def create_rsna_NASnet_multioutupt(img_height, img_width, no_joints_types = 13):
     common_part = NASnet_model(inputs)
     common_part =  tf.keras.layers.GlobalAveragePooling2D()(common_part)
 
-    # split into two parts
+    # split into three parts
     boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred')(common_part)
     sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred')(common_part)
     joint_type = keras.layers.Dense(no_joints_types, activation = 'softmax', name = 'joint_type_pred')(common_part)
@@ -32,9 +33,15 @@ def create_rsna_NASnet_multioutupt(img_height, img_width, no_joints_types = 13):
         'sex_pred' : 'binary_crossentropy',
         'joint_type_pred': categorical_focal_loss(),
     }
+
     lossWeights = {'boneage_pred': 0.005, 'sex_pred': 0.5, 'joint_type_pred': 2}
 
     model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
         metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'binary_accuracy'})
 
     return model
+
+def save_rsna_NASnet_multioutupt():
+    model = create_rsna_NASnet_multioutupt(128, 256, no_joints_types = 13)
+
+    save_pretrained_model(model, './weights/rsna_multioutput_NASnet_pretrain_model_190', 2, 'rnsa_NASnet_pretrain_v1')
