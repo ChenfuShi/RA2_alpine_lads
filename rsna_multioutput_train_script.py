@@ -11,11 +11,13 @@ from utils import save_pretrained_model
 if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/RA2_alpine_lads/')
 
+    model_name = sys.argv[1]
+    logging.info('Saving output model to:', model_name)
+
     logging.info('Loading config')
     config = Config()
 
     logging.info('Starting training')
     trained_model = pretrain_rnsa_multioutput_model('rsna_multioutput_NASnet_pretrain', config, create_rsna_NASnet_multioutupt)
 
-    model_name = sys.argv[1]
     save_pretrained_model(trained_model, 3, model_name)
