@@ -1,9 +1,19 @@
+import datetime
+
+import tensorflow as tf
+
 from tensorflow.keras.layers import Dense
+
+
+from utils.saver import CustomSaver
 
 from dataset.joint_dataset import feet_joint_dataset
 from utils import top_2_categorical_accuracy
 
-def train_feet_erosion_model(config, pretrained_base_model):
+def train_feet_erosion_model(config, model_name, pretrained_base_model):
+    saver = CustomSaver(model_name, n = 10)
+    tensorboard_callback = _get_tensorboard_callback(model_name)
+    
     dataset = feet_joint_dataset(config)
     feet_joint_erosion_dataset, val_dataset = dataset.create_feet_joints_dataset(True, val_split = True)
 
@@ -13,7 +23,16 @@ def train_feet_erosion_model(config, pretrained_base_model):
     pretrained_base_model.compile(loss = 'categorical_crossentropy', metrics=["categorical_accuracy", top_2_categorical_accuracy], optimizer='adam')
 
     history = pretrained_base_model.fit(
-        feet_joint_erosion_dataset, epochs = 25, steps_per_epoch = 200, validation_data = val_dataset, validation_steps = 10, class_weight = dataset.class_weights
+        feet_joint_erosion_dataset, epochs = 25, steps_per_epoch = 200, validation_data = val_dataset, 
+        validation_steps = 10, class_weight = dataset.class_weights, callbacks = [saver, tensorboard_callback]
     )
 
     return pretrained_base_model
+
+
+def _get_tensorboard_callback(model_name):
+    log_dir = 'logs/tensorboard/' + model_name + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    
+    return tensorboard_callback
