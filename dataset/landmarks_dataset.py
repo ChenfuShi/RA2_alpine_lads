@@ -26,7 +26,7 @@ class landmarks_dataset(base_dataset):
 
         if create_val:
             if shuffle_before_val:
-                dataset = dataset.shuffle()
+                dataset = dataset.shuffle(buffer_size = 700,seed=65)
             dataset, val_dataset = super()._create_validation_split(dataset)
 
         dataset = super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True)

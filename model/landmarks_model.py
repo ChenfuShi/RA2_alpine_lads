@@ -11,8 +11,6 @@ import matplotlib.pyplot as plt
 from tensorflow import keras 
 import os
 import tensorflow as tf
-import tensorflow_addons as tfa
-import model.keras_nasnet
 
 
 def landmarks_model_pretrain(config):
@@ -188,4 +186,55 @@ def _landmarks_base(config):
 
     ])
 
+    return model
+
+
+
+def resnet_landmarks_model(config,n_outputs=10,weights=None,outputs_before=10):
+    base_resnet = keras.applications.resnet_v2.ResNet50V2(input_shape=[config.landmarks_img_height,config.landmarks_img_width,1],pooling="avg",weights=None,)
+    model = keras.models.Sequential([base_resnet])
+
+    if weights == None:
+        model.add(keras.layers.Dense(n_outputs, activation='linear'))
+
+        model.compile(optimizer='adam',
+                loss='mean_squared_error',
+                metrics=['mae'])
+    else:
+        pretrained_model = resnet_landmarks_model(config,outputs_before)
+        pretrained_model.load_weights(weights)
+        model=keras.models.Sequential()
+        # remove 1 layers from pretrain model
+        for layer in pretrained_model.layers[:-1]:
+            model.add(layer)
+        # add the layers back
+        model.add(keras.layers.Dense(n_outputs, activation='linear'))
+        model.compile(optimizer='adam',
+                loss='mean_squared_error',
+                metrics=['mae'])
+    return model
+
+
+def nasnet_landmarks_model(config,n_outputs=10,weights=None,outputs_before=10):
+    base_net = keras.applications.NASNetMobile(input_shape=[config.landmarks_img_height,config.landmarks_img_width,1],weights=None,pooling="avg",)
+    model = keras.models.Sequential([base_net])
+
+    if weights == None:
+        model.add(keras.layers.Dense(n_outputs, activation='linear'))
+
+        model.compile(optimizer='adam',
+                loss='mean_squared_error',
+                metrics=['mae'])
+    else:
+        pretrained_model = nasnet_landmarks_model(config,outputs_before)
+        pretrained_model.load_weights(weights)
+        model=keras.models.Sequential()
+        # remove 1 layers from pretrain model
+        for layer in pretrained_model.layers[:-1]:
+            model.add(layer)
+        # add the layers back
+        model.add(keras.layers.Dense(n_outputs, activation='linear'))
+        model.compile(optimizer='adam',
+                loss='mean_squared_error',
+                metrics=['mae'])
     return model

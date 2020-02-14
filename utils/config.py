@@ -28,8 +28,8 @@ class Config:
         cur_date = datetime.datetime.now()
         
         logging.basicConfig(
-            level=logging.INFO,
-            format="%(levelname)s - %(message)s",
-            handlers=[
+           level=logging.INFO,
+           format="%(levelname)s - %(message)s",
+           handlers=[
                 logging.FileHandler("{0}/{1}.log".format(self.output_dir, f"{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}"), mode="a"),
                 logging.StreamHandler()]) 
