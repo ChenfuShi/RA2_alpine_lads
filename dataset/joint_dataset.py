@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from sklearn.preprocessing import OneHotEncoder
-
 import dataset.ops.joint_ops as joint_ops
 import dataset.ops.dataset_ops as ds_ops
 
@@ -21,7 +19,8 @@ class joint_dataset(base_dataset):
         dataset = joint_ops.load_joints(dataset, self.image_dir)
 
         if val_split:
-            dataset, val_dataset = self._create_validation_split(dataset, split_size = 200)
+            dataset = dataset.shuffle(buffer_size = 200)
+            dataset, val_dataset = self._create_validation_split(dataset, split_size = 350)
 
         dataset = self._prepare_for_training(dataset, 256, 128, batch_size = self.config.batch_size, cache = self.cache, pad_resize = False)
 
@@ -55,11 +54,25 @@ class feet_joint_dataset(joint_dataset):
         if(narrowing_flag):
             outcome_column = 'narrowing_0'
 
-        outcomes = OneHotEncoder(categories='auto', sparse = False).fit_transform(feet_dataframe[outcome_column].values.reshape((-1, 1)) - 1)
+        outcomes = feet_dataframe[outcome_column]
+        self._create_class_weights(outcomes)
+        outcomes = pd.get_dummies(outcomes, columns = [outcome_column])
 
         coords = feet_dataframe[['coord_x', 'coord_y']].values
 
-        return self._create_dataset(file_info, coords, outcomes, val_split = val_split)
+        return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), val_split = val_split)
+
+    def _create_class_weights(self, outcomes):
+        N = outcomes.shape[0]
+        classes, counts = np.unique(outcomes.to_numpy(), return_counts = True)
+
+        weights = (1 / counts) * (N) / 2.0
+
+        class_weights = {}
+        for idx, c in enumerate(classes.astype(np.int64)):
+            class_weights[c] = weights[idx]
+
+        self.class_weights = class_weights
 
 class rsna_joint_dataset(joint_dataset):
     def __init__(self, config):
