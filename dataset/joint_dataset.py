@@ -14,22 +14,11 @@ class joint_dataset(base_dataset):
         self.cache = config.cache_loc + cache_postfix
         self.image_dir = config.train_location
 
-    def _create_dataset(self, file_info, joint_coords, outcomes, val_split = False):
+    def _create_dataset(self, file_info, joint_coords, outcomes, augment = True):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         dataset = joint_ops.load_joints(dataset, self.image_dir)
-
-        if val_split:
-            dataset = dataset.shuffle(buffer_size = 200)
-            dataset, val_dataset = self._create_validation_split(dataset, split_size = 350)
-
-        dataset = self._prepare_for_training(dataset, 256, 128, batch_size = self.config.batch_size, cache = self.cache, pad_resize = False)
-
-        if val_split:
-            val_dataset = self._prepare_for_training(val_dataset, 256, 128, batch_size = self.config.batch_size, pad_resize = False, augment = False)
-
-            return dataset, val_dataset
-        else:
-            return dataset
+        
+        return self._prepare_for_training(dataset, 256, 128, batch_size = self.config.batch_size, cache = self.cache, pad_resize = False, augment = augment)
 
 class feet_joint_dataset(joint_dataset):
     def __init__(self, config):
@@ -37,7 +26,21 @@ class feet_joint_dataset(joint_dataset):
 
         self.image_dir = config.train_location
 
-    def create_feet_joints_dataset(self, narrowing_flag, joint_source = './data/feet_joint_data.csv', val_split = False):
+    def create_feet_joints_dataset(self, narrowing_flag = False, joint_source = './data/feet_joint_data.csv', val_joints_source = None):
+        outcome_column = 'erosion_0'
+        if(narrowing_flag):
+            outcome_column = 'narrowing_0'
+
+        dataset = self._create_feet_dataset(joint_source, outcome_column)
+
+        if val_joints_source:
+            val_dataset = self._create_feet_dataset(val_joints_source, outcome_column, is_val = True, augment = False)
+
+            return dataset, val_dataset
+        else:
+            return dataset
+
+    def _create_feet_dataset(self, joint_source, outcome_column, is_val = False, augment = True):
         feet_dataframe = pd.read_csv(joint_source)
 
         feet_dataframe['flip'] = 'N'
@@ -49,18 +52,15 @@ class feet_joint_dataset(joint_dataset):
         feet_dataframe['file_type'] = 'jpg'
 
         file_info = feet_dataframe[['image_name', 'file_type', 'flip', 'key']].values
-        
-        outcome_column = 'erosion_0'
-        if(narrowing_flag):
-            outcome_column = 'narrowing_0'
 
         outcomes = feet_dataframe[outcome_column]
-        self._create_class_weights(outcomes)
+        if np.logical_not(is_val):
+            self._create_class_weights(outcomes)
         outcomes = pd.get_dummies(outcomes, columns = [outcome_column])
 
         coords = feet_dataframe[['coord_x', 'coord_y']].values
 
-        return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), val_split = val_split)
+        return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), augment = augment)
 
     def _create_class_weights(self, outcomes):
         N = outcomes.shape[0]
