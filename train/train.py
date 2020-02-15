@@ -15,7 +15,7 @@ def train_feet_erosion_model(config, model_name, pretrained_base_model):
     tensorboard_callback = _get_tensorboard_callback(model_name)
     
     dataset = feet_joint_dataset(config)
-    feet_joint_erosion_dataset, val_dataset = dataset.create_feet_joints_dataset(True, val_split = True)
+    feet_joint_erosion_dataset, val_dataset = dataset.create_feet_joints_dataset(narrowing_flag = True, joint_source = './data/feet_joint_data_train.csv', val_joints_source = './data/feet_joint_data_test.csv')
 
     # Add erosion outcomes to pretrained model
     pretrained_base_model.add(Dense(5, activation = 'softmax', name = 'main_output'))
