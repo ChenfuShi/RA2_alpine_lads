@@ -23,8 +23,8 @@ def train_feet_erosion_model(config, model_name, pretrained_base_model):
     pretrained_base_model.compile(loss = 'categorical_crossentropy', metrics=["categorical_accuracy", top_2_categorical_accuracy], optimizer='adam')
 
     history = pretrained_base_model.fit(
-        feet_joint_erosion_dataset, epochs = 25, steps_per_epoch = 200, validation_data = val_dataset, 
-        validation_steps = 10, class_weight = dataset.class_weights, callbacks = [saver, tensorboard_callback]
+        feet_joint_erosion_dataset, epochs = 50, steps_per_epoch = 75, validation_data = val_dataset, 
+        validation_steps = 15, verbose = 2, class_weight = dataset.class_weights, callbacks = [saver, tensorboard_callback]
     )
 
     return pretrained_base_model

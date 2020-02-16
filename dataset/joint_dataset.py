@@ -78,7 +78,7 @@ class rsna_joint_dataset(joint_dataset):
     def __init__(self, config):
         super().__init__(config, 'rsna_joints')
 
-        self.image_dir = '../rsna_boneAge/checked_rsna_training'
+        self.image_dir = '../../rsna_boneAge/checked_rsna_training'
 
     def create_rsna_joints_dataset(self, joint_source = './data/rsna_joint_data.csv', val_split = False):
         joint_dataframe = pd.read_csv(joint_source)

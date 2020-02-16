@@ -22,4 +22,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm ~/localscratch/* -r
 # run python training script
 
-python save_rsna_pretrain.py
+python predict_joints_in_dream_data.py
