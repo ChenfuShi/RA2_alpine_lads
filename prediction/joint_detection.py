@@ -84,7 +84,7 @@ class joint_detector():
 
     def _map_to_landmark_detection_images(self, dataset):
         def __load_joints(file_info):
-            image, _ = img_ops.load_image(file_info, [], self.image_directory)
+            image, _ = img_ops.load_image(file_info, [], self.image_directory + '/fixed')
             landmark_detection_image, _ = img_ops.resize_image(image, [], self.landmark_img_height, self.landmark_img_width)
 
             return file_info[0], tf.expand_dims(landmark_detection_image, 0), tf.shape(image)
