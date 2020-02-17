@@ -100,54 +100,54 @@ if __name__ == '__main__':
     ##################################################################
     ## tests for resnet
 
-    # # prepare data
-    # logging.info("preparing train dataset faces")
+    # prepare data
+    logging.info("preparing train dataset faces")
 
-    # dataset = land_pre.landmark_pretrain_faces_dataset(configuration)
-    # faces, faces_val = dataset.create_train_dataset()
+    dataset = land_pre.landmark_pretrain_faces_dataset(configuration)
+    faces, faces_val = dataset.create_train_dataset()
 
-    # logging.info("datasets prepared")
+    logging.info("datasets prepared")
 
-    # # define model
-    # model = landmarks_model.nasnet_landmarks_model(configuration)
-    # model.summary()
+    # define model
+    model = landmarks_model.nasnet_landmarks_model(configuration)
+    model.summary()
 
-    # logging.info("model prepared")
-    # # train
-    # logging.info("starting training")
-    # pretrain_faces(model,faces,faces_val,configuration,"FACE_pretrain_nasnet")
+    logging.info("model prepared")
+    # train
+    logging.info("starting training")
+    pretrain_faces(model,faces,faces_val,configuration,"FACE_pretrain_nasnet")
     
-    # logging.info("doing preprocessing")
-    # fix_images(configuration)
-    # logging.info("preprocessing done")
+    logging.info("doing preprocessing")
+    fix_images(configuration)
+    logging.info("preprocessing done")
 
-    # logging.info("starting step 2 of feet pre-training")
-    # joints_model = landmarks_model.nasnet_landmarks_model(configuration,12,"weights/FACE_pretrain_nasnet_model_250",10)
-    # joints_model.summary()
+    logging.info("starting step 2 of feet pre-training")
+    joints_model = landmarks_model.nasnet_landmarks_model(configuration,12,"weights/FACE_pretrain_nasnet_model_250",10)
+    joints_model.summary()
 
-    # landmark_dataset, landmark_dataset_val = ld_dataset.feet_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
+    landmark_dataset, landmark_dataset_val = ld_dataset.feet_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
 
-    # pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"FEET_pretrain_nasnet")
+    pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"FEET_pretrain_nasnet")
 
-    # logging.info("starting step 2 of hands pre-training")
-    # joints_model = landmarks_model.nasnet_landmarks_model(configuration,26,"weights/FACE_pretrain_nasnet_model_250",10)
-    # joints_model.summary()
+    logging.info("starting step 2 of hands pre-training")
+    joints_model = landmarks_model.nasnet_landmarks_model(configuration,26,"weights/FACE_pretrain_nasnet_model_250",10)
+    joints_model.summary()
 
-    # landmark_dataset, landmark_dataset_val = ld_dataset.hands_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
+    landmark_dataset, landmark_dataset_val = ld_dataset.hands_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
 
-    # pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"HANDS_pretrain_nasnet")
+    pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"HANDS_pretrain_nasnet")
 
-    # logging.info("training on double pretrained model feet")
+    logging.info("training on double pretrained model feet")
 
-    # joints_model = landmarks_model.nasnet_landmarks_model(configuration,26,"weights/FEET_pretrain_nasnet_model_2500",12)
-    # landmark_dataset, landmark_dataset_val = ld_dataset.hands_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
-    # pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"HANDS_train_nasnet")
+    joints_model = landmarks_model.nasnet_landmarks_model(configuration,26,"weights/FEET_pretrain_nasnet_model_2500",12)
+    landmark_dataset, landmark_dataset_val = ld_dataset.hands_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
+    pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"HANDS_train_nasnet")
 
-    # logging.info("training on double pretrained model hands")
+    logging.info("training on double pretrained model hands")
 
-    # joints_model = landmarks_model.nasnet_landmarks_model(configuration,12,"weights/HANDS_pretrain_nasnet_model_2500",26)
-    # landmark_dataset, landmark_dataset_val = ld_dataset.feet_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
-    # pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"FEET_train_nasnet")
+    joints_model = landmarks_model.nasnet_landmarks_model(configuration,12,"weights/HANDS_pretrain_nasnet_model_2500",26)
+    landmark_dataset, landmark_dataset_val = ld_dataset.feet_landmarks_dataset(configuration).create_landmarks_dataset(create_val=True)
+    pretrain_landmarks(joints_model,landmark_dataset,landmark_dataset_val,configuration,"FEET_train_nasnet")
     
 
     # prepare data
