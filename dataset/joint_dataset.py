@@ -73,6 +73,7 @@ class feet_joint_dataset(joint_dataset):
             class_weights[c] = weights[idx]
 
         self.class_weights = class_weights
+        self.class_bias = np.log(counts / np.sum(counts))
 
 class rsna_joint_dataset(joint_dataset):
     def __init__(self, config):
