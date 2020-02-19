@@ -4,7 +4,6 @@ import tensorflow as tf
 
 from tensorflow.keras.layers import Dense
 
-
 from utils.saver import CustomSaver
 
 from dataset.joint_dataset import feet_joint_dataset
@@ -17,13 +16,14 @@ def train_feet_erosion_model(config, model_name, pretrained_base_model):
     dataset = feet_joint_dataset(config)
     feet_joint_erosion_dataset, val_dataset = dataset.create_feet_joints_dataset(narrowing_flag = True, joint_source = './data/feet_joint_data_train.csv', val_joints_source = './data/feet_joint_data_test.csv')
 
+    output_bias = tf.keras.initializers.Constant(dataset.class_bias)
     # Add erosion outcomes to pretrained model
-    pretrained_base_model.add(Dense(5, activation = 'softmax', name = 'main_output'))
+    pretrained_base_model.add(Dense(5, activation = 'softmax', name = 'main_output', bias_initializer = output_bias))
 
     pretrained_base_model.compile(loss = 'categorical_crossentropy', metrics=["categorical_accuracy", top_2_categorical_accuracy], optimizer='adam')
 
     history = pretrained_base_model.fit(
-        feet_joint_erosion_dataset, epochs = 25, steps_per_epoch = 75, validation_data = val_dataset, 
+        feet_joint_erosion_dataset, epochs = 200, steps_per_epoch = 75, validation_data = val_dataset, 
         validation_steps = 15, verbose = 2, class_weight = dataset.class_weights, callbacks = [saver, tensorboard_callback]
     )
 
