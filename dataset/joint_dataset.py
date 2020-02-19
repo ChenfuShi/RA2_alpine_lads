@@ -12,13 +12,13 @@ class joint_dataset(base_dataset):
         super().__init__(config)
 
         self.cache = config.cache_loc + cache_postfix
-        self.image_dir = config.train_location
+        self.image_dir = config.train_location + '/fixed'
 
-    def _create_dataset(self, file_info, joint_coords, outcomes, augment = True):
+    def _create_dataset(self, file_info, joint_coords, outcomes, augment = True, cache = True):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         dataset = joint_ops.load_joints(dataset, self.image_dir)
         
-        return self._prepare_for_training(dataset, 256, 128, batch_size = self.config.batch_size, cache = self.cache, pad_resize = False, augment = augment)
+        return self._prepare_for_training(dataset, 256, 128, batch_size = self.config.batch_size, cache = cache, pad_resize = False, augment = augment)
 
 class feet_joint_dataset(joint_dataset):
     def __init__(self, config):
@@ -31,16 +31,16 @@ class feet_joint_dataset(joint_dataset):
         if(narrowing_flag):
             outcome_column = 'narrowing_0'
 
-        dataset = self._create_feet_dataset(joint_source, outcome_column)
+        dataset = self._create_feet_dataset(joint_source, outcome_column, cache = self.cache)
 
         if val_joints_source:
-            val_dataset = self._create_feet_dataset(val_joints_source, outcome_column, is_val = True, augment = False)
+            val_dataset = self._create_feet_dataset(val_joints_source, outcome_column, is_train = False, augment = False)
 
             return dataset, val_dataset
         else:
             return dataset
 
-    def _create_feet_dataset(self, joint_source, outcome_column, is_val = False, augment = True):
+    def _create_feet_dataset(self, joint_source, outcome_column, is_train = True, augment = True, cache = True):
         feet_dataframe = pd.read_csv(joint_source)
 
         feet_dataframe['flip'] = 'N'
@@ -54,13 +54,13 @@ class feet_joint_dataset(joint_dataset):
         file_info = feet_dataframe[['image_name', 'file_type', 'flip', 'key']].values
 
         outcomes = feet_dataframe[outcome_column]
-        if np.logical_not(is_val):
+        if is_train:
             self._create_class_weights(outcomes)
         outcomes = pd.get_dummies(outcomes, columns = [outcome_column])
 
         coords = feet_dataframe[['coord_x', 'coord_y']].values
 
-        return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), augment = augment)
+        return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), augment = augment, cache = cache)
 
     def _create_class_weights(self, outcomes):
         N = outcomes.shape[0]
