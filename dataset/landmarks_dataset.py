@@ -79,7 +79,7 @@ def _create_landmarks_dataframe(landmarks_location):
                 file_type = img_path[-1]
 
                 labels_dict['sample_id'] = sample_id
-                labels_dict['file_type'] = file_type
+                labels_dict['file_type'] = "jpg" #### hard coding jpg
                 
                 if 'RF' in sample_id or 'RH' in sample_id:
                     labels_dict['flip'] = 'Y'
