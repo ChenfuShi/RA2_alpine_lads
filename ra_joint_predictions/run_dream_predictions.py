@@ -5,8 +5,10 @@ import tensorflow_addons as tfa
 from dream import execute_dream_predictions
 
 # Change to dir
-os.chdir('/usr/local/bin/RA2_alpine_lads/')
+os.chdir('/usr/local/bin/ra_joint_predictions/')
 
+print('----------------')
+print('Running version:', os.environ['CURR_VERSION'])
 print('----------------')
 print('Start init.py')
 print('Check TF Versions:')
