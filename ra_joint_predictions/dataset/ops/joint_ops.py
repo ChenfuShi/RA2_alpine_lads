@@ -58,14 +58,14 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
 
     min_x = tf.math.minimum()
 
-    x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0)) - extra_pad_width
-    y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0)) - extra_pad_height
+    x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0) - extra_pad_width
+    y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0) - extra_pad_height
 
     x_box = tf.math.maximum(x_box, 0)
     y_box = tf.math.maximum(y_box, 0)
 
-    x_box_max = tf.reduce_max(tf.stack([w1_x, w2_x, w3_x]),0)) + extra_pad_width
-    y_box_max = tf.reduce_max(tf.stack([w1_y, w2_y, w3_y]),0)) + extra_pad_height
+    x_box_max = tf.reduce_max(tf.stack([w1_x, w2_x, w3_x]),0) + extra_pad_width
+    y_box_max = tf.reduce_max(tf.stack([w1_y, w2_y, w3_y]),0) + extra_pad_height
 
     x_box_max = tf.math.minimum(x_box_max, img_shape[1])
     y_box_max = tf.math.minimum(y_box_max, img_shape[0])
