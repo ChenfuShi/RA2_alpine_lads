@@ -30,9 +30,3 @@ def train_feet_erosion_model(config, model_name, pretrained_base_model):
     return pretrained_base_model
 
 
-def _get_tensorboard_callback(model_name):
-    log_dir = 'logs/tensorboard/' + model_name + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    
-    return tensorboard_callback

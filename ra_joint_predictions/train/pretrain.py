@@ -1,40 +1,67 @@
-import datetime
+########################################
 
+# DEPRECATED - use module train/pretrain.py instead
+
+
+########################################
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow import keras 
+import os
 import tensorflow as tf
+import tensorflow_addons as tfa
+import logging
+import datetime
+from utils.saver import CustomSaver, _get_tensorboard_callback
 
-from utils.saver import CustomSaver
-from dataset.joint_dataset import rsna_joint_dataset
-
-AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-def pretrain_rnsa_multioutput_model(model_name, config, model_creator):
-    saver = CustomSaver(model_name, n = 10)
-    tensorboard_callback = _get_tensorboard_callback(model_name)
-
-    joint_dataset = rsna_joint_dataset(config).create_rsna_joints_dataset()
-
-    joint_dataset = _split_outcomes(joint_dataset)
-    # joint_val_dataset = _split_outcomes(joint_val_dataset)
-
-    model = model_creator(config.joint_img_height, config.joint_img_width)
-
-    model.fit(joint_dataset,
-        epochs = 200, steps_per_epoch = 100, verbose = 2, callbacks = [saver, tensorboard_callback])
-
-    return model
-
-def _get_tensorboard_callback(model_name):
-    log_dir = 'logs/tensorboard/' + model_name + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+def pretrain_NIH_chest(model,data_train,data_val,config,model_name):
+    # function to run training on chest X-ray dataset
     
+    # datasets have to be corrected for multioutput
+    data_train = data_train.map(_split_dataset_outputs)
+    data_val = data_val.map(_split_dataset_outputs)
+
+    # declare custom saver for model
+    saver = CustomSaver(model_name)
+
+    # declare tensorboard
+    log_dir="logs/tensorboard/" + model_name + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    
-    return tensorboard_callback
+    # fit model indefinetly
+    H = model.fit(data_train, validation_data=data_val,
+    epochs=10000,steps_per_epoch=100,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
 
-def _split_outcomes(dataset, no_joint_types = 13):
-    def __split_outcomes(x, y):
-        split_y = tf.split(y, [1, 1, no_joint_types], 1)
 
-        return x, (split_y[0], split_y[1], split_y[2])
+def pretrain_faces(model,data_train,data_val,config,model_name):
+    # function to pretrain to predict faces features
+    # should work for feet and hands as well. ok no because we don't have validation split for now
+    # declare custom saver for model
+    saver = CustomSaver(model_name,n=25)
 
-    return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
+    # declare tensorboard
+    log_dir="logs/tensorboard/" + model_name + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=10)
+    # fit model for 70 epochs, then we can choose
+    H = model.fit(data_train, validation_data=data_val,
+    epochs=251,steps_per_epoch=2000,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
+
+
+def pretrain_landmarks(model,data_train,data_val,config,model_name):
+    # temporary because we currently do not have validation set
+    # also this should be in trainer i think because we are actually training on images?
+    saver = CustomSaver(model_name,n=50)
+
+    # declare tensorboard
+    log_dir="logs/tensorboard/" + model_name + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=10)
+    # fit model for 500 epochs, then we can choose
+    H = model.fit(data_train, validation_data=data_val,
+    epochs=2501,steps_per_epoch=20,verbose=2,validation_steps=5,callbacks=[saver,tensorboard_callback])
+
+
+def _split_dataset_outputs(x,y):
+    # split outputs of dataset for multioutput
+    return x,(tf.split(y,[1,1,14],1)[2],tf.split(y,[1,1,14],1)[1],tf.split(y,[1,1,14],1)[0])
 
