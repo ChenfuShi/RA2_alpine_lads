@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 from tensorflow import keras 
 import os
 import tensorflow as tf
-from model.utils.building_blocks import bigger_kernel_base
+from model.utils.building_blocks_landmarks import bigger_kernel_base
 
-def basic_landmarks_model(config,n_outputs=10,weights=None,outputs_before=10):
+def basic_landmarks_model(config, n_outputs = 10, weights = None, outputs_before = 10):
     base_original_model = bigger_kernel_base(config)
     
     if weights == None:
