@@ -13,7 +13,7 @@ class landmarks_dataset(base_dataset):
     def __init__(self, config):
         super().__init__(config)
         
-    def _create_landmarks_dataset(self, image_location, landmarks_location, create_val, shuffle_before_val = False):
+    def _create_landmarks_dataset(self, image_location, landmarks_location, create_val):
         landmarks_dataframe = _create_landmarks_dataframe(landmarks_location)
         
         self.landmarks_dataframe = landmarks_dataframe
@@ -25,8 +25,6 @@ class landmarks_dataset(base_dataset):
         dataset = super()._create_dataset(x, y, image_location, update_labels = True)
 
         if create_val:
-            if shuffle_before_val:
-                dataset = dataset.shuffle(buffer_size = 700,seed=65)
             dataset, val_dataset = super()._create_validation_split(dataset)
 
         dataset = super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True)
@@ -42,21 +40,21 @@ class feet_landmarks_dataset(landmarks_dataset):
     def __init__(self, config):
         super().__init__(config)
 
-    def create_landmarks_dataset(self, create_val = False, shuffle_before_val = False):
+    def create_landmarks_dataset(self, create_val = False):
         image_location = os.path.join(self.config.landmarks_feet_images_location , self.config.fixed_dir)
         landmarks_location = os.path.join(self.config.landmarks_location, 'feet')
 
-        return self._create_landmarks_dataset(image_location, landmarks_location, create_val, shuffle_before_val)
+        return self._create_landmarks_dataset(image_location, landmarks_location, create_val, )
 
 class hands_landmarks_dataset(landmarks_dataset):
     def __init__(self, config):
         super().__init__(config)
 
-    def create_landmarks_dataset(self, create_val = False, shuffle_before_val = False):
+    def create_landmarks_dataset(self, create_val = False):
         image_location = os.path.join(self.config.landmarks_hands_images_location , self.config.fixed_dir)
         landmarks_location = os.path.join(self.config.landmarks_location, 'hands')
 
-        return self._create_landmarks_dataset(image_location, landmarks_location, create_val, shuffle_before_val)
+        return self._create_landmarks_dataset(image_location, landmarks_location, create_val, )
 
 
 def _create_landmarks_dataframe(landmarks_location):

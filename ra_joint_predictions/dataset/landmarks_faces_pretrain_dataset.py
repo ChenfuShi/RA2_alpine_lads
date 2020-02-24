@@ -14,7 +14,7 @@ import os
 from utils.config import Config
 from PIL import Image
 from tensorflow import keras
-
+import dataset.ops.dataset_ops as ds_ops
 from dataset.base_dataset import base_dataset
 import logging
 
@@ -30,13 +30,25 @@ class landmark_pretrain_faces_dataset(base_dataset):
 
     def create_train_dataset(self):    
         
-        self.data_info =  pd.read_csv(self.config.landmarks_faces_info,sep="\s+|\t+|\s+\t+|\t+\s+",skiprows=1,engine="python")
+        self.data_info = pd.read_csv(self.config.landmarks_faces_info,sep="\s+|\t+|\s+\t+|\t+\s+",skiprows=1,engine="python")
 
+        self.data_info['idx'] = self.data_info.index.values
+        self.data_info[['idx','file_type']] = self.data_info['idx'].str.split(".",expand=True)
+        self.data_info['flip'] = 'N'
+        
+        x = self.data_info[['idx','file_type', 'flip']].values
+
+        data = self.data_info[self.data_info.columns.difference(['file_type', 'flip','idx'])].values
+        data = data.astype(np.float64)
         # get dataset 
-        faces = self._init_dataset(self.data_info,self.config.landmarks_faces_location)
+        dataset =  tf.data.Dataset.from_tensor_slices((x, data))
 
+        dataset = dataset.shuffle(buffer_size = 20000,seed = 63)
+
+        dataset = ds_ops.load_images(dataset, self.config.landmarks_faces_location, update_labels = True)
+    
         # here separate validation set
-        dataset, dataset_val = super()._create_validation_split(faces,5000)
+        dataset, dataset_val = super()._create_validation_split(dataset,5000)
 
         # data processing
         # augmentation happens here
@@ -46,20 +58,3 @@ class landmark_pretrain_faces_dataset(base_dataset):
             batch_size = self.config.batch_size, cache = self.config.cache_loc + 'faces_val',update_labels=True)
         
         return dataset, dataset_val
-
-    def _init_dataset(self,df_data, pretrain_location):
-        def __load_image(file, y):
-            file_path = self.config.landmarks_faces_location + file 
-
-            img = tf.io.read_file(file_path)    
-            img = tf.image.decode_jpeg(img, channels=1)
-            img = tf.image.convert_image_dtype(img, tf.float32)
-            y = tf.cast(y,dtype=tf.float64)
-            return img, y
-
-        dataset =  tf.data.Dataset.from_tensor_slices((self.data_info.index.values, self.data_info.values))
-
-        dataset = dataset.map(__load_image, num_parallel_calls=AUTOTUNE)
-            
-        return dataset
-
