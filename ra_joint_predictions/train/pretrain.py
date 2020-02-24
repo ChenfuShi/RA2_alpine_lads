@@ -16,7 +16,7 @@ def pretrain_rnsa_multioutput_model(model_name, config, model_creator):
     joint_dataset = _split_outcomes(joint_dataset)
     # joint_val_dataset = _split_outcomes(joint_val_dataset)
 
-    model = model_creator(128, 256)
+    model = model_creator(config.joint_img_height, config.joint_img_width)
 
     model.fit(joint_dataset,
         epochs = 200, steps_per_epoch = 100, verbose = 2, callbacks = [saver, tensorboard_callback])
