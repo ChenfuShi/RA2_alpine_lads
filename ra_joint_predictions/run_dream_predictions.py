@@ -2,7 +2,9 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+from utils.config import Config
 from dream import execute_dream_predictions
+from dream.preprocessing import image_preprocessing
 
 # Change to dir
 os.chdir('/usr/local/bin/ra_joint_predictions/')
@@ -17,5 +19,9 @@ print('TF Addons: ', tfa.__version__)
 print('GPU available: ', tf.test.is_gpu_available())
 print('----------------')
 
-# Entry point for dream predictions
+config = Config('./utils/docker-config.json')
+
+# Preprocess the images
+image_preprocessing(config)
+# Run predictions
 execute_dream_predictions()

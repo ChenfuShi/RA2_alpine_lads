@@ -24,7 +24,9 @@ COPY run.sh /run.sh
 
 # Required: Create /train /test and /output directories 
 RUN mkdir /train \
+    && mkdir /train/fixed \
     && mkdir /test \
+    && mkdir /test/fixed \
     && mkdir /output \
     && chmod 775 /run.sh \
     && chmod 775 /usr/local/bin/ra_joint_predictions

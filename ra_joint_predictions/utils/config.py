@@ -1,20 +1,9 @@
-########################################
-
-
-
-
-########################################
-
 import logging
 import datetime
 
 import json
 
 class Config:
-    """
-    Class containing the parameters 
-    """
-    
     def __init__(self, config_path = './utils/config.json'):
         with open(config_path) as config_file:
             config_data = json.load(config_file)
