@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-from model.utils.building_blocks import bigger_kernel_base
+from model.utils.building_blocks_landmarks import bigger_kernel_base
 
 def create_foot_joint_detector(config, path_to_weights = './weights/joint_detector_weights/feet/feet_joint_detector_weights'):
     # 6 Joints overall

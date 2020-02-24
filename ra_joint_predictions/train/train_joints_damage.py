@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Dense
 from utils.saver import CustomSaver
 
 from dataset.joint_dataset import feet_joint_dataset
-from utils import top_2_categorical_accuracy
+from model.utils.metrics import top_2_categorical_accuracy
 
 def train_feet_erosion_model(config, model_name, pretrained_base_model):
     saver = CustomSaver(model_name, n = 10)
