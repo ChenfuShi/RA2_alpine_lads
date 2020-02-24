@@ -13,12 +13,14 @@ class joint_dataset(base_dataset):
 
         self.cache = config.cache_loc + cache_postfix
         self.image_dir = config.train_location + '/fixed'
+        self.joint_height = config.joint_img_height
+        self.joint_width = config.joint_img_width
 
     def _create_dataset(self, file_info, joint_coords, outcomes, augment = True, cache = True):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         dataset = joint_ops.load_joints(dataset, self.image_dir)
         
-        return self._prepare_for_training(dataset, 256, 128, batch_size = self.config.batch_size, cache = cache, pad_resize = False, augment = augment)
+        return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, cache = cache, pad_resize = False, augment = augment)
 
 class feet_joint_dataset(joint_dataset):
     def __init__(self, config):

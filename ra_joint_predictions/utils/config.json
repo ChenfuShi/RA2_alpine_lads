@@ -17,5 +17,7 @@
     "batch_size": 25,
     "augment":true,
     "have_val": true,
-    "landmarks_location": "./data/landmarks"
+    "landmarks_location": "./data/landmarks",
+    "joint_img_height": 224,
+    "joint_img_width": 224
 }
