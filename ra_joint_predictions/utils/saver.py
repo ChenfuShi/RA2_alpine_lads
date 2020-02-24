@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 
+import tensorflow as tf
 from tensorflow import keras
 
 def save_pretrained_model(pretrained_model, no_layers_to_remove, model_name):
