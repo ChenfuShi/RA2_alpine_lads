@@ -4,6 +4,20 @@ import os
 
 from tensorflow import keras
 
+def save_pretrained_model(pretrained_model, no_layers_to_remove, model_name):
+    if no_layers_to_remove > 0:
+        new_model = keras.models.Sequential()
+        
+        # remove the last x layers, by only adding layers before it to the new model
+        idx = -1 * no_layers_to_remove
+        for layer in pretrained_model.layers[:idx]:
+            new_model.add(layer)
+
+        new_model.save(model_name + '.h5')
+    else:
+        pretrained_model.save(model_name + '.h5')
+
+
 class CustomSaver(keras.callbacks.Callback):
     def __init__(self, model_name, n = 25):
         super().__init__()
@@ -18,7 +32,6 @@ class CustomSaver(keras.callbacks.Callback):
         
         if epoch % self.n == 0:  # save every n epochs
             self.model.save_weights(os.path.join('weights', self.model_name + '_model_{}'.format(epoch)))
-
 
 
 def _get_tensorboard_callback(model_name):

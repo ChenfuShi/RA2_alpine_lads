@@ -20,4 +20,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm ~/localscratch/* -r
 
 # run python training script
-python train_feet_erosion_model_script.py ${pretrained_model} ${model_name}
+python ../ra_joint_predictions/train_feet_erosion_model_script.py ${pretrained_model} ${model_name}
