@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from tensorflow.keras.layers import Dense
 
-from utils.saver import CustomSaver
+from utils.saver import CustomSaver, _get_tensorboard_callback
 
 from dataset.joint_dataset import feet_joint_dataset
 from model.utils.metrics import top_2_categorical_accuracy
