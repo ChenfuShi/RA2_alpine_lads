@@ -9,7 +9,7 @@ from utils.config import Config
 from utils import save_pretrained_model
 
 if __name__ == '__main__':
-    os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/')
+    os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
 
     model_name = sys.argv[1]
     logging.info('Saving output model to:', model_name)
