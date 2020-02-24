@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
+from model.utils.building_blocks import bigger_kernel_base
 
 def create_foot_joint_detector(config, path_to_weights = './weights/joint_detector_weights/feet/feet_joint_detector_weights'):
     # 6 Joints overall
@@ -22,7 +23,7 @@ def _create_model_with_weigths(config, output_size, path_to_weights):
 
 def _create_joints_detector_model(config, output_size):
     # larger kernel
-    joints_detector_model = _create_model_kernel(config.landmarks_img_height, config.landmarks_img_width)
+    joints_detector_model = bigger_kernel_base(config)
 
     joints_detector_model.add(keras.layers.Dense(256, activation='relu'))
     joints_detector_model.add(keras.layers.BatchNormalization())
@@ -30,29 +31,3 @@ def _create_joints_detector_model(config, output_size):
 
     return joints_detector_model
 
-def _create_model_kernel(input_height, input_width):
-    model_kernel = keras.models.Sequential([
-        keras.layers.Conv2D(filters = 20, kernel_size=(5,5),activation="relu",input_shape=[input_height, input_width, 1]),
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 20, kernel_size=(5,5),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 40, kernel_size=(5,5),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 40, kernel_size=(5,5),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 80, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 80, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Conv2D(filters = 160, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(filters = 160, kernel_size=(3,3),activation="relu"),
-        keras.layers.BatchNormalization(),
-        keras.layers.MaxPooling2D((2,2)),
-        keras.layers.Flatten()
-    ])
-
-    return model_kernel
