@@ -27,8 +27,7 @@ def pretrain_NIH_chest(model,data_train,data_val,config,model_name):
     saver = CustomSaver(model_name)
 
     # declare tensorboard
-    log_dir="logs/tensorboard/" + model_name + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    tensorboard_callback = _get_tensorboard_callback(model_name)
     # fit model indefinetly
     H = model.fit(data_train, validation_data=data_val,
     epochs=10000,steps_per_epoch=100,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
