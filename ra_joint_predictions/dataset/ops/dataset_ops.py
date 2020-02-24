@@ -39,7 +39,7 @@ def batch_and_prefetch_dataset(dataset, batch_size = 128):
     
     return dataset.prefetch(buffer_size = AUTOTUNE)    
 
-def resize_images(dataset, img_width, img_height, update_labels = False, pad_resize = True):
+def resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True):
     def __resize(img, y):
         return img_ops.resize_image(img, y, img_height, img_width, pad_resize = pad_resize, update_labels = update_labels)
 
