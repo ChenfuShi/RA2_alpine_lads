@@ -23,6 +23,7 @@ def pretrain_rnsa_multioutput_model(model_name, config, model_creator):
 
     return model
 
+
 def _split_outcomes(dataset, no_joint_types = 13):
     def __split_outcomes(x, y):
         split_y = tf.split(y, [1, 1, no_joint_types], 1)
