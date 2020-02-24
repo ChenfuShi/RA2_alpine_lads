@@ -7,7 +7,7 @@ from tensorflow import keras
 from tensorflow.keras.layers import Dense, Dropout
 
 from utils.losses import categorical_focal_loss
-from model.utils.building_blocks import create_bigger_kernel_base, create_complex_joint_model
+from model.utils.building_blocks_joints import create_complex_joint_model
 
 def create_rsna_NASnet_multioutupt(config, no_joints_types = 13):
     inputs = keras.layers.Input(shape=[config.img_height, config.img_width, 1])
