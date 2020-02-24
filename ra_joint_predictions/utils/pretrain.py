@@ -14,6 +14,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import logging
 import datetime
+from utils.saver import CustomSaver, _get_tensorboard_callback
 
 def pretrain_NIH_chest(model,data_train,data_val,config,model_name):
     # function to run training on chest X-ray dataset
@@ -63,20 +64,4 @@ def pretrain_landmarks(model,data_train,data_val,config,model_name):
 def _split_dataset_outputs(x,y):
     # split outputs of dataset for multioutput
     return x,(tf.split(y,[1,1,14],1)[2],tf.split(y,[1,1,14],1)[1],tf.split(y,[1,1,14],1)[0])
-
-
-class CustomSaver(keras.callbacks.Callback):
-    def __init__(self,model_name,n=25):
-        self.model_name = model_name
-        self.n = n
-        super().__init__()
-        
-    def on_epoch_end(self, epoch, logs={}):
-        logging.info(logs)
-        cur_date = datetime.datetime.now()
-        logging.info(f"{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}")
-        if epoch % self.n == 0:  # save every n epochs
-            self.model.save_weights(os.path.join("weights",self.model_name + "_model_{}".format(epoch)))
-
-
 
