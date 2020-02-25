@@ -64,16 +64,15 @@ foot_outcome_mapping = {
 }
 
 class joint_detector():
-    def __init__(self, config, image_directory, consider_flip = False):
+    def __init__(self, config, consider_flip = False):
         self.landmark_img_height = config.landmarks_img_height
         self.landmark_img_width = config.landmarks_img_width
-
-        self.image_directory = image_directory
         self.consider_flip = consider_flip
 
     # Go through each image in targe directory and create an entry in dataframe
-    def _create_detection_dataframe(self):
-        file_names = os.listdir(self.image_directory)
+    def _create_detection_dataframe(self, img_dir, file_names = None):
+        if not file_names:
+            file_names = os.listdir(img_dir)
 
         elements = []
         for file_name in file_names:
@@ -97,25 +96,25 @@ class joint_detector():
 
         return pd.DataFrame(elements, index = np.arange(len(elements)))
 
-    def _detect_joints_in_image_data(self, data_frame, joint_detector, coord_mapping):
-        dataset = self._create_joint_detection_dataset(data_frame)
+    def _detect_joints_in_image_data(self, data_frame, img_dir, joint_detector, coord_mapping):
+        dataset = self._create_joint_detection_dataset(data_frame, img_dir)
 
         joint_dataframe = self._get_joint_predictions(dataset, joint_detector, coord_mapping)
 
         return data_frame.merge(joint_dataframe)
 
-    def _create_joint_detection_dataset(self, data_frame):
+    def _create_joint_detection_dataset(self, data_frame, img_dir):
         image_info = data_frame[['image_name', 'file_type', 'flip']].values
 
         dataset = tf.data.Dataset.from_tensor_slices((image_info))
-        dataset = self._map_to_landmark_detection_images(dataset)
+        dataset = self._map_to_landmark_detection_images(dataset, img_dir)
         dataset = dataset.prefetch(buffer_size = AUTOTUNE)
 
         return dataset
 
-    def _map_to_landmark_detection_images(self, dataset):
+    def _map_to_landmark_detection_images(self, dataset, img_dir):
         def __load_joints(file_info):
-            image, _ = img_ops.load_image(file_info, [], self.image_directory)
+            image, _ = img_ops.load_image(file_info, [], img_dir)
             landmark_detection_image, _ = img_ops.resize_image(image, [], self.landmark_img_height, self.landmark_img_width)
 
             return file_info[0], tf.expand_dims(landmark_detection_image, 0), tf.shape(image)
@@ -152,21 +151,21 @@ class joint_detector():
 
 class dream_joint_detector(joint_detector):
     def __init__(self, config, hand_joint_detector, feet_joint_detector):
-        super().__init__(config, config.train_location + '/' + config.fixed_dir, consider_flip = True)
+        super().__init__(config, consider_flip = True)
 
         self.hand_joint_detector = hand_joint_detector
         self.feet_joint_detector = feet_joint_detector
 
-    def create_dream_datasets(self):
-        full_dataframe = self._create_detection_dataframe()
+    def create_dream_datasets(self, img_dir, file_names = None):
+        full_dataframe = self._create_detection_dataframe(img_dir, file_names)
 
         hands_mask = ['H' in image_name for image_name in full_dataframe['image_name']]
 
         hand_dataframe = full_dataframe.iloc[hands_mask]
         feet_dataframe = full_dataframe.iloc[np.logical_not(hands_mask)]
 
-        data_hands = self._detect_joints_in_image_data(hand_dataframe, self.hand_joint_detector, hand_coord_mapping)
-        data_feet = self._detect_joints_in_image_data(feet_dataframe, self.feet_joint_detector, foot_coord_mapping)
+        data_hands = self._detect_joints_in_image_data(hand_dataframe, img_dir, self.hand_joint_detector, hand_coord_mapping)
+        data_feet = self._detect_joints_in_image_data(feet_dataframe, img_dir, self.feet_joint_detector, foot_coord_mapping)
 
         return data_hands, data_feet
 

@@ -1,18 +1,24 @@
 import cv2
 import os
+import logging
 
 import numpy as np
 import PIL.Image
 import PIL.ImageOps
 
+from utils.file_utils import is_supported_image_file
+
 supported_file_types = ['jpg', 'png', 'jpeg']
 
 def preprocess_images(image_directory, target_directory):
+    processed_images = []
+    
     filenames = os.listdir(image_directory)
+
     for filename in filenames:
         file_parts = filename.split('.')
 
-        if(len(file_parts) > 1 and file_parts[1] in supported_file_types):
+        if is_supported_image_file(file_parts):
             file_path = os.path.join(image_directory, filename)
 
             img = PIL.Image.open(file_path)
@@ -26,4 +32,11 @@ def preprocess_images(image_directory, target_directory):
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             
             #Write the adjusted images to the fixed dir
-            cv2.imwrite(os.path.join(target_directory, filename), img)
+            written_img = cv2.imwrite(os.path.join(target_directory, filename), img)
+
+            if written_img:
+                processed_images.append(filename)
+            else:
+                logging.warn('Failed to write preprocessed image %s to %s', filename, target_directory)
+
+    return processed_images

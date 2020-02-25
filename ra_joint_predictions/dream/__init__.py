@@ -1,5 +1,6 @@
-import pandas as pd
+import logging
 import numpy as np
+import pandas as pd
 
 def execute_dream_predictions():
 	training_data = pd.read_csv('/train/training.csv')
@@ -21,6 +22,3 @@ def execute_dream_predictions():
 
 	predictions = pd.DataFrame(pred_dicts, index = np.arange(len(pred_dicts)), columns = template.columns)
 	predictions.to_csv('/output/predictions.csv', index = False)
-
-
-

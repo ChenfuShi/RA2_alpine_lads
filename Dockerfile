@@ -4,6 +4,12 @@ ENV PYTHONDONTWRITEBYTECODE=true
 ARG GIT_HASH=unspecified
 ENV CURR_VERSION=$GIT_HASH
 
+COPY run.sh /run.sh
+RUN  mkdir /train \
+    && mkdir /test \
+    && mkdir /output \
+    && chmod 775 /run.sh
+
 RUN /opt/conda/bin/conda install --yes --freeze-installed \
     nomkl \
     pandas \
@@ -17,20 +23,7 @@ RUN /opt/conda/bin/conda install --yes --freeze-installed \
     && find /opt/conda/ -follow -type f -name '*.pyc' -delete \
     && find /opt/conda/ -follow -type f -name '*.js.map' -delete
 
-ADD /ra_joint_predictions /usr/local/bin/ra_joint_predictions
+COPY /ra_joint_predictions /usr/local/bin/ra_joint_predictions
+RUN chmod -R 775 /usr/local/bin/ra_joint_predictions
 
-# Required for GPU: run.sh defines PATHs to find GPU drivers, see run.sh for specific commands
-COPY run.sh /run.sh
-
-# Required: Create /train /test and /output directories 
-RUN mkdir /train \
-    && mkdir /train/fixed \
-    && mkdir /test \
-    && mkdir /test/fixed \
-    && mkdir /output \
-    && chmod 775 /run.sh \
-    && chmod 775 /usr/local/bin/ra_joint_predictions
-
-# Required: define an entrypoint. run.sh will run the model for us, but in a different configuration
-# you could simply call the model file directly as an entrypoint 
 ENTRYPOINT ["/bin/bash", "/run.sh"]
