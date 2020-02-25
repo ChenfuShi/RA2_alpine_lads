@@ -2,8 +2,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-def execute_dream_predictions():
-	training_data = pd.read_csv('/train/training.csv')
+def predict_dream_test_set(config):
+    training_data = pd.read_csv('/train/training.csv')
 
 	mean_preds = np.mean(training_data.iloc[:, 1:], axis = 0)
 
