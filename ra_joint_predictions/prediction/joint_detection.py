@@ -169,99 +169,14 @@ class dream_joint_detector(joint_detector):
 
         return data_hands, data_feet
 
-    def _add_dream_outputs(self, output_mapping):
-        def _create_dream_output_lambda(image_name):
-            part = image_name.split('-')[1]
-
-            def __add_dream_outputs(key, output_dict, row):
-                joint_mapping = output_mapping[key]
-
-                mapped_keys = [key_val.format(part = part) for key_val in joint_mapping[0]]
-                for idx, mapped_key in enumerate(mapped_keys):
-                    output_dict[f'narrowing_{idx}'] = row[mapped_key]
-
-                mapped_keys = [key_val.format(part = part) for key_val in joint_mapping[1]]
-                for idx, mapped_key in enumerate(mapped_keys):
-                    output_dict[f'erosion_{idx}'] = row[mapped_key]
-
-                return output_dict
-
-            return lambda key, output_dict, row: __add_dream_outputs(key, output_dict, row)
-
-        return lambda image_name: _create_dream_output_lambda(image_name)
-
-    def _get_dataframes(self, training_csv):
-        info = pd.read_csv(training_csv)
-        features = info.columns
-        parts = ["LH","RH","LF","RF"]
-        dataframes = {}
-        for part in parts:
-            flip = 'N'
-            if(part.startswith('R')):
-                flip = 'Y'
-            
-            dataframes[part] = info.loc[:,["Patient_ID"]+[s for s in features if part in s]].copy()
-            dataframes[part]["Patient_ID"] = dataframes[part]["Patient_ID"].astype(str) + f"-{part}"
-            dataframes[part]["flip"] = flip
-            dataframes[part]["file_type"] = 'jpg'
-            
-        data_hands = pd.concat((dataframes["RH"],dataframes["LH"]), sort = False)
-        data_feet = pd.concat((dataframes["RF"],dataframes["LF"]), sort = False)
-            
-        return data_hands, data_feet
-
 class rsna_joint_detector(joint_detector):
     def __init__(self, config, hand_joint_detector):
-        super().__init__(config, '../rsna_boneAge/checked_rsna_training')
+        super().__init__(config, consider_flip = False)
 
-        self.training_csv = '../rsna_boneAge/boneage-training-dataset.csv'
         self.hand_joint_detector = hand_joint_detector
+        self.img_dir = config.rsna_img_dir
+        
+    def create_rnsa_dataset(self, img_dir = '../../rsna_boneAge/checked_rsna_training'):
+        rsna_dataframe = self._create_detection_dataframe(img_dir)
 
-    def create_rnsa_dataset(self):
-        key_columns = ['id', 'file_type', 'flip']
-
-        dataframe = self._load_dataframe()
-        dataframe = self._detect_joints_in_image_data(dataframe, key_columns, self.hand_joint_detector)
-
-        return self._create_output_dataframe(dataframe, hand_coord_mapping, self._add_rnsa_outputs())
-
-    def _add_rnsa_outputs(self):
-        def __add_rnsa_outputs(key, output_dict, row):
-            output_dict['boneage'] = row['boneage']
-            output_dict['sex'] = row['male']
-
-            return output_dict
-
-        def _create_rnsa_output_lambda(image_name):
-            return lambda key, output_dict, row: __add_rnsa_outputs(key, output_dict, row)
-
-        return lambda image_name: _create_rnsa_output_lambda(image_name)
-
-    def _load_dataframe(self):
-        #Go through each image in the checked directory
-        checked_rnsa_images = os.listdir(self.image_directory)
-
-        rnsa_dicts = []
-        for checked_rnsa_image in checked_rnsa_images:
-            file_name_parts = checked_rnsa_image.split('.')
-
-            file_name = file_name_parts[0]
-            file_type = file_name_parts[1]
-
-            rnsa_dict = {
-                'id': file_name,
-                'file_type': file_type, 
-                'flip': 'N'
-            }
-
-            rnsa_dicts.append(rnsa_dict)
-
-        # Create dataframe from read images
-        rnsa_checked_images_dataframe = pd.DataFrame(rnsa_dicts, dtype = np.str, index = np.arange(len(rnsa_dicts)))
-
-        # Read full outcomes from *.csv, and encode gender as 0/1 (0 == Female)
-        outcomes_dataframe = pd.read_csv(self.training_csv)
-        outcomes_dataframe = outcomes_dataframe.astype({'id': 'str', 'male': 'int32'})
-
-        # Return merged dataframe that only contains entries with checked images and outcomes
-        return rnsa_checked_images_dataframe.merge(outcomes_dataframe, how = 'inner', on = 'id')
+        return self._detect_joints_in_image_data(rsna_dataframe, img_dir, self.hand_joint_detector, hand_coord_mapping)
