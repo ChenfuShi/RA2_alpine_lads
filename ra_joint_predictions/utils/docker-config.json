@@ -1,0 +1,11 @@
+{
+    "train_location": "/train",
+    "test_location": "/test",
+    "train_fixed_location": "/output",
+    "test_fixed_location": "/output",
+    "output_dir": "/output",
+    "landmarks_img_height": 512,
+    "landmarks_img_width": 512,
+    "joint_img_height": 224,
+    "joint_img_width": 224
+}

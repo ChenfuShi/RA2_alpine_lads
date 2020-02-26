@@ -6,7 +6,7 @@ from model.joint_detection import create_foot_joint_detector, create_hand_joint_
 from prediction.joint_detection import dream_joint_detector
 
 if __name__ == '__main__':
-    os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/')
+    os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
 
     config = Config()
 
