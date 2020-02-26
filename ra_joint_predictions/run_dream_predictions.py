@@ -5,8 +5,8 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 
 from utils.config import Config
-from dream import execute_dream_predictions
 from dream.preprocessing import image_preprocessing, predict_joints
+from dream.prediction import predict_dream_test_set
 
 def _log_container_details():
     logging.info('Running version: %s', os.environ['CURR_VERSION'])
@@ -43,6 +43,6 @@ _log_container_details()
 train_images, test_images = _preprocess_images(config)
 _predict_joints_in_images(config, train_images, test_images)
 
-execute_dream_predictions()
+predict_dream_test_set(config)
 
 _clean_output()
