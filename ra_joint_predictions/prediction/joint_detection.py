@@ -37,32 +37,6 @@ foot_coord_mapping = {
     'mtp_5': [10, 12]
 }
 
-# Map each joint, to its outcome scores
-hand_outcome_mapping = {
-    'mcp': [[], ['{part}_mcp_E__ip'] ],
-    'pip_2': [['{part}_pip_J__2'], ['{part}_pip_E__2']],
-    'pip_3': [['{part}_pip_J__3'], ['{part}_pip_E__3']],
-    'pip_4': [['{part}_pip_J__4'], ['{part}_pip_E__4']],
-    'pip_5': [['{part}_pip_J__5'], ['{part}_pip_E__5']],
-    'mcp_1': [['{part}_mcp_J__1'], ['{part}_mcp_E__1']],
-    'mcp_2': [['{part}_mcp_J__2'], ['{part}_mcp_E__2']],
-    'mcp_3': [['{part}_mcp_J__3'], ['{part}_mcp_E__3']],
-    'mcp_4': [['{part}_mcp_J__4'], ['{part}_mcp_E__4']],
-    'mcp_5': [['{part}_mcp_J__5'], ['{part}_mcp_E__5']],
-    'w1': [['{part}_wrist_J__radcar', '{part}_wrist_J__mna'], ['{part}_wrist_E__mc1', '{part}_wrist_E__mul']],
-    'w2': [['{part}_wrist_J__cmc3', '{part}_wrist_J__capnlun'], ['{part}_wrist_E__radius', '{part}_wrist_E__nav']],
-    'w3': [['{part}_wrist_J__cmc4', '{part}_wrist_J__cmc5'], ['{part}_wrist_E__ulna', '{part}_wrist_E__lunate']]
-}
-
-foot_outcome_mapping = {
-    'mtp': [['{part}_mtp_J__ip'], ['{part}_mtp_E__ip']], 
-    'mtp_1': [['{part}_mtp_J__1'], ['{part}_mtp_E__1']], 
-    'mtp_2': [['{part}_mtp_J__2'], ['{part}_mtp_E__2']],
-    'mtp_3': [['{part}_mtp_J__3'], ['{part}_mtp_E__3']],
-    'mtp_4': [['{part}_mtp_J__4'], ['{part}_mtp_E__4']],
-    'mtp_5': [['{part}_mtp_J__5'], ['{part}_mtp_E__5']]
-}
-
 class joint_detector():
     def __init__(self, config, consider_flip = False):
         self.landmark_img_height = config.landmarks_img_height
