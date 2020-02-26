@@ -9,7 +9,7 @@ class base_dataset():
 
     def _create_dataset(self, x, y, file_location, update_labels = False):
         dataset = tf.data.Dataset.from_tensor_slices((x, y))
-        dataset = dataset.shuffle(buffer_size = 20000,seed = 63)
+        dataset = dataset.shuffle(buffer_size = 20000, seed = 63)
         dataset = ds_ops.load_images(dataset, file_location, update_labels = update_labels)
     
         return dataset
