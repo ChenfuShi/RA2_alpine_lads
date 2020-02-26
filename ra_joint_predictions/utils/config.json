@@ -1,5 +1,6 @@
 {
     "train_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
+    "train_fixed_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/fixed",
     "fixed_dir": "fixed",
     "pretrain_NIH_chest_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/NIH_chest_X_ray/pretrain",
     "pretrain_NIH_chest_info": "data/pretrain_data.csv",
@@ -20,5 +21,7 @@
     "have_val": true,
     "landmarks_location": "./data/landmarks",
     "joint_img_height": 224,
-    "joint_img_width": 224
+    "joint_img_width": 224,
+    "rsna_img_dir": "../../rsna_boneAge/checked_rsna_training",
+    "rsna_labels": "../../rsna_boneAge/boneage-training-dataset.csv"
 }

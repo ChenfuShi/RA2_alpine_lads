@@ -1,11 +1,42 @@
 import numpy as np
+import os
 import pandas as pd
 import tensorflow as tf
+
+from sklearn.model_selection import train_test_split
 
 import dataset.ops.joint_ops as joint_ops
 import dataset.ops.dataset_ops as ds_ops
 
 from dataset.base_dataset import base_dataset
+
+dream_hand_parts = ['LH', 'RH']
+dream_foot_parts = ['LF', 'RF']
+
+foot_outcome_mapping = {
+    'mtp': [['{part}_mtp_J__ip'], ['{part}_mtp_E__ip']], 
+    'mtp_1': [['{part}_mtp_J__1'], ['{part}_mtp_E__1']], 
+    'mtp_2': [['{part}_mtp_J__2'], ['{part}_mtp_E__2']],
+    'mtp_3': [['{part}_mtp_J__3'], ['{part}_mtp_E__3']],
+    'mtp_4': [['{part}_mtp_J__4'], ['{part}_mtp_E__4']],
+    'mtp_5': [['{part}_mtp_J__5'], ['{part}_mtp_E__5']]
+}
+
+hand_outcome_mapping = {
+    'mcp': [[], ['{part}_mcp_E__ip'] ],
+    'pip_2': [['{part}_pip_J__2'], ['{part}_pip_E__2']],
+    'pip_3': [['{part}_pip_J__3'], ['{part}_pip_E__3']],
+    'pip_4': [['{part}_pip_J__4'], ['{part}_pip_E__4']],
+    'pip_5': [['{part}_pip_J__5'], ['{part}_pip_E__5']],
+    'mcp_1': [['{part}_mcp_J__1'], ['{part}_mcp_E__1']],
+    'mcp_2': [['{part}_mcp_J__2'], ['{part}_mcp_E__2']],
+    'mcp_3': [['{part}_mcp_J__3'], ['{part}_mcp_E__3']],
+    'mcp_4': [['{part}_mcp_J__4'], ['{part}_mcp_E__4']],
+    'mcp_5': [['{part}_mcp_J__5'], ['{part}_mcp_E__5']],
+    'w1': [['{part}_wrist_J__radcar', '{part}_wrist_J__mna'], ['{part}_wrist_E__mc1', '{part}_wrist_E__mul']],
+    'w2': [['{part}_wrist_J__cmc3', '{part}_wrist_J__capnlun'], ['{part}_wrist_E__radius', '{part}_wrist_E__nav']],
+    'w3': [['{part}_wrist_J__cmc4', '{part}_wrist_J__cmc5'], ['{part}_wrist_E__ulna', '{part}_wrist_E__lunate']]
+}
 
 class joint_dataset(base_dataset):
     def __init__(self, config, cache_postfix):
@@ -22,79 +53,125 @@ class joint_dataset(base_dataset):
         
         return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, cache = cache, pad_resize = False, augment = augment)
 
-class feet_joint_dataset(joint_dataset):
-    def __init__(self, config):
-        super().__init__(config, 'feet_joints')
+    def _create_intermediate_joints_df(self, joints_source, joint_keys):
+        joints_df = pd.read_csv(joints_source)
 
-        self.image_dir = config.train_location
+        mapped_joints = []
+        for _, row in joints_df.iterrows():
+            image_name = row['image_name']
 
-    def create_feet_joints_dataset(self, narrowing_flag = False, joint_source = './data/feet_joint_data.csv', val_joints_source = None):
-        outcome_column = 'erosion_0'
-        if(narrowing_flag):
-            outcome_column = 'narrowing_0'
+            for key in joint_keys:
+                mapped_joint = {
+                    'image_name': image_name,
+                    'key': key,
+                    'flip': row['flip'],
+                    'file_type': row['file_type'],
+                    'coord_x': row[key + '_x'],
+                    'coord_y': row[key + '_y']
+                }
 
-        dataset = self._create_feet_dataset(joint_source, outcome_column, cache = self.cache)
+                mapped_joints.append(mapped_joint)
 
+        return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
+
+class dream_dataset(joint_dataset):
+    def __init__(self, config, cache_postfix):
+        super().__init__(config, cache_postfix)
+
+    def _create_dream_datasets(self, outcomes_source, joints_source, val_joints_source, outcome_mapping, parts, outcome_columns):
+        outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts)
+
+        if(val_joints_source):
+            outcome_joint_val_df = self._create_outcome_joint_dataframe(outcomes_source, val_joints_source, outcome_mapping, parts)
+
+        dataset = self._create_dream_dataset(outcome_joint_df, outcome_columns, cache = self.cache)
         if val_joints_source:
-            val_dataset = self._create_feet_dataset(val_joints_source, outcome_column, is_train = False, augment = False)
+            val_dataset = self._create_dream_dataset(outcome_joint_val_df, outcome_columns, is_train = False, augment = False)
 
             return dataset, val_dataset
         else:
             return dataset
 
-    def _create_feet_dataset(self, joint_source, outcome_column, is_train = True, augment = True, cache = True):
-        feet_dataframe = pd.read_csv(joint_source)
+    def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts):
+        outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)
+        joints_df = self._create_intermediate_joints_df(joints_source, outcome_mapping.keys())
 
-        feet_dataframe['flip'] = 'N'
-        flip_idx = ['-R' in image_name for image_name in feet_dataframe['image_name']]
-        flip_columns = feet_dataframe['flip'].values
-        flip_columns[flip_idx] = 'Y'
-        feet_dataframe['flip'] = flip_columns
+        return outcomes_df.merge(joints_df, on = ['image_name', 'key'])
 
-        feet_dataframe['file_type'] = 'jpg'
+    def _create_intermediate_outcomes_df(self, outcomes_source, outcome_mapping, parts):
+        outcomes_df = pd.read_csv(outcomes_source)
 
-        file_info = feet_dataframe[['image_name', 'file_type', 'flip', 'key']].values
+        outcome_joints = []
+        for _, row in outcomes_df.iterrows():
+            patient_id = row['Patient_ID']
 
-        outcomes = feet_dataframe[outcome_column]
+            for part in parts:
+                image_name = patient_id + '-' + part
+
+                for idx, key in enumerate(outcome_mapping.keys()):
+                    joint_mapping = outcome_mapping[key]
+
+                    outcome_joint = {
+                        'image_name': image_name,
+                        'key': key
+                    }
+                    
+                    mapped_narrowing_keys = [key_val.format(part = part) for key_val in joint_mapping[0]]
+                    for idx, mapped_key in enumerate(mapped_narrowing_keys):
+                        outcome_joint[f'narrowing_{idx}'] = row[mapped_key]
+
+                    mapped_erosion_keys = [key_val.format(part = part) for key_val in joint_mapping[1]]
+                    for idx, mapped_key in enumerate(mapped_erosion_keys):
+                        outcome_joint[f'erosion_{idx}'] = row[mapped_key]
+
+                    outcome_joints.append(outcome_joint)
+
+        return pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))    
+
+    def _create_dream_dataset(self, outcome_joint_df, outcome_columns, is_train = True, augment = True, cache = True):
+        file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].values
+
+        outcomes = outcome_joint_df[outcome_columns]
         if is_train:
-            self._create_class_weights(outcomes)
-        outcomes = pd.get_dummies(outcomes, columns = [outcome_column])
+            self._init_model_outcomes_bias(outcomes)
+            
+        outcomes = pd.get_dummies(outcomes, columns = outcome_columns)
 
-        coords = feet_dataframe[['coord_x', 'coord_y']].values
+        coords = outcome_joint_df[['coord_x', 'coord_y']].values
 
         return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), augment = augment, cache = cache)
 
-    def _create_class_weights(self, outcomes):
-        N = outcomes.shape[0]
-        classes, counts = np.unique(outcomes.to_numpy(), return_counts = True)
+    def _init_model_outcomes_bias(self, outcomes):
+        N, D = outcomes.shape
 
-        weights = (1 / counts) * (N) / 2.0
+        outcomes_class_weights = []
+        outcomes_class_bias = []
 
-        class_weights = {}
-        for idx, c in enumerate(classes.astype(np.int64)):
-            class_weights[c] = weights[idx]
+        for _ in range(D):
+            classes, counts = np.unique(outcomes.to_numpy(), return_counts = True)
 
-        self.class_weights = class_weights
-        self.class_bias = np.log(counts / np.sum(counts))
+            weights = (1 / counts) * (N) / 2.0
 
-class rsna_joint_dataset(joint_dataset):
+            class_weights = {}
+            for idx, c in enumerate(classes.astype(np.int64)):
+                class_weights[c] = weights[idx]
+
+            outcomes_class_weights.append(class_weights)
+            outcomes_class_bias.append(np.log(counts / np.sum(counts)))
+
+        self.class_weights = outcomes_class_weights
+        self.class_bias = outcomes_class_bias
+
+class feet_joint_dataset(dream_dataset):
     def __init__(self, config):
-        super().__init__(config, 'rsna_joints')
+        super().__init__(config, 'feet_joints')
 
-        self.image_dir = '../../rsna_boneAge/checked_rsna_training'
+        self.image_dir = config.train_fixed_location
 
-    def create_rsna_joints_dataset(self, joint_source = './data/rsna_joint_data.csv', val_split = False):
-        joint_dataframe = pd.read_csv(joint_source)
+    def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data.csv', val_joints_source = None, erosion_flag = False):
+        outcome_column = 'narrowing_0'
+        if(erosion_flag):
+            outcome_column = 'erosion_0'
 
-        joint_dataframe['flip'] = 'N'
-        joint_dataframe['file_type'] = 'png'
-
-        file_info = joint_dataframe[['image_name', 'file_type', 'flip', 'key']].astype(np.str).values
-        coords = joint_dataframe[['coord_x', 'coord_y']].values
-
-        outcomes = joint_dataframe[['boneage', 'sex', 'key']]
-        outcomes = pd.get_dummies(outcomes, columns = ['key'], dtype = np.float32).values
-
-        return self._create_dataset(file_info, coords, outcomes) 
-
+        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column])
 
