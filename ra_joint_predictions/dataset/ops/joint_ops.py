@@ -22,6 +22,7 @@ def load_joints(dataset, directory):
         return joint_img, z
 
     return dataset.map(__load_joints, num_parallel_calls=AUTOTUNE)
+    
 
 def _extract_joint_from_image(img, x, y):
     img_shape = tf.cast(tf.shape(img), tf.float64)
@@ -42,6 +43,35 @@ def _extract_joint_from_image(img, x, y):
 
     if x_box + box_width > img_shape[1]:
         box_width = img_shape[1] - x_box
+
+    img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
+
+    return img
+
+
+def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
+    img_shape = tf.cast(tf.shape(img), tf.float64)
+    w1_x, w2_x, w3_x, w1_y, w2_y, w3_y = [tf.cast(x, tf.float64) for x in [w1_x, w2_x, w3_x, w1_y, w2_y, w3_y]]
+
+    extra_pad_height = img_shape[0] / 10
+    extra_pad_width = img_shape[1] / 10
+
+    min_x = tf.math.minimum()
+
+    x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0) - extra_pad_width
+    y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0) - extra_pad_height
+
+    x_box = tf.math.maximum(x_box, 0)
+    y_box = tf.math.maximum(y_box, 0)
+
+    x_box_max = tf.reduce_max(tf.stack([w1_x, w2_x, w3_x]),0) + extra_pad_width
+    y_box_max = tf.reduce_max(tf.stack([w1_y, w2_y, w3_y]),0) + extra_pad_height
+
+    x_box_max = tf.math.minimum(x_box_max, img_shape[1])
+    y_box_max = tf.math.minimum(y_box_max, img_shape[0])
+
+    box_height = y_box_max - y_box
+    box_width = x_box_max - x_box
 
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
 

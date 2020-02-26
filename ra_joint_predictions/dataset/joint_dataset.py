@@ -96,3 +96,5 @@ class rsna_joint_dataset(joint_dataset):
         outcomes = pd.get_dummies(outcomes, columns = ['key'], dtype = np.float32).values
 
         return self._create_dataset(file_info, coords, outcomes) 
+
+
