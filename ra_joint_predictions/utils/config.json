@@ -9,6 +9,7 @@
     "landmarks_faces_info": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/faces_landmarks/list_landmarks_celeba.txt",
     "landmarks_img_height": 512,
     "landmarks_img_width": 512,
+    "rsna_img_dir":"/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/rsna_boneAge/checked_rsna_training",
     "output_dir": "logs",
     "cache_loc": "~/localscratch/RA_challenge_scratch/",
     "img_height": 512,
