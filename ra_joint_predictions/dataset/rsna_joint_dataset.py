@@ -13,19 +13,20 @@ class rsna_joint_dataset(joint_dataset):
     def __init__(self, config):
         super().__init__(config, 'rsna_joints')
 
-        self.img_dir = config.rsna_img_dir
+        self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
 
-    def create_rsna_joints_dataset(self, joints_source = './data/rsna_joint_data.csv', val_split = False):
-        outcomes_df = self._create_intermediate_outcomes_df(self.img_dir)
+    def create_rsna_joints_dataset(self, joints_source = './data/predictions/rsna_joint_data.csv', val_split = False):
+        outcomes_df = self._create_intermediate_outcomes_df(self.image_dir)
         joints_df = self._create_intermediate_joints_df(joints_source, hand_joint_keys)
-
-        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['image_name', 'key'], right_on = ['id', 'key'])
+        joints_df = joints_df.astype({'image_name': 'str'})
+        
+        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'])
 
         return self._create_rsna_datasets(outcome_joint_df, val_split)
 
-    def _create_intermediate_outcomes_df(self, img_dir):
-        rsna_images = os.listdir(img_dir)
+    def _create_intermediate_outcomes_df(self, image_dir):
+        rsna_images = os.listdir(image_dir)
 
         rsna_dicts = []
         for rsna_image in rsna_images:
@@ -52,7 +53,7 @@ class rsna_joint_dataset(joint_dataset):
         file_info = outcomes_df[['image_name', 'file_type', 'flip', 'key']].astype(np.str).to_numpy()
         coords = outcomes_df[['coord_x', 'coord_y']].to_numpy()
 
-        outcomes = outcomes_df[['boneage', 'sex', 'key']]
+        outcomes = outcomes_df[['boneage', 'male', 'key']]
         outcomes = pd.get_dummies(outcomes, columns = ['key'], dtype = np.float32)
         outcomes = outcomes.to_numpy(np.float64)
 
