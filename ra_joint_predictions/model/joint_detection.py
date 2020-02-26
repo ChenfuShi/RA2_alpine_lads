@@ -14,6 +14,8 @@ def create_hand_joint_detector(config, path_to_weights = './weights/joint_detect
 
     return _create_model_with_weigths(config, output_size, path_to_weights)
 
+
+# THESE TWO FUNCTIONS NEED TO USE THE LANDMARKS MODEL INSTEAD OF THEIR OWN BUILDING BLOCKS
 def _create_model_with_weigths(config, output_size, path_to_weights):
     joints_detector_model = _create_joints_detector_model(config, output_size)
 

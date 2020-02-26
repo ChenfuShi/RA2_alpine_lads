@@ -22,4 +22,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm ~/localscratch/* -r
 # run python training script
 cd /mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/RA2_alpine_lads/ra_joint_predictions
-python training_landmarks_models.py
+python training_landmarks_models_resnet.py
