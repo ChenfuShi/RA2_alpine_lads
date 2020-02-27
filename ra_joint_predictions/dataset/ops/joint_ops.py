@@ -23,6 +23,25 @@ def load_joints(dataset, directory):
 
     return dataset.map(__load_joints, num_parallel_calls=AUTOTUNE)
     
+def load_wrists(dataset, directory):
+    def __load_wrists(file_info, y, z):
+        joint_key = file_info[3]
+        w1_x = y[0]
+        w2_x = y[2]
+        w3_x = y[4]
+        w1_y = y[1]
+        w2_y = y[3]
+        w3_y = y[5]
+
+        full_img, _ = img_ops.load_image(file_info, [], directory)
+
+        #TODO: Use joint_key to decide on box dimensions
+
+        joint_img = _extract_wrist_from_image(full_img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y)
+
+        return joint_img, z
+
+    return dataset.map(__load_wrists, num_parallel_calls=AUTOTUNE)
 
 def _extract_joint_from_image(img, x, y):
     img_shape = tf.cast(tf.shape(img), tf.float64)
@@ -56,8 +75,6 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     extra_pad_height = img_shape[0] / 10
     extra_pad_width = img_shape[1] / 10
 
-    min_x = tf.math.minimum()
-
     x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0) - extra_pad_width
     y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0) - extra_pad_height
 
@@ -72,6 +89,9 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
 
     box_height = y_box_max - y_box
     box_width = x_box_max - x_box
+
+    box_height = tf.math.maximum(box_height, tf.constant(50,dtype=tf.float64))
+    box_width = tf.math.maximum(box_width, tf.constant(50,dtype=tf.float64))
 
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
 
