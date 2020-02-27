@@ -6,18 +6,24 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Dense, Dropout
 
-from utils.losses import categorical_focal_loss
+from model.utils.building_blocks_joints import _fc_block
 from model.utils.building_blocks_joints import create_complex_joint_model
 
-def create_rsna_NASnet_multioutupt(config, no_joints_types = 13):
-    inputs = keras.layers.Input(shape=[config.img_height, config.img_width, 1])
+def create_rsna_NASnet_multioutupt(config, no_joint_types = 13):
+    inputs = keras.layers.Input(shape=[config.joint_img_height, config.joint_img_width, 1])
     
     base_model = create_complex_joint_model(inputs)
 
     # split into three parts
-    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred')(base_model)
-    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred')(base_model)
-    joint_type = keras.layers.Dense(no_joints_types, activation = 'softmax', name = 'joint_type_pred')(base_model)
+
+    boneage_fc = _fc_block(base_model, 32, 'boneage_1')
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred')(boneage_fc)
+
+    sex_fc = _fc_block(base_model, 32, 'sex_1')
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred')(sex_fc)
+
+    joint_type_fc = _fc_block(base_model, 32, 'joint_type_1')
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred')(joint_type_fc)
 
     # get final model
     model = keras.models.Model(
@@ -34,6 +40,6 @@ def create_rsna_NASnet_multioutupt(config, no_joints_types = 13):
     lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
 
     model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
-        metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'binary_accuracy'})
+        metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
 
     return model
