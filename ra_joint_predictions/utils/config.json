@@ -1,11 +1,11 @@
 {
-    "train_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
-    "train_fixed_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/fixed",
+    "train_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/training_dataset",
+    "train_fixed_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/training_dataset/fixed",
     "fixed_dir": "fixed",
-    "pretrain_NIH_chest_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/NIH_chest_X_ray/pretrain",
+    "pretrain_NIH_chest_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/NIH_chest_X_ray/pretrain",
     "pretrain_NIH_chest_info": "data/pretrain_data.csv",
-    "landmarks_feet_images_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
-    "landmarks_hands_images_location": "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset",
+    "landmarks_feet_images_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/training_dataset",
+    "landmarks_hands_images_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/training_dataset",
     "landmarks_faces_location": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/faces_landmarks/img_celeba/",
     "landmarks_faces_info": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/faces_landmarks/list_landmarks_celeba.txt",
     "landmarks_img_height": 512,
@@ -21,6 +21,6 @@
     "landmarks_location": "./data/landmarks",
     "joint_img_height": 224,
     "joint_img_width": 224,
-    "rsna_img_dir": "../../../rsna_boneAge/checked_rsna_training",
-    "rsna_labels": "../../../rsna_boneAge/boneage-training-dataset.csv"
+    "rsna_img_dir": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/checked_rsna_training",
+    "rsna_labels": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/boneage-training-dataset.csv"
 }
