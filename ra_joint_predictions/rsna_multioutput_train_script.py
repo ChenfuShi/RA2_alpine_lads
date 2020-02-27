@@ -6,7 +6,7 @@ from train.pretrain_RSNA_joints import pretrain_rnsa_multioutput_model
 from model.RSNA_model import create_rsna_NASnet_multioutupt
 
 from utils.config import Config
-from utils import save_pretrained_model
+from utils.saver import save_pretrained_model
 
 if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')

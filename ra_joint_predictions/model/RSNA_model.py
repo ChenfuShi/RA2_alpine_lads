@@ -22,7 +22,7 @@ def create_rsna_NASnet_multioutupt(config, no_joint_types = 13):
     sex_fc = _fc_block(base_model, 32, 'sex_1')
     sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred')(sex_fc)
 
-    joint_type_fc = _fc_block(base_model, 32, 'joint_type_1')
+    joint_type_fc = _fc_block(base_model, 64, 'joint_type_1')
     joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred')(joint_type_fc)
 
     # get final model
