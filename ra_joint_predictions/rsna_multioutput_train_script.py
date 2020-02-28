@@ -2,11 +2,11 @@ import logging
 import os
 import sys
 
-from train.pretrain import pretrain_rnsa_multioutput_model
-from model.rsna_multioutput_model import create_rsna_NASnet_multioutupt
+from train.pretrain_RSNA_joints import pretrain_rnsa_multioutput_model
+from model.RSNA_model import create_rsna_NASnet_multioutupt
 
 from utils.config import Config
-from utils import save_pretrained_model
+from utils.saver import save_pretrained_model
 
 if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
@@ -20,4 +20,4 @@ if __name__ == '__main__':
     logging.info('Starting training')
     trained_model = pretrain_rnsa_multioutput_model('rsna_multioutput_NASnet_pretrain', config, create_rsna_NASnet_multioutupt)
 
-    save_pretrained_model(trained_model, 3, model_name)
+    save_pretrained_model(trained_model, 6, model_name)

@@ -27,7 +27,6 @@ class rsna_joint_dataset(joint_dataset):
 
         return self._create_rsna_datasets(outcome_joint_df, val_split)
 
-
     def _create_intermediate_outcomes_df(self, image_dir, keys):
         rsna_images = os.listdir(image_dir)
 
@@ -73,10 +72,7 @@ class rsna_joint_dataset(joint_dataset):
         else:
             return self._create_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
 
-
-
-
-class rsna_wrist_dataset(rsna_joint_dataset, joint_dataset):
+class rsna_wrist_dataset(rsna_joint_dataset):
     def __init__(self, config):
         joint_dataset.__init__(self, config, 'rsna_wrists')
 

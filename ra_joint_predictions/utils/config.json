@@ -15,7 +15,7 @@
     "img_height": 512,
     "img_width": 378,
     "CPU_threads": 8,
-    "batch_size": 25,
+    "batch_size": 64,
     "augment":true,
     "have_val": true,
     "landmarks_location": "./data/landmarks",

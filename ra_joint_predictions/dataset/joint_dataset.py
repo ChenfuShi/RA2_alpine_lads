@@ -3,7 +3,9 @@ import os
 import pandas as pd
 import tensorflow as tf
 
+from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
 
 import dataset.ops.joint_ops as joint_ops
 import dataset.ops.dataset_ops as ds_ops
@@ -49,7 +51,6 @@ class joint_dataset(base_dataset):
         super().__init__(config)
 
         self.cache = config.cache_loc + cache_postfix
-        self.image_dir = config.train_location + '/fixed'
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
 
@@ -105,19 +106,21 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix):
+    def __init__(self, config, cache_postfix, no_outcomes = 1):
         super().__init__(config, cache_postfix)
 
-    def _create_dream_datasets(self, outcomes_source, joints_source, val_joints_source, outcome_mapping, parts, outcome_columns, wrist = False):
-        outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist=wrist)
-        outcome_joint_df = outcome_joint_df.dropna(subset=outcome_columns)
-        if(val_joints_source):
-            outcome_joint_val_df = self._create_outcome_joint_dataframe(outcomes_source, val_joints_source, outcome_mapping, parts, wrist=wrist)
-            outcome_joint_val_df = outcome_joint_val_df.dropna(subset=outcome_columns)
+        self.image_dir = config.train_fixed_location
 
-        dataset = self._create_dream_dataset(outcome_joint_df, outcome_columns, cache = self.cache, wrist=wrist)
+    def _create_dream_datasets(self, outcomes_source, joints_source, val_joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
+        outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
+        outcome_joint_df = outcome_joint_df.dropna(subset = outcome_columns)
+        if(val_joints_source):
+            outcome_joint_val_df = self._create_outcome_joint_dataframe(outcomes_source, val_joints_source, outcome_mapping, parts, wrist = wrist)
+            outcome_joint_val_df = outcome_joint_val_df.dropna(subset = outcome_columns)
+
+        dataset = self._create_dream_dataset(outcome_joint_df, outcome_columns, no_classes, cache = self.cache, wrist = wrist)
         if val_joints_source:
-            val_dataset = self._create_dream_dataset(outcome_joint_val_df, outcome_columns, is_train = False, augment = False, wrist=wrist)
+            val_dataset = self._create_dream_dataset(outcome_joint_val_df, outcome_columns, no_classes, is_train = False, augment = False, wrist = wrist)
 
             return dataset, val_dataset
         else:
@@ -162,42 +165,61 @@ class dream_dataset(joint_dataset):
 
         return pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))    
 
-    def _create_dream_dataset(self, outcome_joint_df, outcome_columns, is_train = True, augment = True, cache = True, wrist = False):
+    def _create_dream_dataset(self, outcome_joint_df, outcome_columns, no_classes, is_train = True, augment = True, cache = True, wrist = False):
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].values
 
         outcomes = outcome_joint_df[outcome_columns]
         if is_train:
-            self._init_model_outcomes_bias(outcomes)
-            
-        outcomes = pd.get_dummies(outcomes, columns = outcome_columns)
+            self._init_model_outcomes_bias(outcomes, no_classes)
+
+        outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
         
         if wrist:
             coords = outcome_joint_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].values
         else:
             coords = outcome_joint_df[['coord_x', 'coord_y']].values
 
-        return self._create_dataset(file_info, coords, outcomes.to_numpy(dtype = np.float64), augment = augment, cache = cache, wrist = wrist)
+        return self._create_dataset(file_info, coords, outcomes, augment = augment, cache = cache, wrist = wrist)
 
-    def _init_model_outcomes_bias(self, outcomes):
+    def _init_model_outcomes_bias(self, outcomes, no_classes):
         N, D = outcomes.shape
 
         outcomes_class_weights = []
         outcomes_class_bias = []
 
-        for _ in range(D):
-            classes, counts = np.unique(outcomes.to_numpy(), return_counts = True)
+        for d in range(D):
+            class_weights = {}
+    
+            # init class weights to 1
+            for class_val in np.arange(no_classes):
+                class_weights[class_val] = 1
 
+            # Calc and update class weights for samples that are actually found
+            classes, counts = np.unique(outcomes.iloc[:, d].to_numpy(), return_counts = True)
             weights = (1 / counts) * (N) / 2.0
 
-            class_weights = {}
             for idx, c in enumerate(classes.astype(np.int64)):
                 class_weights[c] = weights[idx]
+            
+            # Init bias
+            bias = np.zeros(no_classes)
+            bias[classes.astype(np.int64)] = np.log(counts / np.sum(counts))
+            # Set bias of not found classes even lower than rarest class
+            bias[bias == 0] = np.min(bias) - 1
 
             outcomes_class_weights.append(class_weights)
-            outcomes_class_bias.append(np.log(counts / np.sum(counts)))
+            outcomes_class_bias.append(bias)
 
         self.class_weights = outcomes_class_weights
         self.class_bias = outcomes_class_bias
+
+    def _dummy_encode_outcomes(self, outcomes, no_classes):
+        D = outcomes.shape[1]
+
+        one_hot_encoder = OneHotEncoder(sparse = False, categories = [np.arange(no_classes)] * D)
+        column_transformer = ColumnTransformer([('one_hot_encoder', one_hot_encoder, np.arange(D))], remainder = 'passthrough')
+
+        return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
 
 class feet_joint_dataset(dream_dataset):
     def __init__(self, config):
@@ -207,11 +229,12 @@ class feet_joint_dataset(dream_dataset):
 
     def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_column = 'narrowing_0'
+        no_classes = 5
         if(erosion_flag):
             outcome_column = 'erosion_0'
+            no_classes = 11
 
-        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column])
-
+        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
 class hands_joints_dataset(dream_dataset):
     def __init__(self, config):
@@ -221,21 +244,24 @@ class hands_joints_dataset(dream_dataset):
 
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_column = 'narrowing_0'
+        no_classes = 5
         if(erosion_flag):
             outcome_column = 'erosion_0'
+            no_classes = 6
 
-        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column])
-
+        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
 
 class hands_wrists_dataset(dream_dataset):
     def __init__(self, config):
-        super().__init__(config, 'wrists_joints')
+        super().__init__(config, 'wrists_joints', no_outcomes = 6)
 
         self.image_dir = config.train_fixed_location
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
+        no_classes = 5
         if(erosion_flag):
             outcome_columns = ['erosion_0', 'erosion_1', 'erosion_2', 'erosion_3', 'erosion_4', 'erosion_5']
+            no_classes = 6
 
-        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, wrist=True)
+        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist=True)
