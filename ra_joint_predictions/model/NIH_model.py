@@ -14,6 +14,13 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 from model.utils.keras_nasnet import NASNet
 
+def create_resnet_multioutput(config):
+    pass
+
+
+
+
+
 def create_NASnet_multioutupt(config):
     # load base model
     NASnet_model = keras.applications.NASNetMobile(input_shape=[config.img_height,config.img_width,1], include_top=False,weights=None,)

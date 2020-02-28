@@ -41,11 +41,9 @@ class landmark_pretrain_faces_dataset(base_dataset):
         data = self.data_info[self.data_info.columns.difference(['file_type', 'flip','idx'])].values
         data = data.astype(np.float64)
         # get dataset 
-        dataset =  tf.data.Dataset.from_tensor_slices((x, data))
 
-        dataset = dataset.shuffle(buffer_size = 20000,seed = 63)
-
-        dataset = ds_ops.load_images(dataset, self.config.landmarks_faces_location, update_labels = True)
+        dataset = self._create_dataset(
+            x, data, self.config.landmarks_faces_location, update_labels=True)
     
         # here separate validation set
         dataset, dataset_val = super()._create_validation_split(dataset,5000)
