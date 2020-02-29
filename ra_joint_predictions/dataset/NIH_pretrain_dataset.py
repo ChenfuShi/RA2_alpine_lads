@@ -39,7 +39,7 @@ class pretrain_dataset_NIH_chest(base_dataset):
         
         x = self.data_info[['Image Index','file_type', 'flip']].values
 
-        data = self.data_info[self.data_info.columns.difference(['file_type', 'flip', 'Image Index'])].values
+        data = self.data_info.drop(['file_type', 'flip', 'Image Index'], axis=1).values
         data = data.astype(np.float64)
 
         # get dataset 
@@ -71,19 +71,5 @@ class pretrain_dataset_NIH_chest(base_dataset):
 
         return pretrain_NIH_info[useful_cols]
 
-def _init_dataset(df_data, pretrain_location):
-    def __load_image(file, y):
-        file_path = pretrain_location + "/" + file 
-        
-        img = tf.io.read_file(file_path)    
-        img = tf.image.decode_png(img, channels=1)
-        img = tf.image.convert_image_dtype(img, tf.float32)
 
-        return img, y
-
-    dataset = tf.data.Dataset.from_tensor_slices((df_data["Image Index"].values, df_data.loc[:, df_data.columns != 'Image Index'].values))
-
-    dataset = dataset.map(__load_image, num_parallel_calls=AUTOTUNE)
-        
-    return dataset
 
