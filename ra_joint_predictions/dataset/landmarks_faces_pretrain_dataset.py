@@ -38,7 +38,7 @@ class landmark_pretrain_faces_dataset(base_dataset):
         
         x = self.data_info[['idx','file_type', 'flip']].values
 
-        data = self.data_info[self.data_info.columns.difference(['file_type', 'flip','idx'])].values
+        data = self.data_info.drop(['file_type', 'flip','idx'],axis=1).values
         data = data.astype(np.float64)
         # get dataset 
 
