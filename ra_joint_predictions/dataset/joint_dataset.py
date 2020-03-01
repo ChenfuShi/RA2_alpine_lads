@@ -66,7 +66,7 @@ class joint_dataset(base_dataset):
     def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True):
         dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
         dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache)
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, cache = cache, pad_resize = False)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = False)
         
         return dataset
 
