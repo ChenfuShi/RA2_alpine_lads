@@ -54,14 +54,21 @@ class joint_dataset(base_dataset):
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
 
-    def _create_dataset(self, file_info, joint_coords, outcomes, wrist = False, augment = True, cache = True):
+    def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         if wrist:
             dataset = joint_ops.load_wrists(dataset, self.image_dir)
         else:
             dataset = joint_ops.load_joints(dataset, self.image_dir)
         
-        return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, cache = cache, pad_resize = False, augment = augment)
+        return dataset
+
+    def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True):
+        dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, cache = cache, pad_resize = False)
+        
+        return dataset
 
     def _create_intermediate_joints_df(self, joints_source, joint_keys):
         joints_df = pd.read_csv(joints_source)
@@ -165,7 +172,7 @@ class dream_dataset(joint_dataset):
 
         return pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))    
 
-    def _create_dream_dataset(self, outcome_joint_df, outcome_columns, no_classes, is_train = True, augment = True, cache = True, wrist = False):
+    def _create_dream_dataset(self, outcome_joint_df, outcome_columns, no_classes, augment = True, cache = True, wrist = False, is_train = True):
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].values
 
         outcomes = outcome_joint_df[outcome_columns]
@@ -179,7 +186,34 @@ class dream_dataset(joint_dataset):
         else:
             coords = outcome_joint_df[['coord_x', 'coord_y']].values
 
-        return self._create_dataset(file_info, coords, outcomes, augment = augment, cache = cache, wrist = wrist)
+        if is_train:
+            return self._create_interleaved_joint_datasets(file_info, coords, outcomes, wrist)
+        else:
+            return self._create_non_split_joint_dataset(file_info, coords, outcomes, wrist = wrist, augment = False)
+
+    def _create_interleaved_joint_datasets(self, file_info, joint_coords, outcomes, wrist = False):
+        # Find elements with majority class - default 0, if needed move to constructor
+        maj_idx = np.argmax(outcomes, axis = 1) == 0
+        min_idx = np.logical_not(maj_idx)
+        # Tranform boolean mask into indices
+        maj_idx = np.where(maj_idx)[0]
+        min_idx = np.where(min_idx)[0]
+
+        # Create 2 datasets, one with the majority class, one with the other classes
+        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx], wrist = wrist)
+        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx], wrist = wrist)
+
+        # Cache the partial datasets
+        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj')
+        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min')
+
+        # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
+        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
+
+        # Prepare for training
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = False)
+
+        return dataset
 
     def _init_model_outcomes_bias(self, outcomes, no_classes):
         N, D = outcomes.shape

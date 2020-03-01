@@ -65,12 +65,12 @@ class rsna_joint_dataset(joint_dataset):
         if(val_split):
             file_info, file_test, coords, coords_test, outcomes, outcomes_test = train_test_split(file_info, coords, outcomes, test_size = 0.2)
 
-            rsna_dataset = self._create_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
-            rsna_val_dataset = self._create_dataset(file_test, coords_test, outcomes_test, augment = False, wrist = wrist)
+            rsna_dataset = self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
+            rsna_val_dataset = self._create_non_split_joint_dataset(file_test, coords_test, outcomes_test, augment = False, wrist = wrist)
             
             return rsna_dataset, rsna_val_dataset
         else:
-            return self._create_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
+            return self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
 
 class rsna_wrist_dataset(rsna_joint_dataset):
     def __init__(self, config):
