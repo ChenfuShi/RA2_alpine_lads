@@ -23,14 +23,14 @@ def train_feet_erosion_model(config, model_name, pretrained_base_model):
 
     output_bias = tf.keras.initializers.Constant(dataset.class_bias[0])
     
-    pretrained_base_model.add(Dense(5, activation = 'softmax', name = 'main_output', bias_initializer = output_bias))
+    pretrained_base_model.add(Dense(5, activation = 'softmax', name = 'main_output')) # , bias_initializer = output_bias))
 
     metrics = ['categorical_accuracy', softmax_rsme_metric(np.arange(5)), argmax_rsme, class_softmax_rsme_metric(np.arange(5), 0)]
     pretrained_base_model.compile(loss = 'categorical_crossentropy', metrics = metrics, optimizer = 'adam')
 
     history = pretrained_base_model.fit(
-        feet_joint_erosion_dataset, epochs = 500, steps_per_epoch = 75, validation_data = val_dataset, 
-        validation_steps = 15, verbose = 2, class_weight = dataset.class_weights[0], callbacks = [saver, tensorboard_callback]
+        feet_joint_erosion_dataset, epochs = 100, steps_per_epoch = 75, validation_data = val_dataset, 
+        validation_steps = 25, verbose = 2, class_weight = dataset.class_weights[0], callbacks = [saver, tensorboard_callback]
     )
 
     return pretrained_base_model

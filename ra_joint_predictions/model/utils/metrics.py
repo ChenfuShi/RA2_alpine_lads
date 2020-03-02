@@ -25,13 +25,19 @@ def class_softmax_rsme_metric(classes, class_filter):
     def class_softmax_rmse(y_true, y_pred):
         true = tf.cast(K.argmax(y_true), K.floatx())
         pred = K.sum(y_pred * classes, axis = 1)
-        
+
         idx = tf.where(tf.math.not_equal(tf.cast(class_filter, K.floatx()), true))
-        
+ 
         true = tf.gather(true, idx)
         pred = tf.gather(pred, idx)
-        
-        return rsme(true, pred)
+
+        idx_size = tf.size(idx)
+
+        rsme_val = tf.cond(idx_size == 0,
+                    lambda: tf.constant(0, tf.float32),
+                    lambda: rsme(true, pred))
+
+        return rsme_val
     
     class_softmax_rmse.__name__ = 'class_softmax_rmse_{}'.format(class_filter)
     
