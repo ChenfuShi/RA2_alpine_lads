@@ -16,7 +16,7 @@ import logging
 import datetime
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
-def pretrain_NIH_chest(model,data_train,data_val,config,model_name):
+def pretrain_NIH_chest(model,data_train,data_val,config,model_name,epochs=251):
     # function to run training on chest X-ray dataset
     
     # datasets have to be corrected for multioutput
@@ -24,13 +24,13 @@ def pretrain_NIH_chest(model,data_train,data_val,config,model_name):
     data_val = data_val.map(_split_dataset_outputs)
 
     # declare custom saver for model
-    saver = CustomSaver(model_name)
+    saver = CustomSaver(model_name,n=25)
 
     # declare tensorboard
     tensorboard_callback = _get_tensorboard_callback(model_name)
     # fit model indefinetly
     H = model.fit(data_train, validation_data=data_val,
-    epochs=10000,steps_per_epoch=100,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
+    epochs=epochs,steps_per_epoch=1000,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
 
 
 def _split_dataset_outputs(x,y):
