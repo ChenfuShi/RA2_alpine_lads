@@ -38,4 +38,4 @@ if __name__ == '__main__':
     logging.info("model prepared")
     # train
     logging.info("starting training")
-    pretrain_NIH_chest(model,chest_dataset,chest_dataset_val,configuration,"NIH_new_pretrain")
+    pretrain_NIH_chest(model,chest_dataset,chest_dataset_val,configuration,"NIH_resnet_pretrain")

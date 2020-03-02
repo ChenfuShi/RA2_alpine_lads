@@ -16,10 +16,11 @@ from model.utils.keras_nasnet import NASNet
 from model.utils.building_blocks_joints import create_complex_joint_model
 
 def create_resnet_multioutput(config):
-    base_resnet = keras.applications.resnet_v2.ResNet50V2(input_shape=[config.landmarks_img_height,config.landmarks_img_width,1],pooling="avg",weights=None,)
+    base_resnet = keras.applications.resnet_v2.ResNet50V2(input_shape=[config.img_height,config.img_width,1],pooling="avg",weights=None,)
     # create new model with common part
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
     common_part = base_resnet(inputs)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
     # split into two parts
     disease = keras.layers.Dense(14, activation='sigmoid', name='disease_pred')(common_part)
     sex = keras.layers.Dense(1, activation='sigmoid', name='sex_pred')(common_part)
@@ -48,7 +49,6 @@ def create_resnet_multioutput(config):
 
 def create_complex_joint_multioutput(config):
 
-
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
 
     # create new model with common part
@@ -63,7 +63,7 @@ def create_complex_joint_multioutput(config):
     model = keras.models.Model(
         inputs=inputs,
         outputs=[disease,sex, age],
-        name="resnet_multiout_NIH")
+        name="complex_multiout_NIH")
 
     losses = {
     "disease_pred": tfa.losses.focal_loss.SigmoidFocalCrossEntropy(),
@@ -88,6 +88,7 @@ def create_NASnet_multioutupt(config):
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
     common_part = NASnet_model(inputs)
     common_part =  tf.keras.layers.GlobalAveragePooling2D()(common_part)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
 
     # split into two parts
     disease = keras.layers.Dense(14, activation='sigmoid', name='disease_pred')(common_part)
@@ -128,7 +129,8 @@ def create_NASnet_7x1920_multioutupt(config):
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
     common_part = NASnet_model(inputs)
     common_part =  tf.keras.layers.GlobalAveragePooling2D()(common_part)
-
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    
     # split into two parts
     disease = keras.layers.Dense(14, activation='sigmoid', name='disease_pred')(common_part)
     sex = keras.layers.Dense(1, activation='sigmoid', name='sex_pred')(common_part)
