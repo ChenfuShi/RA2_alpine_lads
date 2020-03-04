@@ -46,8 +46,10 @@ hand_joint_keys = ['mcp', 'pip_2', 'pip_3', 'pip_4', 'pip_5', 'mcp_1', 'mcp_2', 
 
 hand_wrist_keys = ['w1', 'w2', 'w3']
 
+AUTOTUNE = tf.data.experimental.AUTOTUNE
+
 class joint_dataset(base_dataset):
-    def __init__(self, config, cache_postfix):
+    def __init__(self, config, cache_postfix = ''):
         super().__init__(config)
 
         self.cache = config.cache_loc + cache_postfix
@@ -297,5 +299,15 @@ class hands_wrists_dataset(dream_dataset):
         if(erosion_flag):
             outcome_columns = ['erosion_0', 'erosion_1', 'erosion_2', 'erosion_3', 'erosion_4', 'erosion_5']
             no_classes = 6
+            
+        dataset = self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist=True)
 
-        return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist=True)
+        return self._split_outcomes(dataset, no_classes)
+    
+    def _split_outcomes(self, dataset, no_classes):
+        def __split_outcomes(x, y):
+            split_y = tf.split(y, [no_classes, no_classes, no_classes, no_classes, no_classes, no_classes], 1)
+
+            return x, (split_y[0], split_y[1], split_y[2], split_y[3], split_y[4], split_y[5])
+
+        return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
