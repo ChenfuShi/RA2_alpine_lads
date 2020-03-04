@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from tensorflow.keras.layers import Dense
+import tensorflow.keras as keras
+
+from tensorflow.keras.layers import Dense, Input
 
 from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset
 from model.utils.metrics import top_2_categorical_accuracy
@@ -18,19 +20,34 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
     
     joint_dataset, tf_joint_dataset = _get_dataset(config, joint_type, dmg_type)
     
-    pretrained_base_model.add(Dense(5, activation = 'softmax', name = 'main_output'))
+    metric_dir = {}
+    outputs = []
+    for idx, class_weight in enumerate(joint_dataset.class_weights):
+        no_outcomes = len(class_weight.keys())
+        
+        metrics = ['categorical_crossentropy', softmax_rsme_metric(np.arange(no_outcomes)), argmax_rsme, class_softmax_rsme_metric(np.arange(no_outcomes), 0)]
+        
+        output = Dense(no_outcomes, activation = 'softmax', name = f'output_{idx}')(pretrained_base_model.output)
+        outputs.append(output)
+        
+        metric_dir[f'output_{idx}'] = metrics
 
-    metrics = ['categorical_accuracy', softmax_rsme_metric(np.arange(5)), argmax_rsme, class_softmax_rsme_metric(np.arange(5), 0)]
-    pretrained_base_model.compile(loss = 'categorical_crossentropy', metrics = metrics, optimizer = 'adam')
+    model = keras.models.Model(
+        inputs = pretrained_base_model.input,
+        outputs = outputs,
+        name = f'joint_model_{joint_type}_{dmg_type}')
 
-    history = pretrained_base_model.fit(
-        tf_joint_dataset, epochs = 100, steps_per_epoch = 75, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback]
-    )
+    # metrics = ['categorical_accuracy', softmax_rsme_metric(np.arange(5)), argmax_rsme, class_softmax_rsme_metric(np.arange(5), 0)]
+    model.compile(loss = 'categorical_crossentropy', metrics = metric_dir, optimizer = 'adam')
 
-    hist_df = pd.DataFrame(history.history)
-    hist_df.to_csv('./' + model_name + '_hist.csv')
+    # history = model.fit(
+        #tf_joint_dataset, epochs = 100, steps_per_epoch = 75, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback]
+    #)
 
-    return pretrained_base_model
+    #hist_df = pd.DataFrame(history.history)
+    #hist_df.to_csv('./' + model_name + '_hist.csv')
+
+    return model
 
 def _get_dataset(config, joint_type, dmg_type):
     outcomes_sources = os.path.join(config.train_location, 'training.csv')
