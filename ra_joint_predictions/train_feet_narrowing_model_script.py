@@ -7,7 +7,7 @@ import tensorflow as tf
 from utils.config import Config
 from utils.saver import save_pretrained_model
 
-from train.train_joints_damage import train_feet_erosion_model
+from train.train_joints_damage import train_feet_narrowing_model
 
 if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
@@ -24,6 +24,6 @@ if __name__ == '__main__':
     # load pretrained model
     loaded_model = tf.keras.models.load_model(pretrained_model + '.h5')
 
-    trained_model = train_feet_erosion_model(config, model_name, loaded_model)
+    trained_model = train_feet_narrowing_model(config, model_name, loaded_model)
 
     save_pretrained_model(trained_model, 0, model_name)
