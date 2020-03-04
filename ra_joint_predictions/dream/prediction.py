@@ -10,7 +10,7 @@ from model.utils.metrics import argmax_rsme, softmax_rsme_metric, class_softmax_
 from dataset.test_dataset import joint_test_dataset
 
 def predict_dream_test_set(config):
-    feet_narrowing_model, hands_narrowing_model, wrists_narrowing_model, hands_erosion_model, feet_erosion_model, wrists_erosion_model = _get_models()
+    hands_narrowing_model, wrists_narrowing_model, feet_narrowing_model, hands_erosion_model, wrists_erosion_model, feet_erosion_model = _get_models()
     
     preds = {}
     
@@ -22,61 +22,65 @@ def predict_dream_test_set(config):
             
     dataset = joint_test_dataset(config, config.train_fixed_location)
 
-    hands_test_dataset = dataset.get_hands_test_dataset(joints_source = '/output/dream_test_hand_joint_data.csv')
+    hands_test_dataset = dataset.get_hand_joint_test_dataset(joints_source = '/output/dream_test_hand_joint_data.csv')
     wrists_test_dataset = dataset.get_wrist_joint_testdataset(joints_source = '/output/dream_test_hand_joint_data.csv')
     feet_test_dataset = dataset.get_feet_joint_test_dataset(joints_source = '/output/dream_test_feet_joint_data.csv')
-
+  
     for file_info, img in hands_test_dataset:
         patient_id, part, key = _get_details(file_info)
         
-        __init_preds(patient_id)
+        _init_preds(patient_id)
         
         img_tf = tf.expand_dims(img, 0)
         
-        narrowing_outcome_key = joint_dataset.hand_outcome_mapping[key][0][0].format(part = part)
-        y_pred = feet_narrowing_model.predict(img_tf)
-        y_pred = np.sum(y_pred * np.arange(5))
-        preds[patient_id][narrowing_outcome_key] = y_pred
+        outcomes = joint_dataset.hand_outcome_mapping[key][0]
+        if len(outcomes) > 0:
+            narrowing_outcome_key = outcomes[0].format(part = part)
+            y_pred = hands_narrowing_model.predict(img_tf)
+            y_pred = np.sum(y_pred * np.arange(5), axis = 1)
+            preds[patient_id][narrowing_outcome_key] = y_pred[0]
         
-        erosion_outcome_key = joint_dataset.hand_outcome_mapping[key][1][0].format(part = part)
-        y_pred = feet_erosion_model.predict(img_tf)
-        y_perd = np.sum(y_pred * np.arange(6))
-        preds[patient_id][erosion_outcome_key] = y_pred
+        outcomes = joint_dataset.hand_outcome_mapping[key][1]
+        if len(outcomes) > 0:
+            erosion_outcome_key = outcomes[0].format(part = part)
+            y_pred = hands_erosion_model.predict(img_tf)
+            y_pred = np.sum(y_pred * np.arange(6), axis = 1)
+            preds[patient_id][erosion_outcome_key] = y_pred[0]
         
     for file_info, img in wrists_test_dataset:
         patient_id, part, key = _get_details(file_info)
         
-        __init_preds(patient_id)
+        _init_preds(patient_id)
         
         img_tf = tf.expand_dims(img, 0)
         
-        wrist_narrowing_outcome_keys = [wrist_key.format(part = part) for wrist_key in joint_dataset.wrist_outcome_mapping['wirst'][0]]
-        wrist_erosion_outcome_keys = [wrist_key.format(part = part) for wrist_key in joint_dataset.wrist_outcome_mapping['wirst'][1]]
+        wrist_narrowing_outcome_keys = [wrist_key.format(part = part) for wrist_key in joint_dataset.wrist_outcome_mapping['wrist'][0]]
+        wrist_erosion_outcome_keys = [wrist_key.format(part = part) for wrist_key in joint_dataset.wrist_outcome_mapping['wrist'][1]]
         
         y_pred = wrists_narrowing_model.predict(img_tf)
         for idx, narrowing_key in enumerate(wrist_narrowing_outcome_keys):
-            preds[patient_id][narrowing_key] = np.sum(y_pred[idx] * np.range(5))
+            preds[patient_id][narrowing_key] = np.sum(y_pred[idx] * np.arange(5), axis = 1)[0]
             
         y_pred = wrists_erosion_model.predict(img_tf)
         for idx, erosion_key in enumerate(wrist_erosion_outcome_keys):
-            preds[patient_id][erosion_key] = np.sum(y_pred[idx] * np.range(11))
+            preds[patient_id][erosion_key] = np.sum(y_pred[idx] * np.arange(6), axis = 1)[0]
     
     for file_info, img in feet_test_dataset:
         patient_id, part, key = _get_details(file_info)
         
-        __init_preds(patient_id)
+        _init_preds(patient_id)
         
         img_tf = tf.expand_dims(img, 0)
         
         narrowing_outcome_key = joint_dataset.foot_outcome_mapping[key][0][0].format(part = part)
         y_pred = feet_narrowing_model.predict(img_tf)
-        y_pred = np.sum(y_pred * np.arange(5))
-        preds[patient_id][narrowing_outcome_key] = y_pred
+        y_pred = np.sum(y_pred * np.arange(5), axis = 1)
+        preds[patient_id][narrowing_outcome_key] = y_pred[0]
         
         erosion_outcome_key = joint_dataset.foot_outcome_mapping[key][1][0].format(part = part)
         y_pred = feet_erosion_model.predict(img_tf)
-        y_perd = np.sum(y_pred * np.arange(11))
-        preds[patient_id][erosion_outcome_key] = y_pred
+        y_pred = np.sum(y_pred * np.arange(11), axis = 1)
+        preds[patient_id][erosion_outcome_key] = y_pred[0]
         
     predictions_df = pd.DataFrame(preds.values(), index = np.arange(len(preds.values())))
     
@@ -94,7 +98,10 @@ def predict_dream_test_set(config):
     
     template = pd.read_csv('/test/template.csv')
     predictions_df = predictions_df[template.columns]
-    predictions_df.to_csv('/output/predictions.csv', index = False)
+    
+    print(predictions_df)
+    
+    predictions_df.to_csvi('/output/predictions.csv', index = False)
             
 def _get_models():
     dependencies = {
@@ -124,7 +131,7 @@ def _get_models():
                        
     feet_erosion_model = tf.keras.models.load_model('feet_erosion_v1.h5', custom_objects=dependencies)
 
-    return feet_narrowing_model, hands_narrowing_model, wrists_narrowing_model, hands_erosion_model, feet_erosion_model, wrists_erosion_model
+    return hands_narrowing_model, wrists_narrowing_model, feet_narrowing_model, hands_erosion_model, wrists_erosion_model, feet_erosion_model
                        
 def _get_details(file_info):
     file_info = file_info.numpy()

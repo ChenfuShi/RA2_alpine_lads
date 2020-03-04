@@ -23,7 +23,10 @@ class joint_test_dataset(joint_dataset.joint_dataset):
         return self._create_joint_dataset(joints_source, joint_dataset.hand_joint_keys, load_wrists = True)
 
     def _create_joint_dataset(self, joints_source, joint_keys, load_wrists = False):
-        joints_df = self._create_intermediate_joints_df(joints_source, joint_keys)
+        if load_wrists:
+            joints_df = self._create_intermediate_wrists_df(joints_source, joint_dataset.hand_wrist_keys)
+        else:
+            joints_df = self._create_intermediate_joints_df(joints_source, joint_keys)
         
         file_info = joints_df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
         
