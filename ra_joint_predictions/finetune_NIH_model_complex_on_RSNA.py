@@ -10,7 +10,7 @@ from tensorflow.keras.models import load_model
 
 configuration = Config()
 
-model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_new_pretrain_model_75")
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_new_pretrain_model_100")
 
 model.summary()
 
