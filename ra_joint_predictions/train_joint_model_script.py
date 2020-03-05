@@ -23,13 +23,15 @@ if __name__ == '__main__':
     # E for Erosion, J for narrowing
     dmg_type = sys.argv[4]
 
+    do_validation = sys.argv[5] == 'Y'
+
     logging.info('Loading config')
     config = Config()
 
     # load pretrained model
     loaded_model = tf.keras.models.load_model(pretrained_model + '.h5')
 
-    trained_model, hist_df = train_joints_damage_model(config, model_name, loaded_model, joint_type, dmg_type)
+    trained_model, hist_df = train_joints_damage_model(config, model_name, loaded_model, joint_type, dmg_type, do_validation = do_validation)
 
     save_pretrained_model(trained_model, 0, './pretraind_models/' + model_name)
     hist_df.to_csv('./pretraind_models/hist/' + model_name + '_hist.csv')

@@ -311,3 +311,45 @@ class hands_wrists_dataset(dream_dataset):
             return x, (split_y[0], split_y[1], split_y[2], split_y[3], split_y[4], split_y[5])
 
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
+
+class joint_narrowing_dataset(dream_dataset):
+    def __init__(self, config):
+        super().__init__(config, 'narrowing_joints', no_outcomes = 5)
+
+        self.image_dir = config.train_fixed_location
+        self.outcome_columns = ['narrowing_0']
+        self.no_classes = 5
+
+    def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data.csv', feet_joints_source = './data/predictions/feet_joint_data.csv', hand_joints_val_source = None, feet_joints_val_source = None):
+        hand_joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
+        hand_joint_narrowing_dataset = self._create_dream_dataset(hand_joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
+
+        if hand_joints_val_source and feet_joints_val_source:
+            hand_joint_narrowing_val_df = self._create_combined_df(outcomes_source, hand_joints_val_source, feet_joints_val_source)
+            hand_joint_narrowing_val_dataset = self._create_dream_dataset(hand_joint_narrowing_val_df, self.outcome_columns, self.no_classes, is_train = False)
+
+            return hand_joint_narrowing_dataset, hand_joint_narrowing_val_dataset
+
+        return hand_joint_narrowing_dataset
+
+    def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
+        combined_df = self._create_combined_narrowing_df(outcomes_source, hand_joints_source, feet_joints_source)
+        combined_outcome_df = self._create_combined_narrowing_outcomes_df(outcomes_source)
+
+        return combined_df.merge(combined_outcome_df, on = ['image_name', 'key'])
+
+    def _create_combined_narrowing_df(self, outcomes_source, hand_joints_source, feet_joints_source):
+        hand_joints_df = self._create_intermediate_joints_df(hand_joints_source, hand_outcome_mapping.keys())
+        feet_joints_df = self._create_intermediate_joints_df(feet_joints_source, foot_outcome_mapping.keys())
+
+        return pd.concat([hand_joints_df, feet_joints_df], ignore_index=True)
+
+    def _create_combined_narrowing_outcomes_df(self, outcomes_source):
+        hand_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, hand_outcome_mapping, dream_hand_parts)
+        feet_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, foot_outcome_mapping, dream_foot_parts)
+
+        combined_narrowing_outcomes_df =  pd.concat([hand_joints_outcomes_df, feet_joints_outcomes_df], ignore_index=True)
+        combined_narrowing_outcomes_df = combined_narrowing_outcomes_df.dropna(subset = self.outcome_columns)
+
+        return combined_narrowing_outcomes_df
+        
