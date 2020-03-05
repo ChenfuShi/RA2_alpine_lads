@@ -17,5 +17,4 @@ nvidia-smi
 
 source activate
 
-# Command to run R model
 python /usr/local/bin/ra_joint_predictions/run_dream_predictions.py
