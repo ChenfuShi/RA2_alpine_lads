@@ -44,9 +44,8 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
        tf_joint_dataset, epochs = 100, steps_per_epoch = 75, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
-    hist_df.to_csv('./' + model_name + '_hist.csv')
 
-    return model
+    return model, hist_df
 
 def _get_dataset(config, joint_type, dmg_type):
     outcomes_sources = os.path.join(config.train_location, 'training.csv')

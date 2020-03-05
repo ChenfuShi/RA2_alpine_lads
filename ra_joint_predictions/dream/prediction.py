@@ -108,9 +108,9 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(5), 0)
     }
 
-    feet_narrowing_model = tf.keras.models.load_model('feet_narrowing_v1.h5', custom_objects=dependencies)
-    hands_narrowing_model = tf.keras.models.load_model('hands_narrowing_v1.h5', custom_objects=dependencies)
-    wrists_narrowing_model = tf.keras.models.load_model('wrists_narrowing_v2.h5', custom_objects=dependencies)
+    feet_narrowing_model = tf.keras.models.load_model('./pretrained_models/feet_narrowing_v1.h5', custom_objects=dependencies)
+    hands_narrowing_model = tf.keras.models.load_model('./pretraiend_models/hands_narrowing_v1.h5', custom_objects=dependencies)
+    wrists_narrowing_model = tf.keras.models.load_model('./pretrained_models/wrists_narrowing_v2.h5', custom_objects=dependencies)
     
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(6)),
@@ -118,8 +118,8 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(6), 0)
     }
 
-    hands_erosion_model = tf.keras.models.load_model('hands_erosion_v1.h5', custom_objects=dependencies)
-    wrists_erosion_model = tf.keras.models.load_model('wrists_erosion_v2.h5', custom_objects=dependencies)
+    hands_erosion_model = tf.keras.models.load_model('./pretrained_models/hands_erosion_v1.h5', custom_objects=dependencies)
+    wrists_erosion_model = tf.keras.models.load_model('./pretrained_models/wrists_erosion_v2.h5', custom_objects=dependencies)
     
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(11)),
@@ -127,7 +127,7 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(11), 0)
     }
                        
-    feet_erosion_model = tf.keras.models.load_model('feet_erosion_v2.h5', custom_objects=dependencies)
+    feet_erosion_model = tf.keras.models.load_model('./pretrained_models/feet_erosion_v2.h5', custom_objects=dependencies)
 
     return hands_narrowing_model, wrists_narrowing_model, feet_narrowing_model, hands_erosion_model, wrists_erosion_model, feet_erosion_model
                        

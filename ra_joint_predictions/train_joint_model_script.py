@@ -29,6 +29,7 @@ if __name__ == '__main__':
     # load pretrained model
     loaded_model = tf.keras.models.load_model(pretrained_model + '.h5')
 
-    trained_model = train_joints_damage_model(config, model_name, loaded_model, joint_type, dmg_type)
+    trained_model, hist_df = train_joints_damage_model(config, model_name, loaded_model, joint_type, dmg_type)
 
-    save_pretrained_model(trained_model, 0, model_name)
+    save_pretrained_model(trained_model, 0, './pretraind_models/' + model_name)
+    hist_df.to_csv('./pretraind_models/hist/' + model_name + '_hist.csv')
