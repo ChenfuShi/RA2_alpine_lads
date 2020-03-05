@@ -32,7 +32,10 @@ def _predict_joints_in_images(config, train_images, test_images):
 def _clean_output():
     for file in os.listdir('/output'):
         if file != 'predictions.csv' and not file.endswith('.log'):
-            os.remove('/output/' + file)
+            file_path = '/output/' + file
+
+            if os.path.isfile(file_path):
+                os.remove(file_path)
 
 # Change to dir
 os.chdir('/usr/local/bin/ra_joint_predictions/')

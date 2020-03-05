@@ -1,11 +1,3 @@
-########################################
-
-
-
-
-########################################
-
-
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -19,7 +11,6 @@ from dataset.base_dataset import base_dataset
 import logging
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-
 
 class landmark_pretrain_faces_dataset(base_dataset):
     """
@@ -50,9 +41,12 @@ class landmark_pretrain_faces_dataset(base_dataset):
 
         # data processing
         # augmentation happens here
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.config.cache_loc + 'faces') 
         dataset = super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, 
-            batch_size = self.config.batch_size, cache = self.config.cache_loc + 'faces',update_labels=True)
+            batch_size = self.config.batch_size, update_labels=True)
+
+        dataset_val = self._cache_shuffle_repeat_dataset(dataset_val, cache = self.config.cache_loc + 'faces_val') 
         dataset_val =super()._prepare_for_training(dataset_val, self.config.landmarks_img_width, self.config.landmarks_img_height, 
-            batch_size = self.config.batch_size, cache = self.config.cache_loc + 'faces_val',update_labels=True)
+            batch_size = self.config.batch_size, update_labels=True)
         
         return dataset, dataset_val

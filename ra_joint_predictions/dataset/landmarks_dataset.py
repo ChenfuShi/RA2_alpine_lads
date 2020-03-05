@@ -22,15 +22,17 @@ class landmarks_dataset(base_dataset):
         x = landmarks_dataframe[['sample_id', 'file_type', 'flip']].values
         y = landmarks_dataframe.loc[:, label_idx].values
         
-        dataset = super()._create_dataset(x, y, image_location, update_labels = True)
+        dataset = self._create_dataset(x, y, image_location, update_labels = True)
 
         if create_val:
-            dataset, val_dataset = super()._create_validation_split(dataset)
+            dataset, val_dataset = self._create_validation_split(dataset)
 
-        dataset = super()._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True)
+        dataset = self._cache_shuffle_repeat_dataset(dataset)
+        dataset = self._prepare_for_training(dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True)
 
         if create_val:
-            val_dataset = super()._prepare_for_training(val_dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True, augment = False)
+            dataset = self._cache_shuffle_repeat_dataset(dataset)
+            val_dataset = self._prepare_for_training(val_dataset, self.config.landmarks_img_width, self.config.landmarks_img_height, batch_size = self.config.batch_size, update_labels = True, augment = False)
 
             return dataset, val_dataset
 

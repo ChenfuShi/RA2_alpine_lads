@@ -17,6 +17,7 @@ RUN /opt/conda/bin/conda install --yes --freeze-installed \
     opencv \
     matplotlib \
     pillow \
+    scikit-learn \
     && pip install tensorflow-addons==0.6.0 \
     && conda clean -afy \
     && find /opt/conda/ -follow -type f -name '*.a' -delete \
