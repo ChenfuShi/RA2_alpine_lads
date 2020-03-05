@@ -12,6 +12,10 @@ from train.train_joints_damage import train_joints_damage_model
 if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
 
+    config = Config()
+
+    logging.info(sys.argv)
+
     pretrained_model = sys.argv[1]
     logging.info('Using pretrainde model: %s', pretrained_model)
 
@@ -25,13 +29,10 @@ if __name__ == '__main__':
 
     do_validation = sys.argv[5] == 'Y'
 
-    logging.info('Loading config')
-    config = Config()
-
     # load pretrained model
-    loaded_model = tf.keras.models.load_model(pretrained_model + '.h5')
+    loaded_model = tf.keras.models.load_model('./pretrained_models/' + pretrained_model + '.h5')
 
     trained_model, hist_df = train_joints_damage_model(config, model_name, loaded_model, joint_type, dmg_type, do_validation = do_validation)
 
-    save_pretrained_model(trained_model, 0, './pretraind_models/' + model_name)
-    hist_df.to_csv('./pretraind_models/hist/' + model_name + '_hist.csv')
+    save_pretrained_model(trained_model, 0, './pretrained_models/' + model_name)
+    hist_df.to_csv('./pretrained_models/hist/' + model_name + '_hist.csv')

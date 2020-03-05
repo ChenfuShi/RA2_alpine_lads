@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 
 import numpy as np
@@ -18,10 +19,7 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
     saver = CustomSaver(model_name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model_name)
     
-    if not do_validation:
-        joint_dataset, tf_joint_dataset = _get_dataset(config, joint_type, dmg_type)
-    else:
-        joint_dataset, tf_joint_dataset, tf_joint_val_dataset = _get_dataset(config, joint_type, dmg_type, do_validation = True)
+    joint_dataset, tf_joint_dataset = _get_dataset(config, joint_type, dmg_type, do_validation = do_validation)
     
     metric_dir = {}
     outputs = []
@@ -45,10 +43,10 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
 
     if not do_validation:
         history = model.fit(
-            tf_joint_dataset, epochs = 100, steps_per_epoch = 75, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
+            tf_joint_dataset, epochs = 250, steps_per_epoch = 150, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
     else:
         history = model.fit(
-            tf_joint_dataset, epochs = 100, steps_per_epoch = 75, validation_data = tf_joint_val_dataset, validation_steps = 20,
+            tf_joint_dataset[0], epochs = 250, steps_per_epoch = 150, validation_data = tf_joint_dataset[1], validation_steps = 35,
                 verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
@@ -58,16 +56,16 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
 def _get_dataset(config, joint_type, dmg_type, do_validation = False):
     outcomes_sources = os.path.join(config.train_location, 'training.csv')
 
-    if not do_validation:
+    if do_validation:
+        hand_joints_source = './data/predictions/hand_joint_data_train.csv'
+        feet_joints_source = './data/predictions/feet_joint_data_train.csv'
+        hand_joints_val_source = './data/predictions/hand_joint_data_test.csv'
+        feet_joints_val_source = './data/predictions/feet_joint_data_test.csv'
+    else:
         hand_joints_source = './data/predictions/hand_joint_data.csv'
         feet_joints_source = './data/predictions/feet_joint_data.csv'
         hand_joints_val_source = None
         feet_joints_val_source = None
-    else:
-        hand_joints_source = './data/predictions/hand_joint_data_train.csv'
-        feet_joints_source = './data/predictions/feet_joint_data_train.csv'
-        hand_joints_val_source = './data/predictions/hand_joint_data_test.csv'
-        feet_joints_val_source = './data/predictions/hand_joint_data_test.csv'
 
     erosion_flag = dmg_type == 'E'
 

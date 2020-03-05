@@ -20,4 +20,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm ~/localscratch/* -r
 
 # run python training script
-python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} "F" "J"
+python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} "F" "J" ${do_val:-"N"}

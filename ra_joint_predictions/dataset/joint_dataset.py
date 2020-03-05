@@ -1,5 +1,7 @@
-import numpy as np
+import logging
 import os
+
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -324,7 +326,9 @@ class joint_narrowing_dataset(dream_dataset):
         hand_joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
         hand_joint_narrowing_dataset = self._create_dream_dataset(hand_joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
 
-        if hand_joints_val_source and feet_joints_val_source:
+        if hand_joints_val_source is not None and feet_joints_val_source is not None:
+            logging.info("DOING VAL!")
+            
             hand_joint_narrowing_val_df = self._create_combined_df(outcomes_source, hand_joints_val_source, feet_joints_val_source)
             hand_joint_narrowing_val_dataset = self._create_dream_dataset(hand_joint_narrowing_val_df, self.outcome_columns, self.no_classes, is_train = False)
 
@@ -342,13 +346,13 @@ class joint_narrowing_dataset(dream_dataset):
         hand_joints_df = self._create_intermediate_joints_df(hand_joints_source, hand_outcome_mapping.keys())
         feet_joints_df = self._create_intermediate_joints_df(feet_joints_source, foot_outcome_mapping.keys())
 
-        return pd.concat([hand_joints_df, feet_joints_df], ignore_index=True)
+        return pd.concat([hand_joints_df, feet_joints_df], ignore_index=True, sort = False)
 
     def _create_combined_narrowing_outcomes_df(self, outcomes_source):
         hand_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, hand_outcome_mapping, dream_hand_parts)
         feet_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, foot_outcome_mapping, dream_foot_parts)
 
-        combined_narrowing_outcomes_df =  pd.concat([hand_joints_outcomes_df, feet_joints_outcomes_df], ignore_index=True)
+        combined_narrowing_outcomes_df =  pd.concat([hand_joints_outcomes_df, feet_joints_outcomes_df], ignore_index=True, sort = False)
         combined_narrowing_outcomes_df = combined_narrowing_outcomes_df.dropna(subset = self.outcome_columns)
 
         return combined_narrowing_outcomes_df
