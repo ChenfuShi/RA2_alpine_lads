@@ -48,6 +48,19 @@ def finetune_model(model,model_name,config,epochs_before=51,epochs_after=201):
     for layer in model.layers:
         layer.trainable = True
 
+    # need to recompile after trainable
+    losses = {
+        'boneage_pred': 'mean_squared_error',
+        'sex_pred' : 'binary_crossentropy',
+        'joint_type_pred': 'categorical_crossentropy',
+    }
+
+    lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
+
+    model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
+        metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
+
+
     saver = CustomSaver(model_name + "after", n = 10)
     model.fit(joint_dataset,
     epochs = epochs_after, steps_per_epoch = 1000, validation_data = joint_val_dataset, validation_steps = 10, verbose = 2, callbacks = [saver, tensorboard_callback])
