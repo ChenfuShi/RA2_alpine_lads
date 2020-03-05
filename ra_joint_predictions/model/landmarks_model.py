@@ -97,6 +97,7 @@ def nasnet_landmarks_model(config,n_outputs=10,weights=None,outputs_before=10):
 
 
 def densenet_landmarks_model(config,n_outputs=10,weights=None,outputs_before=10):
+    # this occupies too much memory
     base_densenet = keras.applications.densenet.DenseNet121(input_shape=[config.landmarks_img_height,config.landmarks_img_width,1],pooling="avg",weights=None,)
     
     if weights == None:
