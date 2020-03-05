@@ -99,9 +99,7 @@ def predict_dream_test_set(config):
     template = pd.read_csv('/test/template.csv')
     predictions_df = predictions_df[template.columns]
     
-    print(predictions_df)
-    
-    predictions_df.to_csvi('/output/predictions.csv', index = False)
+    predictions_df.to_csv('/output/predictions.csv', index = False)
             
 def _get_models():
     dependencies = {
@@ -112,7 +110,7 @@ def _get_models():
 
     feet_narrowing_model = tf.keras.models.load_model('feet_narrowing_v1.h5', custom_objects=dependencies)
     hands_narrowing_model = tf.keras.models.load_model('hands_narrowing_v1.h5', custom_objects=dependencies)
-    wrists_narrowing_model = tf.keras.models.load_model('wrists_narrowing_v1.h5', custom_objects=dependencies)
+    wrists_narrowing_model = tf.keras.models.load_model('wrists_narrowing_v2.h5', custom_objects=dependencies)
     
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(6)),
@@ -121,7 +119,7 @@ def _get_models():
     }
 
     hands_erosion_model = tf.keras.models.load_model('hands_erosion_v1.h5', custom_objects=dependencies)
-    wrists_erosion_model = tf.keras.models.load_model('wrists_erosion_v1.h5', custom_objects=dependencies)
+    wrists_erosion_model = tf.keras.models.load_model('wrists_erosion_v2.h5', custom_objects=dependencies)
     
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(11)),
@@ -129,7 +127,7 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(11), 0)
     }
                        
-    feet_erosion_model = tf.keras.models.load_model('feet_erosion_v1.h5', custom_objects=dependencies)
+    feet_erosion_model = tf.keras.models.load_model('feet_erosion_v2.h5', custom_objects=dependencies)
 
     return hands_narrowing_model, wrists_narrowing_model, feet_narrowing_model, hands_erosion_model, wrists_erosion_model, feet_erosion_model
                        
