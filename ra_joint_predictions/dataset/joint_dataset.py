@@ -17,6 +17,42 @@ from dataset.base_dataset import base_dataset
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
 
+hands_narrowing_params = {
+    'no_classes': 5,
+    'outcomes': ['narrowing_0'],
+    'parts': dream_hand_parts
+}
+
+wrists_narrowing_params = {
+    'no_classes': 5,
+    'outcomes': ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5'],
+    'parts': dream_hand_parts
+}
+
+feet_narrowing_params = {
+    'no_classes': 5,
+    'outcomes': ['narrowing_0'],
+    'parts': dream_foot_parts
+}
+
+hands_erosion_params = {
+    'no_classes': 6,
+    'outcomes': ['erosion_0'],
+    'parts': dream_hand_parts
+}
+
+wrists_erosion_params = {
+    'no_classes': 6,
+    'outcomes': ['erosion_0', 'erosion_1', 'erosion_2', 'erosion_3', 'erosion_4', 'erosion_5'],
+    'parts': dream_hand_parts
+}
+
+feet_erosion_params = {
+    'no_classes': 11,
+    'outcomes': ['erosion_0'],
+    'parts': dream_foot_parts
+}
+
 foot_outcome_mapping = {
     'mtp': [['{part}_mtp_J__ip'], ['{part}_mtp_E__ip']], 
     'mtp_1': [['{part}_mtp_J__1'], ['{part}_mtp_E__1']], 
@@ -117,7 +153,7 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix, no_outcomes = 1):
+    def __init__(self, config, cache_postfix = '', no_outcomes = 1):
         super().__init__(config, cache_postfix)
 
         self.image_dir = config.train_fixed_location
@@ -327,8 +363,6 @@ class joint_narrowing_dataset(dream_dataset):
         hand_joint_narrowing_dataset = self._create_dream_dataset(hand_joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
 
         if hand_joints_val_source is not None and feet_joints_val_source is not None:
-            logging.info("DOING VAL!")
-            
             hand_joint_narrowing_val_df = self._create_combined_df(outcomes_source, hand_joints_val_source, feet_joints_val_source)
             hand_joint_narrowing_val_dataset = self._create_dream_dataset(hand_joint_narrowing_val_df, self.outcome_columns, self.no_classes, is_train = False)
 

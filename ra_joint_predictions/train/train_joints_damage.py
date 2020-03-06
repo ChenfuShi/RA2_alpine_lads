@@ -68,21 +68,20 @@ def _get_dataset(config, joint_type, dmg_type, do_validation = False):
         feet_joints_val_source = None
 
     erosion_flag = dmg_type == 'E'
+    
+    if joint_type == 'F':
+        joint_dataset = feet_joint_dataset(config)
 
-    if erosion_flag:
+        return joint_dataset, joint_dataset.create_feet_joints_dataset(outcomes_sources, joints_source = feet_joints_source, val_joints_source = feet_joints_val_source, erosion_flag = erosion_flag)
+    elif joint_type == 'H':
+        joint_dataset = hands_joints_dataset(config)
+
+        return joint_dataset, joint_dataset.create_hands_joints_dataset(outcomes_sources, joints_source = hand_joints_source, val_joints_source = hand_joints_val_source, erosion_flag = erosion_flag)
+    elif joint_type == 'W':
+        joint_dataset = hands_wrists_dataset(config)
+
+        return joint_dataset, joint_dataset.create_wrists_joints_dataset(outcomes_sources, joints_source = hand_joints_source, val_joints_source = hand_joints_val_source, erosion_flag = erosion_flag)
+    elif joint_type == 'HF' and not erosion_flag:
         joint_dataset = joint_narrowing_dataset(config)
 
         return joint_dataset, joint_dataset.create_combined_narrowing_joint_dataset(outcomes_sources, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source, hand_joints_val_source = hand_joints_val_source, feet_joints_val_source = feet_joints_val_source)
-    else:
-        if joint_type == 'F':
-            joint_dataset = feet_joint_dataset(config)
-
-            return joint_dataset, joint_dataset.create_feet_joints_dataset(outcomes_sources, joints_source = feet_joints_source, val_joints_source = feet_joints_val_source, erosion_flag = erosion_flag)
-        elif joint_type == 'H':
-            joint_dataset = hands_joints_dataset(config)
-
-            return joint_dataset, joint_dataset.create_hands_joints_dataset(outcomes_sources, joints_source = hand_joints_source, val_joints_source = hand_joints_val_source, erosion_flag = erosion_flag)
-        else:
-            joint_dataset = hands_wrists_dataset(config)
-
-            return joint_dataset, joint_dataset.create_wrists_joints_dataset(outcomes_sources, joints_source = hand_joints_source, val_joints_source = hand_joints_val_source, erosion_flag = erosion_flag)

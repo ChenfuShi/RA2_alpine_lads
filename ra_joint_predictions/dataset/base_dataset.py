@@ -20,9 +20,9 @@ class base_dataset():
 
         return dataset, val_dataset
 
-    def _cache_shuffle_repeat_dataset(self, dataset, cache = True):
+    def _cache_shuffle_repeat_dataset(self, dataset, cache = True, buffer_size = 200):
         dataset = ds_ops.cache_dataset(dataset, cache)
-        dataset = ds_ops.shuffle_and_repeat_dataset(dataset)
+        dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = buffer_size)
 
         return dataset
 
