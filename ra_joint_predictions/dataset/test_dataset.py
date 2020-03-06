@@ -14,7 +14,6 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         super().__init__(config)
 
         self.img_dir = img_dir
-        self.no_samples = 0
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if not erosion_flag:
@@ -44,11 +43,11 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         df = self._create_df(joints_source, outcome_mapping, outcomes_source, params, load_wrists = load_wrists)
         
         if outcomes_source:
-            dataset = self._create_dataset(df, params, load_wrists)
+            dataset, no_samples = self._create_dataset(df, params, load_wrists)
         else:
-            dataset = self._create_dataset(df, None, load_wrists)
+            dataset, no_samples = self._create_dataset(df, None, load_wrists)
 
-        return dataset
+        return dataset, no_samples
 
     def _create_df(self, joints_source, outcome_mapping, outcomes_source, params, load_wrists = False):
         if load_wrists:
@@ -67,9 +66,6 @@ class joint_test_dataset(joint_dataset.dream_dataset):
 
     def _create_dataset(self, df, params, load_wrists):
         file_info = df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
-        
-        # Init number of samples in this test dataset
-        self.no_samples = file_info.shape[0]
 
         if load_wrists:
             joint_coords = df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].to_numpy()
@@ -96,12 +92,12 @@ class joint_test_dataset(joint_dataset.dream_dataset):
 
             if load_wrists:
                 dataset = self._split_outcomes(dataset, params['no_classes'])
-                
+
             dataset = dataset.cache()
         else:
             dataset = self._remove_outcome(dataset)
 
-        return dataset.prefetch(buffer_size = AUTOTUNE)
+        return dataset.prefetch(buffer_size = AUTOTUNE), file_info.shape[0]
         
     def _load_joints_without_outcomes(self, dataset):
         def __load_joints(file_info, coords, y):
