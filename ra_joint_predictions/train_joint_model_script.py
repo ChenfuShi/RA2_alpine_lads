@@ -13,7 +13,7 @@ if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
 
     config = Config()
-    logging.info('Command line arguments: ' + sys.argv)
+    logging.info('Command line arguments: %s', sys.argv)
 
     pretrained_model = sys.argv[1]
     logging.info('Using pretrainde model: %s', pretrained_model)

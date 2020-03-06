@@ -16,9 +16,9 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         self.img_dir = img_dir
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
-        if not erosion_flag:
+        if erosion_flag is False:
             params = joint_dataset.hands_narrowing_params
-        else:
+        elif erosion_flag is True:
             params = joint_dataset.hands_erosion_params
         
         return self._create_joint_dataset(joints_source, joint_dataset.hand_outcome_mapping, outcomes_source, params)
@@ -92,7 +92,8 @@ class joint_test_dataset(joint_dataset.dream_dataset):
 
             if load_wrists:
                 dataset = self._split_outcomes(dataset, params['no_classes'])
-
+           
+            dataset = dataset.batch(self.config.batch_size)
             dataset = dataset.cache()
         else:
             dataset = self._remove_outcome(dataset)

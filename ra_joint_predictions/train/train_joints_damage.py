@@ -24,6 +24,9 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
     
     metric_dir = {}
     outputs = []
+
+    logging.info(joint_dataset.class_weights)
+
     for idx, class_weight in enumerate(joint_dataset.class_weights):
         no_outcomes = len(class_weight.keys())
         
@@ -44,10 +47,12 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
 
     if not do_validation:
         history = model.fit(
-            tf_joint_dataset, epochs = 250, steps_per_epoch = 150, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
+            tf_joint_dataset, epochs = 100, steps_per_epoch = 75, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
     else:
+        val_steps = np.ceil(no_val_samples / config.batch_size)
+
         history = model.fit(
-            tf_joint_dataset, epochs = 250, steps_per_epoch = 150, validation_data = tf_joint_val_dataset, validation_steps = no_val_samples,
+            tf_joint_dataset, epochs = 100, steps_per_epoch = 75, validation_data = tf_joint_val_dataset, validation_steps = val_steps,
                 verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
@@ -63,7 +68,7 @@ def _get_dataset(config, joint_type, dmg_type, do_validation = False):
         hand_joints_val_source = './data/predictions/hand_joint_data_test.csv'
         feet_joints_val_source = './data/predictions/feet_joint_data_test.csv'
 
-        joint_test_dataset = joint_test_dataset(config, config.train_fixed_location)
+        val_dataset = joint_test_dataset(config, config.train_fixed_location)
     else:
         hand_joints_source = './data/predictions/hand_joint_data.csv'
         feet_joints_source = './data/predictions/feet_joint_data.csv'
@@ -80,21 +85,21 @@ def _get_dataset(config, joint_type, dmg_type, do_validation = False):
         tf_dataset = joint_dataset.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
-            tf_val_dataset, no_samples = joint_test_dataset.get_feet_joint_test_dataset(feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            tf_val_dataset, no_samples = val_dataset.get_feet_joint_test_dataset(feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'H':
         joint_dataset = hands_joints_dataset(config)
         tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
-            tf_val_dataset, no_samples = joint_test_dataset.get_hands_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            tf_val_dataset, no_samples = val_dataset.get_hands_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'W':
         joint_dataset = hands_wrists_dataset(config)
         tf_dataset = joint_dataset.create_wrists_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
-            tf_val_dataset, no_samples = joint_test_dataset.get_wrists_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            tf_val_dataset, no_samples = val_dataset.get_wrists_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'HF' and not erosion_flag:
         joint_dataset = joint_narrowing_dataset(config)
