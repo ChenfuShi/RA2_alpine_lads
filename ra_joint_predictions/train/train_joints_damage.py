@@ -45,14 +45,21 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
     # metrics = ['categorical_accuracy', softmax_rsme_metric(np.arange(5)), argmax_rsme, class_softmax_rsme_metric(np.arange(5), 0)]
     model.compile(loss = 'categorical_crossentropy', metrics = metric_dir, optimizer = 'adam')
 
+    epochs = 100
+    steps_per_epoch = 75
+
+    if joint_type == 'W':
+        steps_per_epoch: 50
+
+
     if not do_validation:
         history = model.fit(
-            tf_joint_dataset, epochs = 100, steps_per_epoch = 75, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
+            tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
     else:
         val_steps = np.ceil(no_val_samples / config.batch_size)
 
         history = model.fit(
-            tf_joint_dataset, epochs = 100, steps_per_epoch = 75, validation_data = tf_joint_val_dataset, validation_steps = val_steps,
+            tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps,
                 verbose = 2, class_weight = joint_dataset.class_weights[0], callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)

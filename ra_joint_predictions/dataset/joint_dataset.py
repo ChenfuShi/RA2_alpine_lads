@@ -93,6 +93,7 @@ class joint_dataset(base_dataset):
         self.cache = config.cache_loc + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
+        self.buffer_size = 200
 
     def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
@@ -105,7 +106,7 @@ class joint_dataset(base_dataset):
 
     def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True):
         dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache)
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache, buffer_size = self.buffer_size)
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = False)
         
         return dataset
@@ -157,6 +158,7 @@ class dream_dataset(joint_dataset):
         super().__init__(config, cache_postfix)
 
         self.image_dir = config.train_fixed_location
+        self.batch_size = config.batch_size
 
     def _create_dream_datasets(self, outcomes_source, joints_source, val_joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
@@ -219,7 +221,7 @@ class dream_dataset(joint_dataset):
         if is_train:
             self._init_model_outcomes_bias(outcomes, no_classes)
 
-        outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+        dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
         
         if wrist:
             coords = outcome_joint_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].values
@@ -227,14 +229,18 @@ class dream_dataset(joint_dataset):
             coords = outcome_joint_df[['coord_x', 'coord_y']].values
 
         if is_train:
-            return self._create_interleaved_joint_datasets(file_info, coords, outcomes, wrist)
-        else:
-            return self._create_non_split_joint_dataset(file_info, coords, outcomes, wrist = wrist, augment = False)
+            maj_idx = self._find_maj_indices(outcomes)
 
-    def _create_interleaved_joint_datasets(self, file_info, joint_coords, outcomes, wrist = False):
-        # Find elements with majority class - default 0, if needed move to constructor
-        maj_idx = np.argmax(outcomes, axis = 1) == 0
+            return self._create_interleaved_joint_datasets(file_info, coords, dummy_outcomes, maj_idx, wrist)
+        else:
+            return self._create_non_split_joint_dataset(file_info, coords, dummy_outcomes, wrist = wrist, augment = False)
+
+    def _find_maj_indices(self, outcomes):
+        return outcomes == 0
+
+    def _create_interleaved_joint_datasets(self, file_info, joint_coords, outcomes, maj_idx, wrist = False):
         min_idx = np.logical_not(maj_idx)
+
         # Tranform boolean mask into indices
         maj_idx = np.where(maj_idx)[0]
         min_idx = np.where(min_idx)[0]
@@ -251,7 +257,7 @@ class dream_dataset(joint_dataset):
         dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
 
         # Prepare for training
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = False)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.batch_size, pad_resize = False)
 
         return dataset
 
@@ -300,13 +306,16 @@ class feet_joint_dataset(dream_dataset):
         super().__init__(config, 'feet_joints')
 
         self.image_dir = config.train_fixed_location
+        self.buffer_size = 2000
 
     def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_column = 'narrowing_0'
         no_classes = 5
+        self.cache = self.cache + '_narrowing'
         if(erosion_flag):
             outcome_column = 'erosion_0'
             no_classes = 11
+            self.cache = self.cache + '_erosion'
 
         return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
@@ -315,13 +324,16 @@ class hands_joints_dataset(dream_dataset):
         super().__init__(config, 'hands_joints')
 
         self.image_dir = config.train_fixed_location
+        self.buffer_size = 2000
 
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_column = 'narrowing_0'
         no_classes = 5
+        self.cache = self.cache + '_narrow'
         if(erosion_flag):
             outcome_column = 'erosion_0'
             no_classes = 6
+            self.cache = self.cache + '_erosion'
 
         return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
 
@@ -330,17 +342,26 @@ class hands_wrists_dataset(dream_dataset):
         super().__init__(config, 'wrists_joints', no_outcomes = 6)
 
         self.image_dir = config.train_fixed_location
+        # Set different batch size for wrists
+        self.batch_size = 16
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
         no_classes = 5
+        self.cache = self.cache + '_narrow'
         if(erosion_flag):
             outcome_columns = ['erosion_0', 'erosion_1', 'erosion_2', 'erosion_3', 'erosion_4', 'erosion_5']
             no_classes = 6
+            self.cache = self.cache + '_erosion'
             
         dataset = self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist=True)
 
         return self._split_outcomes(dataset, no_classes)
+
+    # Overwrite method for wrist dataset to change how maj elements are found
+    def _find_maj_indices(self, outcomes):
+        # Find elements with all 0
+        return np.count_nonzero(outcomes, axis = 1) == 0
     
     def _split_outcomes(self, dataset, no_classes):
         def __split_outcomes(x, y):
@@ -357,6 +378,7 @@ class joint_narrowing_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.outcome_columns = ['narrowing_0']
         self.no_classes = 5
+        self.buffer_size = 4000
 
     def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data.csv', feet_joints_source = './data/predictions/feet_joint_data.csv', hand_joints_val_source = None, feet_joints_val_source = None):
         hand_joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
