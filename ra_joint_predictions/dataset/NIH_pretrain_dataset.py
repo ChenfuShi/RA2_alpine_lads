@@ -47,13 +47,15 @@ class pretrain_dataset_NIH_chest(base_dataset):
             x, data, self.config.pretrain_NIH_chest_location)
         
         # here separate validation set
-        chest_dataset, chest_dataset_val = super()._create_validation_split(chest_dataset,1000)
+        chest_dataset, chest_dataset_val = self._create_validation_split(chest_dataset,1000)
 
         # data processing
         # augmentation happens here
-
-        chest_dataset = super()._prepare_for_training(chest_dataset, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'chest')
-        chest_dataset_val = super()._prepare_for_training(chest_dataset_val, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size, cache = self.config.cache_loc + 'chest_val')
+        chest_dataset = self._cache_shuffle_repeat_dataset(chest_dataset, cache = self.config.cache_loc + 'chest')
+        chest_dataset_val = self._cache_shuffle_repeat_dataset(chest_dataset_val, cache = self.config.cache_loc + 'chest_val')
+        
+        chest_dataset = self._prepare_for_training(chest_dataset, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size)
+        chest_dataset_val = self._prepare_for_training(chest_dataset_val, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size)
 
         return chest_dataset, chest_dataset_val
     

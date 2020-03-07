@@ -20,19 +20,23 @@ def save_pretrained_model(pretrained_model, no_layers_to_remove, model_name):
 
 
 class CustomSaver(keras.callbacks.Callback):
-    def __init__(self, model_name, n = 25):
+    def __init__(self, model_name, n = 25, save_type = "m"):
         super().__init__()
         
         self.model_name = model_name
         self.n = n
+        self.save_type = save_type
         
     def on_epoch_end(self, epoch, logs={}):
-        logging.info(logs)
+        #logging.info(logs)
         cur_date = datetime.datetime.now()
         logging.info(f'{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}')
         
         if epoch % self.n == 0:  # save every n epochs
-            self.model.save_weights(os.path.join('weights', self.model_name + '_model_{}'.format(epoch)))
+            if self.save_type == "m":
+                keras.models.save_model(self.model,os.path.join('weights', self.model_name + '_model_{}.h5'.format(epoch)))
+            else:
+                self.model.save_weights(os.path.join('weights', self.model_name + '_model_{}'.format(epoch)))
 
 
 def _get_tensorboard_callback(model_name):

@@ -33,13 +33,12 @@ def _split_outcomes(dataset, no_joint_types = 13):
     return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
 
-def finetune_model(model,model_name,config,epochs_before=51,epochs_after=201):
+def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_before=51,epochs_after=201, n_outputs = 10):
     
-    tensorboard_callback = _get_tensorboard_callback(model_name)
+    joint_dataset = _split_outcomes(joint_dataset,n_outputs)
+    joint_val_dataset = _split_outcomes(joint_val_dataset,n_outputs)
 
-    joint_dataset, joint_val_dataset = rsna_joint_dataset(config).create_rsna_joints_dataset(val_split = True)
-    joint_dataset = _split_outcomes(joint_dataset,10)
-    joint_val_dataset = _split_outcomes(joint_val_dataset,10)
+    tensorboard_callback = _get_tensorboard_callback(model_name)
 
     saver = CustomSaver(model_name + "before", n = 10)
     model.fit(joint_dataset,
@@ -47,6 +46,19 @@ def finetune_model(model,model_name,config,epochs_before=51,epochs_after=201):
 
     for layer in model.layers:
         layer.trainable = True
+
+    # need to recompile after trainable
+    losses = {
+        'boneage_pred': 'mean_squared_error',
+        'sex_pred' : 'binary_crossentropy',
+        'joint_type_pred': 'categorical_crossentropy',
+    }
+
+    lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
+
+    model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
+        metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
+
 
     saver = CustomSaver(model_name + "after", n = 10)
     model.fit(joint_dataset,

@@ -13,7 +13,7 @@
     "output_dir": "logs",
     "img_height": 224,
     "img_width": 224,
-    "cache_loc": "./tmp_cache",
+    "cache_loc": "~/localscratch/RA_challenge_scratch/",
     "CPU_threads": 8,
     "batch_size": 64,
     "augment":true,
