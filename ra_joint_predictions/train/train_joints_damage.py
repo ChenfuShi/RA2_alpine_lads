@@ -11,7 +11,7 @@ import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense, Input
 
 from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset, joint_narrowing_dataset
-from dataset.test_dataset import joint_test_dataset
+from dataset.test_dataset import joint_test_dataset, narrowing_test_dataset
 from model.utils.metrics import top_2_categorical_accuracy
 from model.utils.metrics import argmax_rsme, softmax_rsme_metric, class_softmax_rsme_metric
 from utils.saver import CustomSaver, _get_tensorboard_callback
@@ -45,12 +45,13 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
     # metrics = ['categorical_accuracy', softmax_rsme_metric(np.arange(5)), argmax_rsme, class_softmax_rsme_metric(np.arange(5), 0)]
     model.compile(loss = 'categorical_crossentropy', metrics = metric_dir, optimizer = 'adam')
 
-    epochs = 100
+    epochs = 250
     steps_per_epoch = 75
 
     if joint_type == 'W':
-        steps_per_epoch: 50
-
+        steps_per_epoch = 50
+    elif joint_type == 'HF':
+        steps_per_epoch = 175
 
     if not do_validation:
         history = model.fit(
@@ -112,8 +113,9 @@ def _get_dataset(config, joint_type, dmg_type, do_validation = False):
         joint_dataset = joint_narrowing_dataset(config)
         tf_dataset = joint_dataset.create_combined_narrowing_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
 
-        # TODO!
-        tf_val_dataset = None
-        no_samples = 0
+        if do_validation:
+            val_dataset = narrowing_test_dataset(config, config.train_fixed_location)
+
+            tf_val_dataset, no_samples = val_dataset.get_joint_narrowing_test_dataset(hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source, outcomes_source = outcomes_source)
 
     return joint_dataset, tf_dataset, tf_val_dataset, no_samples
