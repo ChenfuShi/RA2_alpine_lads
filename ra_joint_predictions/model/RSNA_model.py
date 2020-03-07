@@ -11,6 +11,7 @@ from model.utils.building_blocks_joints import create_complex_joint_model
 
 
 def complex_joint_finetune_model(config, no_joint_types = 10, weights = "weights/NIH_new_pretrain_model_100.h5"):
+    # should work with any model. should me renamed convert finetune model or something
     NIH_model = keras.models.load_model(weights)
 
     NEW_model = keras.Model(NIH_model.input, NIH_model.layers[-4].output)

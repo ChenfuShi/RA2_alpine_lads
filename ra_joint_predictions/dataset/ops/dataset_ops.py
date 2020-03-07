@@ -62,3 +62,10 @@ def _apply_random_augment(dataset, aug, update_labels):
         return img_ops.apply_augment(img, y, aug, update_labels = update_labels)
     
     return dataset.map(__apply_random_augment, num_parallel_calls=AUTOTUNE)
+
+
+def get_3_channels(dataset):
+    def __get_3_channels(img, y):
+        return img_ops.get_3_channels(img, y)
+    
+    return dataset.map(__get_3_channels, num_parallel_calls=AUTOTUNE)

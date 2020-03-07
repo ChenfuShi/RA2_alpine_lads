@@ -28,7 +28,7 @@ class CustomSaver(keras.callbacks.Callback):
         self.save_type = save_type
         
     def on_epoch_end(self, epoch, logs={}):
-        logging.info(logs)
+        #logging.info(logs)
         cur_date = datetime.datetime.now()
         logging.info(f'{cur_date.year}-{cur_date.month}-{cur_date.day}_{cur_date.hour}.{cur_date.minute}.{cur_date.second}')
         

@@ -31,4 +31,4 @@ model = RSNA_model.complex_joint_finetune_model(configuration,1,weights="weights
 
 model.summary()
 
-finetune_model(model,"complex_model_RSNA_pretrain_with_NIH_pretrain",wrist_dataset,wrist_val_dataset, n_outputs = 1)
+finetune_model(model,"complex_model_RSNA_wrist_pretrain_with_NIH_pretrain",wrist_dataset,wrist_val_dataset, n_outputs = 1)
