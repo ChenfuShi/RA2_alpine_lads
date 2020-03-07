@@ -45,11 +45,11 @@ def train_joints_damage_model(config, model_name, pretrained_base_model, joint_t
     # metrics = ['categorical_accuracy', softmax_rsme_metric(np.arange(5)), argmax_rsme, class_softmax_rsme_metric(np.arange(5), 0)]
     model.compile(loss = 'categorical_crossentropy', metrics = metric_dir, optimizer = 'adam')
 
-    epochs = 100
+    epochs = 250
     steps_per_epoch = 75
 
     if joint_type == 'W':
-        steps_per_epoch: 50
+        steps_per_epoch = 50
 
 
     if not do_validation:
