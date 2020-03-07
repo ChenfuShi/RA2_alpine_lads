@@ -101,3 +101,6 @@ def random_crop(img, y, update_labels, boxes = _create_boxes()):
 def _calc_radians_for_degrees(degree_angle):
     return degree_angle * math.pi / 180
 
+
+def get_3_channels(img,y):
+    return tf.image.grayscale_to_rgb(img), y
