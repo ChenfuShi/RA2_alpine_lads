@@ -22,9 +22,9 @@ def predict_dream_test_set(config):
             
     dataset = joint_test_dataset(config, config.train_fixed_location)
 
-    hands_test_dataset = dataset.get_hand_joint_test_dataset(joints_source = '/output/dream_test_hand_joint_data.csv')
-    wrists_test_dataset = dataset.get_wrist_joint_testdataset(joints_source = '/output/dream_test_hand_joint_data.csv')
-    feet_test_dataset = dataset.get_feet_joint_test_dataset(joints_source = '/output/dream_test_feet_joint_data.csv')
+    hands_test_dataset, _ = dataset.get_hands_joint_test_dataset(joints_source = '/output/dream_test_hand_joint_data.csv')
+    wrists_test_dataset, _ = dataset.get_wrists_joint_test_dataset(joints_source = '/output/dream_test_hand_joint_data.csv')
+    feet_test_dataset, _ = dataset.get_feet_joint_test_dataset(joints_source = '/output/dream_test_feet_joint_data.csv')
   
     for file_info, img in hands_test_dataset:
         patient_id, part, key = _get_details(file_info)
@@ -108,9 +108,9 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(5), 0)
     }
 
-    feet_narrowing_model = tf.keras.models.load_model('./pretrained_models/feet_narrowing_v1.h5', custom_objects=dependencies)
-    hands_narrowing_model = tf.keras.models.load_model('./pretraiend_models/hands_narrowing_v1.h5', custom_objects=dependencies)
-    wrists_narrowing_model = tf.keras.models.load_model('./pretrained_models/wrists_narrowing_v2.h5', custom_objects=dependencies)
+    feet_narrowing_model = tf.keras.models.load_model('../resources/feet_narrowing_v1_val.h5', custom_objects=dependencies)
+    hands_narrowing_model = tf.keras.models.load_model('../resources/hands_narrowing_v1_val.h5', custom_objects=dependencies)
+    wrists_narrowing_model = tf.keras.models.load_model('../resources/wrists_narrowing_v1_val.h5', custom_objects=dependencies)
     
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(6)),
@@ -118,8 +118,8 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(6), 0)
     }
 
-    hands_erosion_model = tf.keras.models.load_model('./pretrained_models/hands_erosion_v1.h5', custom_objects=dependencies)
-    wrists_erosion_model = tf.keras.models.load_model('./pretrained_models/wrists_erosion_v2.h5', custom_objects=dependencies)
+    hands_erosion_model = tf.keras.models.load_model('../resources/hands_erosion_v1_val.h5', custom_objects=dependencies)
+    wrists_erosion_model = tf.keras.models.load_model('../resources/wrists_erosion_v1_val.h5', custom_objects=dependencies)
     
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(11)),
@@ -127,7 +127,7 @@ def _get_models():
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(11), 0)
     }
                        
-    feet_erosion_model = tf.keras.models.load_model('./pretrained_models/feet_erosion_v2.h5', custom_objects=dependencies)
+    feet_erosion_model = tf.keras.models.load_model('../resources/feet_erosion_v1_val.h5', custom_objects=dependencies)
 
     return hands_narrowing_model, wrists_narrowing_model, feet_narrowing_model, hands_erosion_model, wrists_erosion_model, feet_erosion_model
                        

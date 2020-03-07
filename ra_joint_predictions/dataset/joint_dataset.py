@@ -393,12 +393,12 @@ class joint_narrowing_dataset(dream_dataset):
         return hand_joint_narrowing_dataset
 
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
-        combined_df = self._create_combined_narrowing_df(outcomes_source, hand_joints_source, feet_joints_source)
+        combined_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
         combined_outcome_df = self._create_combined_narrowing_outcomes_df(outcomes_source)
 
         return combined_df.merge(combined_outcome_df, on = ['image_name', 'key'])
 
-    def _create_combined_narrowing_df(self, outcomes_source, hand_joints_source, feet_joints_source):
+    def _create_combined_narrowing_df(self, hand_joints_source, feet_joints_source):
         hand_joints_df = self._create_intermediate_joints_df(hand_joints_source, hand_outcome_mapping.keys())
         feet_joints_df = self._create_intermediate_joints_df(feet_joints_source, foot_outcome_mapping.keys())
 
