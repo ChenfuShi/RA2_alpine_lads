@@ -20,29 +20,35 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             params = joint_dataset.hands_narrowing_params
         elif erosion_flag is True:
             params = joint_dataset.hands_erosion_params
+        else: 
+            params = None
         
         return self._create_joint_dataset(joints_source, joint_dataset.hand_outcome_mapping, outcomes_source, params)
 
     def get_wrists_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
-        if not erosion_flag:
+        if erosion_flag is False:
             params = joint_dataset.wrists_narrowing_params
-        else:
+        elif erosion_flag is True:
             params = joint_dataset.wrists_erosion_params
+        else: 
+            params = None
         
         return self._create_joint_dataset(joints_source, joint_dataset.wrist_outcome_mapping, outcomes_source, params, load_wrists = True)
         
     def get_feet_joint_test_dataset(self, joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
-        if not erosion_flag:
+        if erosion_flag is False:
             params = joint_dataset.feet_narrowing_params
-        else:
+        elif erosion_flag is True:
             params = joint_dataset.feet_erosion_params
+        else: 
+            params = None
         
         return self._create_joint_dataset(joints_source, joint_dataset.foot_outcome_mapping, outcomes_source, params)
 
     def _create_joint_dataset(self, joints_source, outcome_mapping, outcomes_source, params, load_wrists = False):
         df = self._create_df(joints_source, outcome_mapping, outcomes_source, params, load_wrists = load_wrists)
         
-        if outcomes_source:
+        if outcomes_source is not None:
             dataset, no_samples = self._create_dataset(df, params, load_wrists)
         else:
             dataset, no_samples = self._create_dataset(df, None, load_wrists)
@@ -76,7 +82,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             outcomes = df[params['outcomes']]
             outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
         else:
-            outcomes = np.zeros(self.no_samples)
+            outcomes = np.zeros(file_info.shape[0])
 
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
 
