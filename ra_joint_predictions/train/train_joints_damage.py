@@ -27,7 +27,9 @@ def train_joints_damage_model(config, model_name, pretrained_model, joint_type, 
     joint_dataset, tf_joint_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, do_validation = do_validation)
     logging.info('Class Weights: %s', joint_dataset.class_weights)
 
-    model = get_joint_damage_model(config, joint_dataset.class_weights, pretrained_model, model_name = model_name)
+    optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.9, nesterov = True)
+
+    model = get_joint_damage_model(config, joint_dataset.class_weights, pretrained_model, model_name = model_name, optimizer = optimizer)
 
     params = train_params.copy()
     if joint_type == 'W':
@@ -94,6 +96,16 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     saver = CustomSaver(model.name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model.name)
 
+    def scheduler(epoch):
+        if epoch < 50:
+            return 0.1
+        elif epoch < 125:
+            return 0.01
+        else:
+            return 0.001
+
+    lr_callback = tf.keras.callbacks.LearningRateScheduler(scheduler)
+
     epochs = train_params['epochs']
     steps_per_epoch = train_params['steps_per_epoch']
     batch_size = train_params['batch_size']
@@ -101,13 +113,13 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     if tf_joint_val_dataset is None:
         history = model.fit(
             tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, 
-                class_weight = class_weights, callbacks = [saver, tensorboard_callback])
+                class_weight = class_weights, callbacks = [saver, tensorboard_callback, lr_callback])
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
 
         history = model.fit(
             tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps,
-                verbose = 2, class_weight = class_weights, callbacks = [saver, tensorboard_callback])
+                verbose = 2, class_weight = class_weights, callbacks = [saver, tensorboard_callback, lr_callback])
 
     hist_df = pd.DataFrame(history.history)
 
