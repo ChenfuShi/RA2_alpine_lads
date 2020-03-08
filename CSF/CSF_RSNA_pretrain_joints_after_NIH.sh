@@ -21,4 +21,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm ~/localscratch/* -r
 
 # run python training script
-python ../ra_challenge/finetune_NIH_model_joints_complex_on_RSNA.py
+python ../ra_joint_predictions/finetune_NIH_model_joints_complex_on_RSNA.py
