@@ -19,11 +19,11 @@ class rsna_joint_dataset(joint_dataset):
         self.outcomes_source = config.rsna_labels
 
     def create_rsna_joints_dataset(self, joints_source = './data/predictions/rsna_joint_data.csv', val_split = False, include_wrist_joints = False):
-        outcomes_df = self._create_intermediate_outcomes_df(self.image_dir, hand_joint_keys) 
-
         joint_keys = hand_joint_keys
         if(include_wrist_joints):
-            joint_keys = joint_keys.extend(hand_wrist_keys)
+            joint_keys.extend(hand_wrist_keys)
+
+        outcomes_df = self._create_intermediate_outcomes_df(self.image_dir, joint_keys) 
 
         joints_df = self._create_intermediate_joints_df(joints_source, joint_keys)
         joints_df = joints_df.astype({'image_name': 'str'})

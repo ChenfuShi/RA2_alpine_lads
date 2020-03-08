@@ -1,5 +1,6 @@
 from utils.config import Config
 import model
+import os
 import dataset
 import logging
 
@@ -8,6 +9,7 @@ from train.pretrain_RSNA_joints import finetune_model
 from tensorflow.keras.models import load_model
 from dataset.rsna_joint_dataset import rsna_joint_dataset, rsna_wrist_dataset
 
+os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
 
 configuration = Config()
 
