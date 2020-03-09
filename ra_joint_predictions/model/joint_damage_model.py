@@ -8,7 +8,8 @@ from model.utils.building_blocks_joints import get_joint_model_input, create_com
 def load_joint_damage_model(model_file, no_classes):
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(no_classes)),
-        'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(no_classes), 0)
+        'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(no_classes), 0),
+        'argmax_rsme': argmax_rsme    
     }
 
     return keras.models.load_model(model_file, custom_objects = dependencies)

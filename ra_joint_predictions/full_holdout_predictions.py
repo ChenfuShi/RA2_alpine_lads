@@ -18,7 +18,7 @@ if __name__ == '__main__':
         'hands_narrowing_model': '../trained_models/v2/hands_narrowing_v2_val.h5',
         'wrists_narrowing_model': '../trained_models/v2/wrists_narrowing_v2_val.h5',
         'feet_narrowing_model': '../trained_models/v2/feet_narrowing_v2_val.h5',
-        'hand_erosion_model': '../trained_models/v2/hands_erosion_v2_val.h5',
+        'hands_erosion_model': '../trained_models/v2/hands_erosion_v2_val.h5',
         'wrists_erosion_model': '../trained_models/v2/wrists_erosion_v2_val.h5',
         'feet_erosion_model': '../trained_models/v2/feet_erosion_v2_val.h5',
         'template_path': '../resources/template.csv',
