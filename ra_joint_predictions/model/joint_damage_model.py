@@ -8,7 +8,6 @@ from model.utils.building_blocks_joints import get_joint_model_input, create_com
 def load_joint_damage_model(model_file, no_classes):
     dependencies = {
         'softmax_rsme': softmax_rsme_metric(np.arange(no_classes)),
-        'argmax_rsme': argmax_rsme,
         'class_softmax_rmse_0': class_softmax_rsme_metric(np.arange(no_classes), 0)
     }
 
@@ -46,7 +45,7 @@ def _add_outputs(class_weights, base_output):
     for idx, class_weight in enumerate(class_weights):
         no_outcomes = len(class_weight.keys())
         
-        metrics = ['categorical_crossentropy', softmax_rsme_metric(np.arange(no_outcomes)), argmax_rsme, class_softmax_rsme_metric(np.arange(no_outcomes), 0)]
+        metrics = [softmax_rsme_metric(np.arange(no_outcomes)), class_softmax_rsme_metric(np.arange(no_outcomes), 0)]
         
         output = keras.layers.Dense(no_outcomes, activation = 'softmax', name = f'output_{idx}')(base_output)
         outputs.append(output)

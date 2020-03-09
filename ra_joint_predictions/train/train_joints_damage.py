@@ -18,7 +18,7 @@ from model.utils.metrics import argmax_rsme, softmax_rsme_metric, class_softmax_
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
 train_params = {
-    'epochs': 250,
+    'epochs': 100,
     'batch_size': 64,
     'steps_per_epoch': 75
 }
@@ -97,9 +97,9 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     tensorboard_callback = _get_tensorboard_callback(model.name)
 
     def scheduler(epoch):
-        if epoch < 50:
-            return 0.1
-        elif epoch < 125:
+        if epoch < 21:
+            return 0.02
+        elif epoch < 51:
             return 0.01
         else:
             return 0.001
@@ -118,8 +118,7 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
         val_steps = np.ceil(no_val_samples / batch_size)
 
         history = model.fit(
-            tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps,
-                verbose = 2, class_weight = class_weights, callbacks = [saver, tensorboard_callback, lr_callback])
+            tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback, lr_callback])
 
     hist_df = pd.DataFrame(history.history)
 
