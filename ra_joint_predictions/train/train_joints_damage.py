@@ -20,15 +20,15 @@ from utils.saver import CustomSaver, _get_tensorboard_callback
 train_params = {
     'epochs': 300,
     'batch_size': 64,
-    'steps_per_epoch': 75
+    'steps_per_epoch': 125
 }
 
 def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False):
     joint_dataset, tf_joint_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, do_validation = do_validation)
     logging.info('Class Weights: %s', joint_dataset.class_weights)
 
-    optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.75, nesterov = True)
-
+    # optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.75, nesterov = True)
+    optimizer = 'adam'
     model = get_joint_damage_model(config, joint_dataset.class_weights, pretrained_model, model_name = model_name, optimizer = optimizer)
 
     params = train_params.copy()
@@ -117,8 +117,9 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
 
-        history = model.fit(
-            tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback, lr_callback])
+        history = model.fit(tf_joint_dataset, 
+        epochs = epochs, steps_per_epoch = steps_per_epoch, 
+            validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
 

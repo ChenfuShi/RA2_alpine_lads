@@ -46,7 +46,7 @@ def _add_outputs(class_weights, base_output):
     for idx, class_weight in enumerate(class_weights):
         no_outcomes = len(class_weight.keys())
         
-        metrics = [softmax_rsme_metric(np.arange(no_outcomes)), class_softmax_rsme_metric(np.arange(no_outcomes), 0)]
+        metrics = ["mae", softmax_rsme_metric(np.arange(no_outcomes)), class_softmax_rsme_metric(np.arange(no_outcomes), 0)]
         
         output = keras.layers.Dense(no_outcomes, activation = 'softmax', name = f'output_{idx}')(base_output)
         outputs.append(output)
