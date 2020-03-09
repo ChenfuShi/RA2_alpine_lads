@@ -18,7 +18,7 @@ from model.utils.metrics import argmax_rsme, softmax_rsme_metric, class_softmax_
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
 train_params = {
-    'epochs': 100,
+    'epochs': 300,
     'batch_size': 64,
     'steps_per_epoch': 75
 }
@@ -27,13 +27,13 @@ def train_joints_damage_model(config, model_name, pretrained_model, joint_type, 
     joint_dataset, tf_joint_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, do_validation = do_validation)
     logging.info('Class Weights: %s', joint_dataset.class_weights)
 
-    optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.9, nesterov = True)
+    optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.75, nesterov = True)
 
     model = get_joint_damage_model(config, joint_dataset.class_weights, pretrained_model, model_name = model_name, optimizer = optimizer)
 
     params = train_params.copy()
     if joint_type == 'W':
-        params['steps_per_epoch'] = 50
+        params['steps_per_epoch'] = 25
     elif joint_type == 'HF':
         params['steps_per_epoch'] = 175
 
@@ -97,9 +97,9 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     tensorboard_callback = _get_tensorboard_callback(model.name)
 
     def scheduler(epoch):
-        if epoch < 21:
+        if epoch < 51:
             return 0.02
-        elif epoch < 51:
+        elif epoch < 151:
             return 0.01
         else:
             return 0.001

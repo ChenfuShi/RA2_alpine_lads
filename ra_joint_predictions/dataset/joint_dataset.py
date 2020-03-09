@@ -219,6 +219,7 @@ class dream_dataset(joint_dataset):
 
         outcomes = outcome_joint_df[outcome_columns]
         if is_train:
+            self.outcomes = outcomes
             self._init_model_outcomes_bias(outcomes, no_classes)
 
         dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
@@ -271,16 +272,33 @@ class dream_dataset(joint_dataset):
             class_weights = {}
     
             # init class weights to 1
-            for class_val in np.arange(no_classes):
-                class_weights[class_val] = 1
+            #for class_val in np.arange(no_classes):
+               # class_weights[class_val] = 1
+
+            non0_idx = np.where(outcomes != 0)[0]
+    
+            # Calc and update class weights for samples that are actually found
+            classes, counts = np.unique(outcomes.iloc[non0_idx, d].to_numpy(), return_counts = True)
+
+            logging.info(classes)
+            logging.info(counts)
+
+            weights = (1 / counts) * (np.sum(counts)) / 2.0
+
+            class_weights[0] = weights[np.argmin(weights)] #  * ((no_classes - 1) / no_classes)
 
             # Calc and update class weights for samples that are actually found
-            classes, counts = np.unique(outcomes.iloc[:, d].to_numpy(), return_counts = True)
-            weights = (1 / counts) * (N) / 2.0
+            #classes, counts = np.unique(outcomes.iloc[:, d].to_numpy(), return_counts = True)
+            # weights = (1 / counts) * (N) / 2.0
 
             for idx, c in enumerate(classes.astype(np.int64)):
                 class_weights[c] = weights[idx]
-            
+           
+            for class_val in np.arange(no_classes):
+                if class_val not in class_weights.keys():                
+                    class_weights[class_val] = 1
+
+ 
             # Init bias
             bias = np.zeros(no_classes)
             bias[classes.astype(np.int64)] = np.log(counts / np.sum(counts))
