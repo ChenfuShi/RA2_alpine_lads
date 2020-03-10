@@ -283,9 +283,9 @@ class dream_dataset(joint_dataset):
             logging.info(classes)
             logging.info(counts)
 
-            weights = (1 / counts) * (np.sum(counts)) / 2.0
+            weights = np.sqrt((1 / counts) * (np.sum(counts)) / 2.0)
 
-            class_weights[0] = weights[np.argmin(weights)] #  * ((no_classes - 1) / no_classes)
+            class_weights[0] = weights[np.argmin(weights)] * ((no_classes - 1) / no_classes)
 
             # Calc and update class weights for samples that are actually found
             #classes, counts = np.unique(outcomes.iloc[:, d].to_numpy(), return_counts = True)

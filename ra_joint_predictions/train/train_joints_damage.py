@@ -33,7 +33,7 @@ def train_joints_damage_model(config, model_name, pretrained_model, joint_type, 
 
     params = train_params.copy()
     if joint_type == 'W':
-        params['steps_per_epoch'] = 25
+        params['steps_per_epoch'] = 75
     elif joint_type == 'HF':
         params['steps_per_epoch'] = 175
 
@@ -113,12 +113,12 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     if tf_joint_val_dataset is None:
         history = model.fit(
             tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, 
-                class_weight = class_weights, callbacks = [saver, tensorboard_callback, lr_callback])
+                class_weight = class_weights, callbacks = [saver, tensorboard_callback])
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
 
         history = model.fit(tf_joint_dataset, 
-        epochs = epochs, steps_per_epoch = steps_per_epoch, 
+        epochs = epochs, steps_per_epoch = steps_per_epoch, class_weight = class_weights,
             validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
