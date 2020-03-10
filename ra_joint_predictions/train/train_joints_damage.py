@@ -14,7 +14,7 @@ from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hand
 from dataset.test_dataset import joint_test_dataset, narrowing_test_dataset
 from model.joint_damage_model import get_joint_damage_model
 from model.utils.metrics import top_2_categorical_accuracy
-from model.utils.metrics import argmax_rsme, softmax_rsme_metric, class_softmax_rsme_metric
+from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
 train_params = {

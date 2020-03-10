@@ -7,7 +7,7 @@ import tensorflow as tf
 import dataset.joint_dataset as joint_dataset
 
 from model.joint_damage_model import load_joint_damage_model
-from model.utils.metrics import argmax_rsme, softmax_rsme_metric, class_softmax_rsme_metric
+from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric
 from dataset.test_dataset import joint_test_dataset
 
 def predict_dream_test_set(config, predict_params):
