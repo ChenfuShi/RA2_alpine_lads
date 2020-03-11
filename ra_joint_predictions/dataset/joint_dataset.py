@@ -315,7 +315,7 @@ class hands_wrists_dataset(dream_dataset):
 
         self.image_dir = config.train_fixed_location
         # Set different batch size for wrists
-        self.batch_size = 16
+        # self.batch_size = 16
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']

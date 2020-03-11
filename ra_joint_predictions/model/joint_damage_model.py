@@ -10,7 +10,9 @@ def load_joint_damage_model(model_file, no_classes, is_regression = False):
         dependencies = {
             'softmax_rmse': softmax_rmse_metric(np.arange(no_classes)),
             'class_softmax_rmse_0': class_softmax_rmse_metric(np.arange(no_classes), 0),
-            'argmax_rmse': argmax_rmse    
+            'argmax_rmse': argmax_rmse,
+            'class_softmax_rsme_0': class_softmax_rmse_metric(np.arange(no_classes), 0), # Added for compatibility with models saved with the previous spelling mistake
+            'softmax_rsme': softmax_rmse_metric(np.arange(no_classes)) # Added for compatibility with models saved with the previous spelling mistake
         }
     else:
         dependencies = {
