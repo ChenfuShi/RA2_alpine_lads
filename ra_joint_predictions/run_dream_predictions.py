@@ -29,6 +29,22 @@ def _predict_joints_in_images(config, train_images, test_images):
         df = pd.read_csv('/output/' + joint_file)
         logging.info('Created %s joint dataframe in file %s', df.shape, joint_file)
 
+def _predict_joint_damage(config):
+    predict_params = {
+        'hands_joint_source': '/output/dream_test_hand_joint_data.csv',
+        'feet_joint_source': '/output/dream_test_feet_joint_data.csv',
+        'hands_narrowing_model': '../resources/hands_narrowing_adam_no_weights_val.h5',
+        'wrists_narrowing_model': '../resources/wrists_narrowing_adam_no_weights_val.h5',
+        'feet_narrowing_model': '../resources/feet_narrowing_adam_no_weights_val.h5',
+        'hands_erosion_model': '../resources/hands_erosion_adam_no_weights_val.h5',
+        'wrists_erosion_model': '../resources/wrists_erosion_adam_no_weights_val.h5',
+        'feet_erosion_model': '../resources/feet_erosion_adam_no_weights_val.h5',
+        'template_path': '/test/template.csv',
+        'output_path': '/output/predictions.csv',
+    }
+
+    predict_dream_test_set(config, predict_params)
+
 def _clean_output():
     for file in os.listdir('/output'):
         if file != 'predictions.csv' and not file.endswith('.log'):
@@ -45,7 +61,6 @@ config = Config('./utils/docker-config.json')
 _log_container_details()
 train_images, test_images = _preprocess_images(config)
 _predict_joints_in_images(config, train_images, test_images)
-
-predict_dream_test_set(config)
+_predict_joint_damage(config)
 
 _clean_output()
