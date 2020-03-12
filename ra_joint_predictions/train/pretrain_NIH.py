@@ -1,11 +1,3 @@
-########################################
-
-# DEPRECATED - use module train/pretrain.py instead
-
-
-########################################
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow import keras 
@@ -16,7 +8,7 @@ import logging
 import datetime
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
-def pretrain_NIH_chest(model,data_train,data_val,config,model_name,epochs=251):
+def pretrain_NIH_chest(model, data_train, data_val, config, model_name, epochs = 251):
     # function to run training on chest X-ray dataset
     
     # datasets have to be corrected for multioutput

@@ -124,6 +124,82 @@ def create_NASnet_multioutupt(config):
     return _add_common(common_part,"NASnet_multiout_NIH",inputs)
 
 
+# a few models with image net pretrain
+# first the ones with 224x224
+def create_VGG_multioutput_imagenet(config):
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
+    base_net = keras.applications.vgg16.VGG16(include_top=False, weights="imagenet", input_shape=[config.img_height,config.img_width,3], pooling="avg")
+    # create new model with common part
+    common_part = base_net(inputs)
+    common_part = keras.layers.Dense(512, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+
+    return _add_common(common_part,"VGG_multiout_NIH_imagenet",inputs)
+
+def create_resnet_multioutput_imagenet(config):
+    base_resnet = keras.applications.resnet_v2.ResNet50V2(include_top=False, input_shape=[config.img_height,config.img_width,3],pooling="avg",weights="imagenet",)
+    # create new model with common part
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
+    common_part = base_resnet(inputs)
+    common_part = keras.layers.Dense(512, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+
+    return _add_common(common_part,"resnet_multiout_NIH_imagenet",inputs)
+
+def create_densenet_multioutput_imagenet(config):
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
+    base_net = keras.applications.densenet.DenseNet121(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="avg")
+    # create new model with common part
+    common_part = base_net(inputs)
+    common_part = keras.layers.Dense(512, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+
+    return _add_common(common_part,"densenet_multiout_NIH_imagenet",inputs)
+
+def create_NASnet_multioutupt_imagenet(config):
+    # load base model
+    NASnet_model = keras.applications.NASNetMobile(input_shape=[config.img_height,config.img_width,3], include_top=False,weights="imagenet",pooling = "avg")
+    
+    # create new model with common part
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
+    common_part = NASnet_model(inputs)
+    common_part = keras.layers.Dense(512, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+
+    return _add_common(common_part,"NASnet_multiout_NIH_imagenet",inputs)
+
+def create_Xception_multioutput(config):
+
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
+    base_net = keras.applications.xception.Xception(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="avg")
+    # create new model with common part
+    common_part = base_net(inputs)
+    common_part = keras.layers.Dense(512, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+    common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
+
+    return _add_common(common_part,"Xception_multiout_NIH_imagenet",inputs)
+
+
 # This tries a much larger network 22m parameters
 def create_NASnet_7x1920_multioutupt(config):
     # load base model

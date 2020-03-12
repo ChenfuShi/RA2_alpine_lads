@@ -23,7 +23,7 @@ if __name__ == '__main__':
     logging.info("datasets prepared")
 
     # no weights then go for new model
-    for model_constr,name in zip([create_rewritten_complex_joint_multioutput,create_VGG_multioutput,create_resnet_multioutput,create_bigger_kernel_multioutput,create_densenet_multioutput,create_Xception_multioutput],["NIH_rewritten","NIH_VGG","NIH_resnet_moredense","NIH_bigger_kernel","NIH_densenet","NIH_Xception"]):
+    for model_constr,name in zip([create_densenet_multioutput,create_Xception_multioutput],["NIH_densenet","NIH_Xception"]):
         model = model_constr(configuration)
 
         #create_bigger_kernel_multioutput 
@@ -33,4 +33,9 @@ if __name__ == '__main__':
         logging.info("model prepared")
         # train
         logging.info("starting training")
-        pretrain_NIH_chest(model,chest_dataset,chest_dataset_val,configuration,name,epochs=51)
+        pretrain_NIH_chest(model,chest_dataset,chest_dataset_val,configuration,name,epochs=26)
+
+
+# create_rewritten_complex_joint_multioutput, create_VGG_multioutput, create_resnet_multioutput, create_bigger_kernel_multioutput
+
+# "NIH_rewritten","NIH_VGG", "NIH_resnet_moredense","NIH_bigger_kernel",
