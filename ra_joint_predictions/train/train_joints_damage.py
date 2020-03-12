@@ -39,7 +39,7 @@ def train_joints_damage_model(config, model_name, pretrained_model, joint_type, 
 
     return _fit_joint_damage_model(model, tf_joint_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples)
 
-def _get_dataset(config, joint_type, dmg_type, do_validation = False):
+def _get_dataset(config, joint_type, dmg_type, do_validation = False, do_regression = False):
     outcomes_source = os.path.join(config.train_location, 'training.csv')
 
     if do_validation:

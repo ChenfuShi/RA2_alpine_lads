@@ -155,11 +155,12 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', no_outcomes = 1):
+    def __init__(self, config, cache_postfix = '', is_regression = False):
         super().__init__(config, cache_postfix)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
+        self.is_regression = is_regression
 
     def _create_dream_datasets(self, outcomes_source, joints_source, val_joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
@@ -222,7 +223,8 @@ class dream_dataset(joint_dataset):
         if is_train:
             self._init_model_outcomes_bias(outcomes, no_classes)
 
-        dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+        if not is_regression:
+            dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
         
         if wrist:
             coords = outcome_joint_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].values
@@ -274,8 +276,8 @@ class dream_dataset(joint_dataset):
         return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config):
-        super().__init__(config, 'feet_joints')
+    def __init__(self, config, is_regression = False):
+        super().__init__(config, 'feet_joints', is_regression = is_regression)
 
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000
@@ -292,8 +294,8 @@ class feet_joint_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config):
-        super().__init__(config, 'hands_joints')
+    def __init__(self, config, is_regression = False):
+        super().__init__(config, 'hands_joints', is_regression = is_regression)
 
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000
@@ -310,12 +312,10 @@ class hands_joints_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
 
 class hands_wrists_dataset(dream_dataset):
-    def __init__(self, config):
-        super().__init__(config, 'wrists_joints', no_outcomes = 6)
+    def __init__(self, config, is_regression = False):
+        super().__init__(config, 'wrists_joints', is_regression = is_regression)
 
         self.image_dir = config.train_fixed_location
-        # Set different batch size for wrists
-        # self.batch_size = 16
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', val_joints_source = None, erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
@@ -336,6 +336,9 @@ class hands_wrists_dataset(dream_dataset):
         return np.count_nonzero(outcomes, axis = 1) == 0
     
     def _split_outcomes(self, dataset, no_classes):
+        if self.is_regression:
+            no_classes = 1
+
         def __split_outcomes(x, y):
             split_y = tf.split(y, [no_classes, no_classes, no_classes, no_classes, no_classes, no_classes], 1)
 
@@ -344,8 +347,8 @@ class hands_wrists_dataset(dream_dataset):
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
 class joint_narrowing_dataset(dream_dataset):
-    def __init__(self, config):
-        super().__init__(config, 'narrowing_joints', no_outcomes = 5)
+    def __init__(self, config, is_regression = False):
+        super().__init__(config, 'narrowing_joints', is_regression = False)
 
         self.image_dir = config.train_fixed_location
         self.outcome_columns = ['narrowing_0']
@@ -374,7 +377,7 @@ class joint_narrowing_dataset(dream_dataset):
         hand_joints_df = self._create_intermediate_joints_df(hand_joints_source, hand_outcome_mapping.keys())
         feet_joints_df = self._create_intermediate_joints_df(feet_joints_source, foot_outcome_mapping.keys())
 
-        return pd.concat([hand_joints_df, feet_joints_df], ignore_index=True, sort = False)
+        return pd.concat([hand_joints_df, feet_joints_df], ignore_index = True, sort = False)
 
     def _create_combined_narrowing_outcomes_df(self, outcomes_source):
         hand_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, hand_outcome_mapping, dream_hand_parts)
