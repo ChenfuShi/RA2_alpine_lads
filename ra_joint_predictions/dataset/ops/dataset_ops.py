@@ -42,9 +42,11 @@ def batch_and_prefetch_dataset(dataset, batch_size = 128):
 def augment_and_resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True, do_augmentation = True):
     def __augment_and_resize(img, y):
         if do_augmentation:
-            _augment_and_clip_image(img, y, update_labels = update_labels)
+            img, y, = _augment_and_clip_image(img, y, update_labels = update_labels)
 
         return img_ops.resize_image(img, y, img_height, img_width, pad_resize = pad_resize, update_labels = update_labels)
+
+    return dataset.map(__augment_and_resize, num_parallel_calls=AUTOTUNE)
 
 def _augment_and_clip_image(img, y, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop], update_labels = False):
     for aug in augments:
