@@ -70,9 +70,11 @@ def _add_outputs(class_weights, base_output, is_regression = False):
         else:
             output = keras.layers.Dense(1, activation = 'linear', name = f'output_{idx}')(base_output)
 
-            metrics.extend([rmse])
+            metrics.append(rmse)
             for class_filter in range(no_outcomes):
-                metrics.extend(class_rmse_metric(class_filter))
+                metrics.append(class_rmse_metric(class_filter))
+                
+            outputs.append(output)
         
         metrics_dir[f'output_{idx}'] = metrics
 

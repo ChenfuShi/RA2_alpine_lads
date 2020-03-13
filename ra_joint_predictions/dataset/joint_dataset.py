@@ -223,8 +223,10 @@ class dream_dataset(joint_dataset):
         if is_train:
             self._init_model_outcomes_bias(outcomes, no_classes)
 
-        if not is_regression:
-            dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+        if not self.is_regression:
+            tf_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+        else:
+            tf_outcomes = outcomes.to_numpy()
         
         if wrist:
             coords = outcome_joint_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].values
@@ -234,9 +236,9 @@ class dream_dataset(joint_dataset):
         if is_train:
             maj_idx = self._find_maj_indices(outcomes)
 
-            return self._create_interleaved_joint_datasets(file_info, coords, dummy_outcomes, maj_idx, wrist)
+            return self._create_interleaved_joint_datasets(file_info, coords, tf_outcomes, maj_idx, wrist)
         else:
-            return self._create_non_split_joint_dataset(file_info, coords, dummy_outcomes, wrist = wrist, augment = False)
+            return self._create_non_split_joint_dataset(file_info, coords, tf_outcomes, wrist = wrist, augment = False)
 
     def _find_maj_indices(self, outcomes):
         return outcomes == 0
@@ -370,7 +372,7 @@ class joint_narrowing_dataset(dream_dataset):
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
         combined_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
         combined_outcome_df = self._create_combined_narrowing_outcomes_df(outcomes_source)
-
+        
         return combined_df.merge(combined_outcome_df, on = ['image_name', 'key'])
 
     def _create_combined_narrowing_df(self, hand_joints_source, feet_joints_source):
@@ -387,4 +389,3 @@ class joint_narrowing_dataset(dream_dataset):
         combined_narrowing_outcomes_df = combined_narrowing_outcomes_df.dropna(subset = self.outcome_columns)
 
         return combined_narrowing_outcomes_df
-        

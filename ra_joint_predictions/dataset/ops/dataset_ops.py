@@ -48,7 +48,7 @@ def augment_and_resize_images(dataset, img_height, img_width, update_labels = Fa
 
     return dataset.map(__augment_and_resize, num_parallel_calls=AUTOTUNE)
 
-def _augment_and_clip_image(img, y, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop], update_labels = False):
+def _augment_and_clip_image(img, y, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop, img_ops.random_gaussian_noise], update_labels = False):
     for aug in augments:
         img, y = img_ops.apply_augment(img, y, aug, update_labels = update_labels)
 
