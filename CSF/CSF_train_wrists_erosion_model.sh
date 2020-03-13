@@ -20,4 +20,5 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm -r ../tmp_cache
 
 # run python training script
-python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} "W" "E" ${do_val:-"N"}
+python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} "W" "E" ${do_val:-"N"} ${do_reg:-"N"}
+ 
