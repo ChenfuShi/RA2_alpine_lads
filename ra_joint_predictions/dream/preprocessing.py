@@ -24,8 +24,8 @@ def predict_joints(config, train_images, test_images):
 
     start = time.time()
 
-    hand_detector = load_model('./resources/hand_joint_detector_v1.h5')
-    foot_detector = load_model('./resources/foot_joint_detector_v1.h5')
+    hand_detector = load_model('../resources/hand_joint_detector_v1.h5')
+    foot_detector = load_model('../resources/foot_joint_detector_v1.h5')
 
     joint_detector = dream_joint_detector(config, hand_detector, foot_detector)
     

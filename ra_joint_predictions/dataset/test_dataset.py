@@ -10,8 +10,8 @@ import dataset.ops.joint_ops as joint_ops
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_test_dataset(joint_dataset.dream_dataset):
-    def __init__(self, config, img_dir):
-        super().__init__(config)
+    def __init__(self, config, img_dir, is_regression = False):
+        super().__init__(config, is_regression = is_regression)
 
         self.img_dir = img_dir
         
@@ -20,29 +20,35 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             params = joint_dataset.hands_narrowing_params
         elif erosion_flag is True:
             params = joint_dataset.hands_erosion_params
+        else: 
+            params = None
         
         return self._create_joint_dataset(joints_source, joint_dataset.hand_outcome_mapping, outcomes_source, params)
 
     def get_wrists_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
-        if not erosion_flag:
+        if erosion_flag is False:
             params = joint_dataset.wrists_narrowing_params
-        else:
+        elif erosion_flag is True:
             params = joint_dataset.wrists_erosion_params
+        else: 
+            params = None
         
         return self._create_joint_dataset(joints_source, joint_dataset.wrist_outcome_mapping, outcomes_source, params, load_wrists = True)
         
     def get_feet_joint_test_dataset(self, joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
-        if not erosion_flag:
+        if erosion_flag is False:
             params = joint_dataset.feet_narrowing_params
-        else:
+        elif erosion_flag is True:
             params = joint_dataset.feet_erosion_params
+        else: 
+            params = None
         
         return self._create_joint_dataset(joints_source, joint_dataset.foot_outcome_mapping, outcomes_source, params)
 
     def _create_joint_dataset(self, joints_source, outcome_mapping, outcomes_source, params, load_wrists = False):
         df = self._create_df(joints_source, outcome_mapping, outcomes_source, params, load_wrists = load_wrists)
         
-        if outcomes_source:
+        if outcomes_source is not None:
             dataset, no_samples = self._create_dataset(df, params, load_wrists)
         else:
             dataset, no_samples = self._create_dataset(df, None, load_wrists)
@@ -74,9 +80,13 @@ class joint_test_dataset(joint_dataset.dream_dataset):
 
         if params:
             outcomes = df[params['outcomes']]
-            outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+            
+            if not self.is_regression:
+                outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+            else:
+                outcomes = outcomes.to_numpy()
         else:
-            outcomes = np.zeros(self.no_samples)
+            outcomes = np.zeros(file_info.shape[0])
 
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
 
@@ -145,8 +155,11 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         return dataset.map(_remove_file_info, num_parallel_calls = AUTOTUNE)
 
     def _split_outcomes(self, dataset, no_classes):
+        if self.is_regression:
+            no_classes = 1
+        
         def __split_outcomes(x, y):
-            split_y = tf.split(y, [no_classes, no_classes, no_classes, no_classes, no_classes, no_classes], -1)
+            split_y = tf.split(y, 6, -1)
 
             return x, (split_y[0], split_y[1], split_y[2], split_y[3], split_y[4], split_y[5])
 
@@ -157,3 +170,21 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             return file_info, img
 
         return dataset.map(__remove_outcome, num_parallel_calls = AUTOTUNE)
+
+class narrowing_test_dataset(joint_test_dataset, joint_dataset.joint_narrowing_dataset):
+    def __init__(self, config, img_dir, is_regression = False):
+        super().__init__(config, img_dir, is_regression = is_regression)
+
+    def get_joint_narrowing_test_dataset(self, hand_joints_source = './data/predictions/hand_joint_data_test.csv', feet_joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None):
+        combined_joints_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
+
+        params = None
+        if outcomes_source is not None:
+            params = joint_dataset.hands_narrowing_params
+
+            combined_outcomes_df = self._create_combined_narrowing_outcomes_df(outcomes_source)
+            combined_outcomes_df = combined_outcomes_df.dropna(subset = params['outcomes'])
+
+            combined_joints_df = combined_joints_df.merge(combined_outcomes_df, on = ['image_name', 'key'])
+
+        return self._create_dataset(combined_joints_df, params, False)

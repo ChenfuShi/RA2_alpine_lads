@@ -27,4 +27,8 @@ RUN /opt/conda/bin/conda install --yes --freeze-installed \
 COPY /ra_joint_predictions /usr/local/bin/ra_joint_predictions
 RUN chmod -R 775 /usr/local/bin/ra_joint_predictions
 
+COPY /resources /usr/local/bin/resources/ 
+RUN chmod -R 775 /usr/local/bin/ra_joint_predictions
+
 ENTRYPOINT ["/bin/bash", "/run.sh"]
+

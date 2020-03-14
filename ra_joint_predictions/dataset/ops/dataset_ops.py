@@ -39,31 +39,23 @@ def batch_and_prefetch_dataset(dataset, batch_size = 128):
     
     return dataset.prefetch(buffer_size = AUTOTUNE)    
 
-def resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True):
-    def __resize(img, y):
+def augment_and_resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True, do_augmentation = True):
+    def __augment_and_resize(img, y):
+        if do_augmentation:
+            img, y, = _augment_and_clip_image(img, y, update_labels = update_labels)
+
         return img_ops.resize_image(img, y, img_height, img_width, pad_resize = pad_resize, update_labels = update_labels)
 
-    return dataset.map(__resize, num_parallel_calls=AUTOTUNE)
+    return dataset.map(__augment_and_resize, num_parallel_calls=AUTOTUNE)
 
-def randomly_augment_images(dataset, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop], update_labels = False):
-    def __clip_image(img, y):
-        img = img_ops.clip_image(img)
-
-        return img, y
-
+def _augment_and_clip_image(img, y, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop, img_ops.random_gaussian_noise], update_labels = False):
     for aug in augments:
-        dataset = _apply_random_augment(dataset, aug, update_labels)
-        
-    # After augmentations, scale values back to lie between 0 & 1
-    return dataset.map(__clip_image, num_parallel_calls=AUTOTUNE)
+        img, y = img_ops.apply_augment(img, y, aug, update_labels = update_labels)
 
-def _apply_random_augment(dataset, aug, update_labels):
-    def __apply_random_augment(img, y):
-        return img_ops.apply_augment(img, y, aug, update_labels = update_labels)
+    img = img_ops.clip_image(img)
+
+    return img, y
     
-    return dataset.map(__apply_random_augment, num_parallel_calls=AUTOTUNE)
-
-
 def get_3_channels(dataset):
     def __get_3_channels(img, y):
         return img_ops.get_3_channels(img, y)

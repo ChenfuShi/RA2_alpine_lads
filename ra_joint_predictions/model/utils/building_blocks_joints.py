@@ -1,5 +1,7 @@
 from tensorflow import keras
 
+def get_joint_model_input(config):
+    return keras.layers.Input(shape = [config.joint_img_height, config.joint_img_width, 1])
 
 def create_complex_joint_model(input):
     model = _conv_block(input, 32, 'conv_1')
@@ -35,8 +37,6 @@ def _fc_block(input, n_neurons, block_prefix):
     fc = keras.layers.Dropout(0.5, name = block_prefix + '_dropout')(fc)
 
     return fc
-
-
 
 def rewritten_complex(config):
     model = keras.models.Sequential([
