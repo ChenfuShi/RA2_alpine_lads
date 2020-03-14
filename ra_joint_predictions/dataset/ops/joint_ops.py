@@ -6,14 +6,14 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 round_to_int = lambda x: tf.cast(tf.round(x), tf.int32)
 
-def load_joints(dataset, directory):
+def load_joints(dataset, directory, imagenet = False):
     def __load_joints(file_info, y, z):
         joint_key = file_info[3]
 
         x_coord = y[0]
         y_coord = y[1]
 
-        full_img, _ = img_ops.load_image(file_info, [], directory)
+        full_img, _ = img_ops.load_image(file_info, [], directory, imagenet = imagenet)
 
         #TODO: Use joint_key to decide on box dimensions
 
@@ -23,7 +23,7 @@ def load_joints(dataset, directory):
 
     return dataset.map(__load_joints, num_parallel_calls=AUTOTUNE)
     
-def load_wrists(dataset, directory):
+def load_wrists(dataset, directory, imagenet = False):
     def __load_wrists(file_info, y, z):
         joint_key = file_info[3]
         w1_x = y[0]
@@ -33,7 +33,7 @@ def load_wrists(dataset, directory):
         w2_y = y[3]
         w3_y = y[5]
 
-        full_img, _ = img_ops.load_image(file_info, [], directory)
+        full_img, _ = img_ops.load_image(file_info, [], directory, imagenet = imagenet)
 
         #TODO: Use joint_key to decide on box dimensions
 
@@ -48,8 +48,8 @@ def _extract_joint_from_image(img, x, y):
     x = tf.cast(x, tf.float64)
     y = tf.cast(y, tf.float64)
 
-    box_height = img_shape[0] / 5
-    box_width = img_shape[1] / 5
+    box_height = img_shape[0] / 8
+    box_width = img_shape[1] / 8
 
     x_box = x - (box_width / 2)
     y_box = y - (box_height / 2)
@@ -72,8 +72,8 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     img_shape = tf.cast(tf.shape(img), tf.float64)
     w1_x, w2_x, w3_x, w1_y, w2_y, w3_y = [tf.cast(x, tf.float64) for x in [w1_x, w2_x, w3_x, w1_y, w2_y, w3_y]]
 
-    extra_pad_height = img_shape[0] / 10
-    extra_pad_width = img_shape[1] / 10
+    extra_pad_height = img_shape[0] / 15
+    extra_pad_width = img_shape[1] / 15
 
     x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0) - extra_pad_width
     y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0) - extra_pad_height
