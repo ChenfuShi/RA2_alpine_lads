@@ -2,8 +2,6 @@ import logging
 import os
 import sys
 
-import tensorflow as tf
-
 from utils.config import Config
 from utils.saver import save_pretrained_model
 
@@ -28,10 +26,10 @@ if __name__ == '__main__':
 
     do_validation = sys.argv[5] == 'Y'
 
+    is_regression = sys.argv[6] == 'Y'
+    
     # load pretrained model
-    loaded_model = tf.keras.models.load_model('./trained_models/' + pretrained_model + '.h5')
+    trained_model, hist_df = train_joints_damage_model(config, model_name, '../trained_models/' + pretrained_model + '.h5', joint_type, dmg_type, do_validation = do_validation, is_regression = is_regression)
 
-    trained_model, hist_df = train_joints_damage_model(config, model_name, loaded_model, joint_type, dmg_type, do_validation = do_validation)
-
-    save_pretrained_model(trained_model, 0, './pretrained_models/' + model_name)
-    hist_df.to_csv('./trained_models/' + model_name + '_hist.csv')
+    save_pretrained_model(trained_model, 0, '../trained_models/' + model_name)
+    hist_df.to_csv('../trained_models/' + model_name + '_hist.csv')
