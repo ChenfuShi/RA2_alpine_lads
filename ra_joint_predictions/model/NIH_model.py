@@ -119,7 +119,12 @@ def create_NASnet_multioutupt(config):
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
     common_part = NASnet_model(inputs)
     common_part =  tf.keras.layers.GlobalAveragePooling2D()(common_part)
+    common_part = keras.layers.Dense(512, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
     common_part = keras.layers.Dense(256, activation='relu')(common_part)
+    common_part = keras.layers.BatchNormalization()(common_part)
+    common_part = keras.layers.Dropout(0.5)(common_part)
 
     return _add_common(common_part,"NASnet_multiout_NIH",inputs)
 
@@ -170,7 +175,7 @@ def create_densenet_multioutput_imagenet(config):
 
 def create_NASnet_multioutupt_imagenet(config):
     # load base model
-    NASnet_model = keras.applications.NASNetMobile(input_shape=[config.img_height,config.img_width,3], include_top=False,weights="imagenet",pooling = "avg")
+    NASnet_model = keras.applications.NASNetMobile(include_top=False,weights="imagenet",pooling = "avg")
     
     # create new model with common part
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])

@@ -22,4 +22,4 @@ for model_file, name in zip([],[]):
 
     model.summary()
 
-    finetune_model(model,"{name}_RSNA_pretrain_with_NIH_pretrain",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 51)
+    finetune_model(model,"{name}_RSNA_pretrain_with_NIH_pretrain",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 101)
