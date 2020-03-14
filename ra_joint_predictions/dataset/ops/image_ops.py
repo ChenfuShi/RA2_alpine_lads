@@ -19,15 +19,18 @@ def _create_boxes(scales = np.arange(0.7, 1, 0.01)):
         
     return boxes
 
-def load_image(file_info, y, directory, update_labels = False):
+def load_image(file_info, y, directory, update_labels = False, imagenet = False):
     file_name = file_info[0]
     file_type = file_info[1]
     flip_img = file_info[2] == 'Y'
 
     img = tf.io.read_file(directory + '/' + file_name + '.' + file_type)
-    img = tf.io.decode_image(img, channels = 1, dtype = tf.float32)
+    if imagenet:
+        img = tf.io.decode_image(img, channels = 3, dtype = tf.float32)
+    else:
+        img = tf.io.decode_image(img, channels = 1, dtype = tf.float32)
 
-    if flip_img:
+    if flip_img:    
         img = tf.image.flip_left_right(img)
 
         if update_labels:
