@@ -217,6 +217,8 @@ class dream_dataset(joint_dataset):
         return pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))    
 
     def _create_dream_dataset(self, outcome_joint_df, outcome_columns, no_classes, augment = True, cache = True, wrist = False, is_train = True):
+        outcome_joint_df = outcome_joint_df.sample(frac = 1).reset_index(drop = True)
+
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].values
 
         outcomes = outcome_joint_df[outcome_columns]
@@ -350,7 +352,7 @@ class hands_wrists_dataset(dream_dataset):
 
 class joint_narrowing_dataset(dream_dataset):
     def __init__(self, config, is_regression = False):
-        super().__init__(config, 'narrowing_joints', is_regression = False)
+        super().__init__(config, 'narrowing_joints', is_regression = is_regression)
 
         self.image_dir = config.train_fixed_location
         self.outcome_columns = ['narrowing_0']
