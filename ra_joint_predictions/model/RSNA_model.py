@@ -13,7 +13,7 @@ from model.utils.building_blocks_joints import create_complex_joint_model
 def complex_joint_finetune_model(*args, **kwargs):
     return model_finetune_RSNA(*args, **kwargs)
 
-def model_finetune_RSNA(config, no_joint_types = 10, weights = "weights/NIH_new_pretrain_model_100.h5"):
+def model_finetune_RSNA(config, no_joint_types = 10, weights = "weights/NIH_new_pretrain_model_100.h5", name = "rsna_complex_multiout"):
     
     NIH_model = keras.models.load_model(weights)
 
@@ -38,7 +38,7 @@ def model_finetune_RSNA(config, no_joint_types = 10, weights = "weights/NIH_new_
     model = keras.models.Model(
         inputs=NEW_model.input,
         outputs=[boneage, sex, joint_type],
-        name='rsna_complex_multiout')
+        name=name)
 
     losses = {
         'boneage_pred': 'mean_squared_error',

@@ -7,13 +7,13 @@ from sklearn.model_selection import train_test_split
 
 from dataset.joint_dataset import joint_dataset
 
-hand_joint_keys = ['mcp', 'pip_2', 'pip_3', 'pip_4', 'pip_5', 'mcp_1', 'mcp_2', 'mcp_3', 'mcp_4', 'mcp_5']
+hand_joint_keys = ['mcp', 'pip_2', 'pip_3', 'pip_4', 'pip_5', 'mcp_1', 'mcp_2', 'mcp_3', 'mcp_4', 'mcp_5','w1', 'w2', 'w3']
 
 hand_wrist_keys = ['w1', 'w2', 'w3']
 
 class rsna_joint_dataset(joint_dataset):
-    def __init__(self, config):
-        super().__init__(config, 'rsna_joints')
+    def __init__(self, config, imagenet = False):
+        super().__init__(config, 'rsna_joints', imagenet = imagenet)
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
@@ -78,8 +78,8 @@ class rsna_joint_dataset(joint_dataset):
             return self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
 
 class rsna_wrist_dataset(rsna_joint_dataset):
-    def __init__(self, config):
-        joint_dataset.__init__(self, config, 'rsna_wrists')
+    def __init__(self, config, imagenet = False):
+        joint_dataset.__init__(self, config, 'rsna_wrists', imagenet = imagenet)
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
