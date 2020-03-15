@@ -33,12 +33,12 @@ def _predict_joint_damage(config):
     predict_params = {
         'hands_joint_source': '/output/dream_test_hand_joint_data.csv',
         'feet_joint_source': '/output/dream_test_feet_joint_data.csv',
-        'hands_narrowing_model': { 'model': '../resources/narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
+        'hands_narrowing_model': { 'model': '../resources/hands_narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
         'wrists_narrowing_model': { 'model': '../resources/wrists_narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'feet_narrowing_model': { 'model': '../resources/narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
+        'feet_narrowing_model': { 'model': '../resources/feet_narrowing_adam_no_weights_reg_shuffle_hand_pretrain.h5', 'is_regression': True },
         'hands_erosion_model': { 'model': '../resources/hands_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
         'wrists_erosion_model': { 'model': '../resources/wrists_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'feet_erosion_model': { 'model': '../resources/feet_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
+        'feet_erosion_model': { 'model': '../resources/feet_erosion_adam_no_weights_reg_shuffle_hand_pretrain.h5', 'is_regression': True },
         'template_path': '/test/template.csv',
         'output_path': '/output/predictions.csv',
     }
