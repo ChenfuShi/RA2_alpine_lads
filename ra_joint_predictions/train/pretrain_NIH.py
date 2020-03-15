@@ -1,11 +1,3 @@
-########################################
-
-# DEPRECATED - use module train/pretrain.py instead
-
-
-########################################
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow import keras 
@@ -16,7 +8,7 @@ import logging
 import datetime
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
-def pretrain_NIH_chest(model,data_train,data_val,config,model_name,epochs=251):
+def pretrain_NIH_chest(model, data_train, data_val, config, model_name, epochs = 251):
     # function to run training on chest X-ray dataset
     
     # datasets have to be corrected for multioutput
@@ -27,10 +19,10 @@ def pretrain_NIH_chest(model,data_train,data_val,config,model_name,epochs=251):
     saver = CustomSaver(model_name,n=25)
 
     # declare tensorboard
-    tensorboard_callback = _get_tensorboard_callback(model_name)
+    # tensorboard_callback = _get_tensorboard_callback(model_name)  ## tensorboard_callback
     # fit model indefinetly
     H = model.fit(data_train, validation_data=data_val,
-    epochs=epochs,steps_per_epoch=1000,validation_steps=10,verbose=2,callbacks=[saver,tensorboard_callback])
+    epochs=epochs,steps_per_epoch=1000,validation_steps=10,verbose=2,callbacks=[saver])
 
 
 def _split_dataset_outputs(x,y):

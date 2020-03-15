@@ -8,9 +8,9 @@ import dataset.ops.image_ops as img_ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-def load_images(dataset, directory, update_labels = False):
+def load_images(dataset, directory, update_labels = False, imagenet = False):
     def __load(file_info, y):
-        return img_ops.load_image(file_info, y, directory, update_labels = update_labels)
+        return img_ops.load_image(file_info, y, directory, update_labels = update_labels, imagenet = imagenet)
 
     return dataset.map(__load, num_parallel_calls=AUTOTUNE)
 
@@ -60,4 +60,4 @@ def get_3_channels(dataset):
     def __get_3_channels(img, y):
         return img_ops.get_3_channels(img, y)
     
-    return dataset.map(__get_3_channels, num_parallel_calls=AUTOTUNE)
+    return dataset.map(__get_3_channels, num_parallel_calls=4)

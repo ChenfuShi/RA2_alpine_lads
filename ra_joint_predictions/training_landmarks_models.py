@@ -1,7 +1,7 @@
 ########################################
 
 # takes pretrained weights with faces, then trains the on joints to predict landmarks
-
+# this is the one that currently works best and the one that we will probably end up using.
 
 
 ########################################

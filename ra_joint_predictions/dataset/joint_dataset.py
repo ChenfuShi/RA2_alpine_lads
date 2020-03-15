@@ -88,9 +88,9 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_dataset(base_dataset):
-    def __init__(self, config, cache_postfix = ''):
+    def __init__(self, config, cache_postfix = '', imagenet = False):
         super().__init__(config)
-
+        self.imagenet = imagenet
         self.cache = config.cache_loc + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
@@ -99,16 +99,17 @@ class joint_dataset(base_dataset):
     def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         if wrist:
-            dataset = joint_ops.load_wrists(dataset, self.image_dir)
+            dataset = joint_ops.load_wrists(dataset, self.image_dir, imagenet = self.imagenet)
         else:
-            dataset = joint_ops.load_joints(dataset, self.image_dir)
+            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet)
         
         return dataset
 
     def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True):
         dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache, buffer_size = self.buffer_size)
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = False)
+
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size)
         
         return dataset
 
@@ -264,7 +265,8 @@ class dream_dataset(joint_dataset):
         dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
 
         # Prepare for training
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.batch_size, pad_resize = False)
+
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size)
 
         return dataset
 
