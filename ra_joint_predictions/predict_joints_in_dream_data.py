@@ -15,10 +15,7 @@ if __name__ == '__main__':
     hand_detector_model = load_model("../resources/hands_landmarks_original_epoch_1000_predictor_1.h5")
     foot_detector_model = load_model("../resources/feet_landmarks_original_epoch_1000_predictor_1.h5")
 
-    hand_detector = create_hand_joint_detector(config)
-    foot_detector = create_foot_joint_detector(config)
-
-    joint_detector = dream_joint_detector(config, hand_detector, foot_detector)
+    joint_detector = dream_joint_detector(config, hand_detector_model, foot_detector_model)
 
     hand_dataframe, feet_dataframe = joint_detector.create_dream_datasets(config.train_fixed_location)
 
