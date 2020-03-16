@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -70,10 +71,10 @@ class joint_detector():
 
         return pd.DataFrame(elements, index = np.arange(len(elements)))
 
-    def _detect_joints_in_image_data(self, data_frame, img_dir, joint_detector, coord_mapping):
+    def _detect_joints_in_image_data(self, data_frame, img_dir, joint_detectors, coord_mapping):
         dataset = self._create_joint_detection_dataset(data_frame, img_dir)
 
-        joint_dataframe = self._get_joint_predictions(dataset, joint_detector, coord_mapping)
+        joint_dataframe = self._get_joint_predictions(dataset, joint_detectors, coord_mapping)
 
         return data_frame.merge(joint_dataframe)
 
@@ -95,18 +96,23 @@ class joint_detector():
 
         return dataset.map(__load_joints, num_parallel_calls = AUTOTUNE)
 
-    def _get_joint_predictions(self, joint_prediction_dataset, joint_detector, coord_mapping):
+    def _get_joint_predictions(self, joint_prediction_dataset, joint_detectors, coord_mapping):
         joint_predictions_list = []
     
         for image_name, landmark_image, original_image_shape in joint_prediction_dataset:
+            img_name = image_name.numpy().decode('UTF-8')
+            
             # Predict Landmark positions
-            joint_predictions = joint_detector.predict(landmark_image)[0]
+            joint_predictions = self._cascading_joint_detection(landmark_image, img_name, joint_detectors)
+
+            if np.count_nonzero(joint_predictions < 0) != 0:
+                logging.error('No detector worked for image %s!', image_name)
 
             # Scale landmarks to original img size
             upscaled_joint_locations = lm_ops.upscale_detected_landmarks(joint_predictions, (self.landmark_img_height, self.landmark_img_width), original_image_shape)
 
             joint_prediction = {
-                'image_name': image_name.numpy().decode('UTF-8')
+                'image_name': img_name
             }
 
             for key in coord_mapping:
@@ -122,35 +128,47 @@ class joint_detector():
             joint_predictions_list.append(joint_prediction)
 
         return pd.DataFrame(joint_predictions_list, index = np.arange(len(joint_predictions_list)))
+    
+    def _cascading_joint_detection(self, landmark_image, image_name, joint_detectors):
+        for idx, joint_detector in enumerate(joint_detectors):
+            joint_predictions = joint_detector.predict(landmark_image)[0]
+
+            if np.count_nonzero(joint_predictions < 0) == 0:
+                break
+            else:
+                logging.warn('Detector %d failed for image %s with landmarks less than 0', idx, image_name)
+        
+        return joint_predictions
 
 class dream_joint_detector(joint_detector):
-    def __init__(self, config, hand_joint_detector, feet_joint_detector):
+    def __init__(self, config, hand_joint_detectors, feet_joint_detectors):
         super().__init__(config, consider_flip = True)
 
-        self.hand_joint_detector = hand_joint_detector
-        self.feet_joint_detector = feet_joint_detector
+        self.hand_joint_detectors = hand_joint_detectors
+        self.feet_joint_detectors = feet_joint_detectors
 
     def create_dream_datasets(self, img_dir, file_names = None):
         full_dataframe = self._create_detection_dataframe(img_dir, file_names)
 
         hands_mask = ['H' in image_name for image_name in full_dataframe['image_name']]
+        feet_mask = ['F' in image_name for image_name in full_dataframe['image_name']]
 
         hand_dataframe = full_dataframe.iloc[hands_mask]
-        feet_dataframe = full_dataframe.iloc[np.logical_not(hands_mask)]
+        feet_dataframe = full_dataframe.iloc[feet_mask]
 
-        data_hands = self._detect_joints_in_image_data(hand_dataframe, img_dir, self.hand_joint_detector, hand_coord_mapping)
-        data_feet = self._detect_joints_in_image_data(feet_dataframe, img_dir, self.feet_joint_detector, foot_coord_mapping)
+        data_hands = self._detect_joints_in_image_data(hand_dataframe, img_dir, self.hand_joint_detectors, hand_coord_mapping)
+        data_feet = self._detect_joints_in_image_data(feet_dataframe, img_dir, self.feet_joint_detectors, foot_coord_mapping)
 
         return data_hands, data_feet
 
 class rsna_joint_detector(joint_detector):
-    def __init__(self, config, hand_joint_detector):
+    def __init__(self, config, hand_joint_detectors):
         super().__init__(config, consider_flip = False)
 
-        self.hand_joint_detector = hand_joint_detector
+        self.hand_joint_detectors = hand_joint_detectors
         self.img_dir = config.rsna_img_dir
         
     def create_rnsa_dataset(self, img_dir = '../../rsna_boneAge/checked_rsna_training'):
         rsna_dataframe = self._create_detection_dataframe(img_dir)
 
-        return self._detect_joints_in_image_data(rsna_dataframe, img_dir, self.hand_joint_detector, hand_coord_mapping)
+        return self._detect_joints_in_image_data(rsna_dataframe, img_dir, self.hand_joint_detectors, hand_coord_mapping)
