@@ -30,20 +30,7 @@ def _predict_joints_in_images(config, train_images, test_images):
         logging.info('Created %s joint dataframe in file %s', df.shape, joint_file)
 
 def _predict_joint_damage(config):
-    predict_params = {
-        'hands_joint_source': '/output/dream_test_hand_joint_data.csv',
-        'feet_joint_source': '/output/dream_test_feet_joint_data.csv',
-        'hands_narrowing_model': { 'model': '../resources/hands_narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'wrists_narrowing_model': { 'model': '../resources/wrists_narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'feet_narrowing_model': { 'model': '../resources/feet_narrowing_adam_no_weights_reg_shuffle_hand_pretrain.h5', 'is_regression': True },
-        'hands_erosion_model': { 'model': '../resources/hands_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'wrists_erosion_model': { 'model': '../resources/wrists_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'feet_erosion_model': { 'model': '../resources/feet_erosion_adam_no_weights_reg_shuffle_hand_pretrain.h5', 'is_regression': True },
-        'template_path': '/test/template.csv',
-        'output_path': '/output/predictions.csv',
-    }
-
-    predict_dream_test_set(config, predict_params)
+    predict_dream_test_set(config)
 
 def _clean_output():
     for file in os.listdir('/output'):

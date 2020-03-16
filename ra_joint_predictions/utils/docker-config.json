@@ -9,5 +9,6 @@
     "joint_img_height": 224,
     "joint_img_width": 224,
     "cache_loc": "/output",
-    "batch_size": 64
+    "batch_size": 64,
+    "test_template_path": "/test/template.csv"
 }

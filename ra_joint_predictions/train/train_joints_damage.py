@@ -117,7 +117,7 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
         val_steps = np.ceil(no_val_samples / batch_size)
 
         history = model.fit(tf_joint_dataset, 
-        epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
+            epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
 
