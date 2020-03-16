@@ -28,7 +28,7 @@ class rsna_joint_dataset(joint_dataset):
         joints_df = self._create_intermediate_joints_df(joints_source, joint_keys)
         joints_df = joints_df.astype({'image_name': 'str'})
         
-        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'])
+        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'], how = "inner")
 
         return self._create_rsna_datasets(outcome_joint_df, val_split)
 
@@ -89,7 +89,7 @@ class rsna_wrist_dataset(rsna_joint_dataset):
         joints_df = self._create_intermediate_wrists_df(joints_source, hand_wrist_keys)
         joints_df = joints_df.astype({'image_name': 'str'})
         
-        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'])
+        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'], how = "inner")
 
         return self._create_rsna_datasets(outcome_joint_df, val_split, wrist = True)
 

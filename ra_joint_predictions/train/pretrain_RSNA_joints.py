@@ -38,7 +38,7 @@ def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_bef
     joint_dataset = _split_outcomes(joint_dataset,n_outputs)
     joint_val_dataset = _split_outcomes(joint_val_dataset,n_outputs)
 
-    tensorboard_callback = _get_tensorboard_callback(model_name)
+    tensorboard_callback = _get_tensorboard_callback(model_name, log_dir = 'logs/tensorboard_RSNA/')
 
     saver = CustomSaver(model_name + "before", n = 10)
     model.fit(joint_dataset,

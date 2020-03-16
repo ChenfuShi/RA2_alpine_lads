@@ -40,3 +40,46 @@ for model_file, name in zip(models,names):
 
 # imagenet models
 
+configuration = Config()
+name = "densent_imagenet"
+joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, imagenet = True).create_rsna_joints_dataset(val_split = True)
+
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_densenet_imagenet_model_100.h5" + model_file, no_joint_types = 13)
+
+model.summary()
+
+finetune_model(model,"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 101, n_outputs = 13)
+
+
+wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, imagenet = True).create_rsna_wrist_dataset(val_split = True)
+
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_densenet_imagenet_model_100.h5" + model_file, no_joint_types = 1)
+
+model.summary()
+
+finetune_model(model,"{name}_RSNA_wrist_v2",wrist_dataset,wrist_val_dataset, epochs_before = 11, epochs_after = 101, n_outputs = 1)
+
+
+
+configuration = Config()
+name = "Xception_imagenet"
+configuration.img_height = 299
+configuration.img_width = 299
+configuration.batch_size = 32
+
+joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, imagenet = True).create_rsna_joints_dataset(val_split = True)
+
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_Xception_imagenet_model_100.h5" + model_file, no_joint_types = 13)
+
+model.summary()
+
+finetune_model(model,"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 101, n_outputs = 13)
+
+
+wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, imagenet = True).create_rsna_wrist_dataset(val_split = True)
+
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_Xception_imagenet_model_100.h5" + model_file, no_joint_types = 1)
+
+model.summary()
+
+finetune_model(model,"{name}_RSNA_wrist_v2",wrist_dataset,wrist_val_dataset, epochs_before = 11, epochs_after = 101, n_outputs = 1)
