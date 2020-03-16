@@ -19,5 +19,5 @@ if __name__ == '__main__':
 
     hand_dataframe, feet_dataframe = joint_detector.create_dream_datasets(config.train_fixed_location)
 
-    hand_dataframe.to_csv('./data/predictions/hand_joint_data_v2.csv')
-    feet_dataframe.to_csv('./data/predictions/feet_joint_data_v2.csv')
+    hand_dataframe.to_csv('./data/predictions/hand_joint_data_v3.csv')
+    feet_dataframe.to_csv('./data/predictions/feet_joint_data_v3.csv')
