@@ -1,5 +1,7 @@
 import os
 
+from tensorflow.keras.models import load_model
+
 from utils.config import Config
 
 from model.joint_detection import create_foot_joint_detector, create_hand_joint_detector
@@ -10,6 +12,9 @@ if __name__ == '__main__':
 
     config = Config()
 
+    hand_detector_model = load_model("../resources/hands_landmarks_original_epoch_1000_predictor_1.h5")
+    foot_detector_model = load_model("../resources/feet_landmarks_original_epoch_1000_predictor_1.h5")
+
     hand_detector = create_hand_joint_detector(config)
     foot_detector = create_foot_joint_detector(config)
 
@@ -17,5 +22,5 @@ if __name__ == '__main__':
 
     hand_dataframe, feet_dataframe = joint_detector.create_dream_datasets(config.train_fixed_location)
 
-    hand_dataframe.to_csv('./data/predictions/hand_joint_data.csv')
-    feet_dataframe.to_csv('./data/predictions/feet_joint_data.csv')
+    hand_dataframe.to_csv('./data/predictions/hand_joint_data_v2.csv')
+    feet_dataframe.to_csv('./data/predictions/feet_joint_data_v2.csv')
