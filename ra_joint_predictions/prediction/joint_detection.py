@@ -106,7 +106,7 @@ class joint_detector():
             joint_predictions = self._cascading_joint_detection(landmark_image, img_name, joint_detectors)
 
             if np.count_nonzero(joint_predictions < 0) != 0:
-                logging.error('No detector worked for image %s!', image_name)
+                logging.error('No detector worked for image %s!', img_name)
 
             # Scale landmarks to original img size
             upscaled_joint_locations = lm_ops.upscale_detected_landmarks(joint_predictions, (self.landmark_img_height, self.landmark_img_width), original_image_shape)
@@ -129,14 +129,14 @@ class joint_detector():
 
         return pd.DataFrame(joint_predictions_list, index = np.arange(len(joint_predictions_list)))
     
-    def _cascading_joint_detection(self, landmark_image, image_name, joint_detectors):
+    def _cascading_joint_detection(self, landmark_image, img_name, joint_detectors):
         for idx, joint_detector in enumerate(joint_detectors):
             joint_predictions = joint_detector.predict(landmark_image)[0]
 
             if np.count_nonzero(joint_predictions < 0) == 0:
                 break
             else:
-                logging.warn('Detector %d failed for image %s with landmarks less than 0', idx, image_name)
+                logging.warn('Detector %d failed for image %s with landmarks less than 0', idx, img_name)
         
         return joint_predictions
 
