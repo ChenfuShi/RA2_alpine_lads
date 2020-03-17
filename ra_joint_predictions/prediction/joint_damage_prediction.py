@@ -22,7 +22,7 @@ class joint_damage_predictor():
 
         y_preds = self.joint_damage_prediction_model.predict(img)
 
-        for n in self.no_outcomes:
+        for n in range(self.no_outcomes):
             y_pred = y_preds[n][0]
 
             if self.is_wrist:

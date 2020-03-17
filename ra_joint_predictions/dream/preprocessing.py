@@ -23,11 +23,14 @@ def predict_joints(config, train_images, test_images):
     logging.info('Predicting joints in images')
 
     start = time.time()
+    
+    hand_detector_model_v2 = load_model("../resources/hands_landmarks_original_epoch_1000_predictor_1.h5")
+    foot_detector_model_v2 = load_model("../resources/feet_landmarks_original_epoch_1000_predictor_1.h5")
 
-    hand_detector = load_model('../resources/hand_joint_detector_v1.h5')
-    foot_detector = load_model('../resources/foot_joint_detector_v1.h5')
+    hand_detector_model = load_model("../resources/hand_joint_detector_v1.h5")
+    foot_detector_model = load_model("../resources/foot_joint_detector_v1.h5")
 
-    joint_detector = dream_joint_detector(config, hand_detector, foot_detector)
+    joint_detector = dream_joint_detector(config, [hand_detector_model_v2, hand_detector_model], [foot_detector_model_v2, foot_detector_model])
     
     train_hand_dataframe, train_feet_dataframe = joint_detector.create_dream_datasets(config.train_fixed_location, train_images)
     test_hand_dataframe, test_feet_dataframe = joint_detector.create_dream_datasets(config.test_fixed_location, test_images)
