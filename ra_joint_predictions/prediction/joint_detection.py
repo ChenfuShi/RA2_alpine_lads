@@ -131,12 +131,16 @@ class joint_detector():
     
     def _cascading_joint_detection(self, landmark_image, img_name, joint_detectors):
         for idx, joint_detector in enumerate(joint_detectors):
+            img_shape = tf.shape(landmark_image)
+            
             joint_predictions = joint_detector.predict(landmark_image)[0]
 
-            if np.count_nonzero(joint_predictions < 0) == 0:
-                break
-            else:
+            if np.count_nonzero(joint_predictions < 0) != 0:
                 logging.warn('Detector %d failed for image %s with landmarks less than 0', idx, img_name)
+            elif (np.count_nonzero(joint_predictions[0::2] > img_shape[1]) > 0 or np.count_nonzero(joint_predictions[1::2] > img_shape[0]) > 0):
+                logging.warn('Detector %d failed for image %s with landmarks outside the image', idx, img_name)
+            else:
+                break
         
         return joint_predictions
 

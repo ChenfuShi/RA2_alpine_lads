@@ -7,8 +7,8 @@ import dataset.joint_dataset as joint_dataset
 from dataset.test_dataset import joint_test_dataset
 from prediction.joint_damage_prediction import joint_damage_predictor
 
-def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_test_v2.csv'):
-    hands_test_dataset, wrists_test_dataset, feet_test_dataset = _get_test_datasets(config, hands_joint_source, feet_joints_source)
+def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv'):
+    hands_test_dataset, wrists_test_dataset, feet_test_dataset = _get_test_datasets(config, hands_joint_source, feet_joint_source)
     hand_narrowing_predictor, wrists_narrowing_predictor, feet_narrowing_predictor, hand_erosion_predictor, wrists_erosion_predictor, feet_erosion_predictor = _get_joint_damage_predictors(model_parameters_collection)
     
     preds = {}
