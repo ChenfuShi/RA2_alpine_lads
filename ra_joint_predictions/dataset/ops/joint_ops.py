@@ -102,8 +102,8 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     y_box_max = tf.reduce_max(tf.stack([w1_y, w2_y, w3_y]),0) + extra_pad_height
 
     # make sure they are within the image
-    x_box_max = tf.math.maximum(x_box, 11)
-    y_box_max = tf.math.maximum(y_box, 11)
+    x_box_max = tf.math.maximum(x_box_max, 11)
+    y_box_max = tf.math.maximum(y_box_max, 11)
     x_box_max = tf.math.minimum(x_box_max, img_shape[1] - 10)
     y_box_max = tf.math.minimum(y_box_max, img_shape[0] - 10)
 
@@ -112,8 +112,8 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     box_width = x_box_max - x_box
 
     # # make sure they are at least a certain size
-    # box_height = tf.math.maximum(box_height, tf.constant(50,dtype=tf.float64))
-    # box_width = tf.math.maximum(box_width, tf.constant(50,dtype=tf.float64))
+    box_height = tf.math.maximum(box_height, tf.constant(50,dtype=tf.float64))
+    box_width = tf.math.maximum(box_width, tf.constant(50,dtype=tf.float64))
 
     # hope
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
