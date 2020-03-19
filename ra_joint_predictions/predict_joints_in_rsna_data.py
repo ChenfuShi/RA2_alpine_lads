@@ -2,6 +2,7 @@ import os
 
 from utils.config import Config
 
+from tensorflow.keras.models import load_model
 from model.joint_detection import create_hand_joint_detector
 from prediction.joint_detection import rsna_joint_detector
 

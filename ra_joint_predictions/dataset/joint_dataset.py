@@ -88,20 +88,22 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_dataset(base_dataset):
-    def __init__(self, config, cache_postfix = '', imagenet = False):
+    def __init__(self, config, cache_postfix = '', imagenet = False, pad_resize = False, joint_scale = 5):
         super().__init__(config)
         self.imagenet = imagenet
         self.cache = config.cache_loc + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
         self.buffer_size = 200
+        self.pad_resize = pad_resize
+        self.joint_scale = joint_scale
 
     def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         if wrist:
             dataset = joint_ops.load_wrists(dataset, self.image_dir, imagenet = self.imagenet)
         else:
-            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet)
+            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_scale = self.joint_scale)
         
         return dataset
 
@@ -109,7 +111,7 @@ class joint_dataset(base_dataset):
         dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
 
         dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache)
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
         
         return dataset
 
@@ -156,8 +158,8 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', is_regression = False):
-        super().__init__(config, cache_postfix)
+    def __init__(self, config, cache_postfix = '', is_regression = False, pad_resize = False, joint_scale = 5):
+        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
@@ -228,7 +230,9 @@ class dream_dataset(joint_dataset):
 
         if not self.is_regression:
             tf_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+            tf_dummy_outcomes = None
         else:
+            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
             tf_outcomes = outcomes.to_numpy()
         
         if wrist:
@@ -239,23 +243,33 @@ class dream_dataset(joint_dataset):
         if is_train:
             maj_idx = self._find_maj_indices(outcomes)
 
-            return self._create_interleaved_joint_datasets(file_info, coords, tf_outcomes, maj_idx, wrist)
+            return self._create_interleaved_joint_datasets(file_info, coords, tf_outcomes, maj_idx, wrist, dummy_outcomes = tf_dummy_outcomes)
         else:
             return self._create_non_split_joint_dataset(file_info, coords, tf_outcomes, wrist = wrist, augment = False)
 
     def _find_maj_indices(self, outcomes):
         return outcomes == 0
 
-    def _create_interleaved_joint_datasets(self, file_info, joint_coords, outcomes, maj_idx, wrist = False):
+    def _create_interleaved_joint_datasets(self, file_info, joint_coords, outcomes, maj_idx, wrist = False, dummy_outcomes = None):
         min_idx = np.logical_not(maj_idx)
 
         # Tranform boolean mask into indices
         maj_idx = np.where(maj_idx)[0]
         min_idx = np.where(min_idx)[0]
-
-        # Create 2 datasets, one with the majority class, one with the other classes
-        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx], wrist = wrist)
-        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx], wrist = wrist)
+        
+        if dummy_outcomes is None:
+            # Create 2 datasets, one with the majority class, one with the other classes
+            maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx], wrist = wrist)
+            min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx], wrist = wrist)
+        else:
+            maj_outcomes = outcomes[maj_idx]
+            maj_dummy_outcomes = dummy_outcomes[maj_idx, :]
+            
+            min_outcomes = outcomes[min_idx]
+            min_dummy_outcomes = dummy_outcomes[min_idx, :]
+            
+            maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], (maj_outcomes, maj_dummy_outcomes), wrist = wrist)
+            min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], (min_outcomes, min_dummy_outcomes), wrist = wrist)
 
         # Cache the partial datasets
         maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj')
@@ -266,7 +280,7 @@ class dream_dataset(joint_dataset):
 
         # Prepare for training
 
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 
         return dataset
 
@@ -300,8 +314,8 @@ class feet_joint_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, val_joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config, is_regression = False):
-        super().__init__(config, 'hands_joints', is_regression = is_regression)
+    def __init__(self, config, is_regression = False, pad_resize = False, joint_scale = 5):
+        super().__init__(config, 'hands_joints', is_regression = is_regression, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000

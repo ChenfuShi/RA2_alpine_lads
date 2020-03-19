@@ -2,7 +2,7 @@ import numpy as np
 
 import tensorflow.keras as keras
 
-from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric, rmse, class_rmse_metric
+from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric, rmse_metric, class_rmse_metric, mae_metric, class_filter_rmse_metric, softmax_rmse_mae
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
 
 def load_joint_damage_model(model_file, no_classes, is_regression = False):
@@ -37,7 +37,14 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
     if not is_regression:
         joint_damage_model.compile(loss = 'categorical_crossentropy', metrics = metrics_dir, optimizer = optimizer)
     else:
-        joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
+        losses = {
+            'reg_output_0': 'mean_squared_error',
+            'class_output_0': 'categorical_crossentropy'
+        }
+
+        lossWeights = {'reg_output_0': 1, 'class_output_0': 1}
+        
+        joint_damage_model.compile(loss = losses, loss_weights = lossWeights, metrics = metrics_dir, optimizer = optimizer)
 
     return joint_damage_model
 
@@ -59,23 +66,30 @@ def _add_outputs(class_weights, base_output, is_regression = False):
     for idx, class_weight in enumerate(class_weights):
         no_outcomes = len(class_weight.keys())
         
-        metrics = ['mae']
+        reg_metrics = []
+        class_metrics = []
 
         if not is_regression:
-            
-            metrics.extend([softmax_rmse_metric(np.arange(no_outcomes)), class_softmax_rmse_metric(np.arange(no_outcomes), 0)])
+            class_metrics.extend([softmax_rmse_mae(np.arange(no_outcomes)), softmax_rmse_metric(np.arange(no_outcomes)), class_softmax_rmse_metric(np.arange(no_outcomes), 0)])
         
-            output = keras.layers.Dense(no_outcomes, activation = 'softmax', name = f'output_{idx}')(base_output)
+            output = keras.layers.Dense(no_outcomes, activation = 'softmax', name = f'class_output_{idx}')(base_output)
             outputs.append(output)
         else:
-            output = keras.layers.Dense(1, activation = 'linear', name = f'output_{idx}')(base_output)
-
-            metrics.append(rmse)
-            for class_filter in range(no_outcomes):
-                metrics.append(class_rmse_metric(class_filter))
+            max_outcome = max(class_weight.keys())
+            
+            req_output = keras.layers.Dense(1, activation = 'linear', name = f'reg_output_{idx}')(base_output)
+            class_output = keras.layers.Dense(no_outcomes, activation = 'softmax', name = f'class_output_{idx}')(base_output)
+            
+            reg_metrics.append(mae_metric(max_outcome))
+            reg_metrics.append(rmse_metric(max_outcome))
+            reg_metrics.append(class_filter_rmse_metric(max_outcome, 0))
+            
+            class_metrics.extend([softmax_rmse_mae(np.arange(no_outcomes)), softmax_rmse_metric(np.arange(no_outcomes)), class_softmax_rmse_metric(np.arange(no_outcomes), 0)])
                 
-            outputs.append(output)
+            outputs.append(req_output)
+            outputs.append(class_output)
         
-        metrics_dir[f'output_{idx}'] = metrics
+        metrics_dir[f'reg_output_{idx}'] = reg_metrics
+        metrics_dir[f'class_output_{idx}'] = class_metrics
 
     return outputs, metrics_dir
