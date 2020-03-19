@@ -189,7 +189,7 @@ def create_NASnet_multioutupt_imagenet(config):
 
     return _add_common(common_part,"NASnet_multiout_NIH_imagenet",inputs)
 
-def create_Xception_multioutput(config):
+def create_Xception_multioutput_imagenet(config):
 
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
     base_net = keras.applications.xception.Xception(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="avg")

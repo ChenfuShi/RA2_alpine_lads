@@ -47,7 +47,7 @@ class pretrain_dataset_NIH_chest(base_dataset):
             x, data, self.config.pretrain_NIH_chest_location, imagenet = imagenet)
         
         # resize the images because it was taking too long
-        chest_dataset = dataset_ops.resize_images(chest_dataset, 350, 350)
+        chest_dataset = dataset_ops.augment_and_resize_images(chest_dataset, 350, 350, do_augmentation = False)
 
         # here separate validation set
         chest_dataset, chest_dataset_val = self._create_validation_split(chest_dataset,1000)
