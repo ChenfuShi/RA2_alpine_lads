@@ -5,6 +5,10 @@ import tensorflow.keras as keras
 from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric, rmse, class_rmse_metric
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
 
+MODEL_TYPE_CLASSIFICATION = "C"
+MODEL_TYPE_REGRESSION = "R"
+MODEL_TYPE_COMBINED = "RC"
+
 def load_joint_damage_model(model_file, no_classes, is_regression = False):
     if not is_regression:
         dependencies = {

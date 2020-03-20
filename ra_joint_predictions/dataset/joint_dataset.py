@@ -11,6 +11,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 import dataset.ops.joint_ops as joint_ops
 import dataset.ops.dataset_ops as ds_ops
+import model.joint_damage_model as joint_damage_model
 
 from dataset.base_dataset import base_dataset
 from utils.class_weight_utils import calc_adapted_class_weights
@@ -156,27 +157,20 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', is_regression = False):
+    def __init__(self, config, cache_postfix = '', model_type = 'R'):
         super().__init__(config, cache_postfix)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
-        self.is_regression = is_regression
+        self.model_type = model_type
 
-    def _create_dream_datasets(self, outcomes_source, joints_source, val_joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
+    def _create_dream_datasets(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
         outcome_joint_df = outcome_joint_df.dropna(subset = outcome_columns)
-        if(val_joints_source):
-            outcome_joint_val_df = self._create_outcome_joint_dataframe(outcomes_source, val_joints_source, outcome_mapping, parts, wrist = wrist)
-            outcome_joint_val_df = outcome_joint_val_df.dropna(subset = outcome_columns)
 
         dataset = self._create_dream_dataset(outcome_joint_df, outcome_columns, no_classes, cache = self.cache, wrist = wrist)
-        if val_joints_source:
-            val_dataset = self._create_dream_dataset(outcome_joint_val_df, outcome_columns, no_classes, is_train = False, augment = False, wrist = wrist)
-
-            return dataset, val_dataset
-        else:
-            return dataset
+        
+        return dataset
 
     def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts, wrist = False):
         outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)
@@ -226,9 +220,15 @@ class dream_dataset(joint_dataset):
         if is_train:
             self._init_model_outcomes_bias(outcomes, no_classes)
 
-        if not self.is_regression:
-            tf_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
-        else:
+        tf_dummy_outcomes = None
+        tf_outcomes = None
+
+        if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
+            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+        elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
+            tf_outcomes = outcomes.to_numpy()
+        elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
+            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
             tf_outcomes = outcomes.to_numpy()
         
         if wrist:
@@ -239,23 +239,33 @@ class dream_dataset(joint_dataset):
         if is_train:
             maj_idx = self._find_maj_indices(outcomes)
 
-            return self._create_interleaved_joint_datasets(file_info, coords, tf_outcomes, maj_idx, wrist)
+            return self._create_interleaved_joint_datasets(file_info, coords, maj_idx, outcomes = tf_outcomes, dummy_outcomes = tf_dummy_outcomes, wrist = wrist)
         else:
             return self._create_non_split_joint_dataset(file_info, coords, tf_outcomes, wrist = wrist, augment = False)
 
     def _find_maj_indices(self, outcomes):
         return outcomes == 0
 
-    def _create_interleaved_joint_datasets(self, file_info, joint_coords, outcomes, maj_idx, wrist = False):
+    def _create_interleaved_joint_datasets(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
         min_idx = np.logical_not(maj_idx)
 
         # Tranform boolean mask into indices
         maj_idx = np.where(maj_idx)[0]
         min_idx = np.where(min_idx)[0]
 
+        if self.model_type == 'C':
+            maj_outcomes = dummy_outcomes[maj_idx, :]
+            min_outcomes = dummy_outcomes[min_idx, :]
+        elif self.model_type == 'R':
+            maj_outcomes = outcomes[maj_idx]
+            min_outcomes = outcomes[min_idx]
+        elif self.model_type == 'RC':
+            maj_outcomes = (outcomes[maj_idx], dummy_outcomes[maj_idx, :])
+            min_outcomes = (outcomes[min_idx], dummy_outcomes[min_idx, :])
+
         # Create 2 datasets, one with the majority class, one with the other classes
-        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx], wrist = wrist)
-        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx], wrist = wrist)
+        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], maj_outcomes, wrist = wrist)
+        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], min_outcomes, wrist = wrist)
 
         # Cache the partial datasets
         maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj')
@@ -282,8 +292,8 @@ class dream_dataset(joint_dataset):
         return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config, is_regression = False):
-        super().__init__(config, 'feet_joints', is_regression = is_regression)
+    def __init__(self, config, model_type = 'R'):
+        super().__init__(config, 'feet_joints', model_type = model_type)
 
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000
