@@ -55,7 +55,7 @@ def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels
 
     return img, y
 
-def apply_augment(img, y, aug, update_labels = False, cutoff = 0.4):
+def apply_augment(img, y, aug, update_labels = False, cutoff = 0.1):
     img, y = tf.cond(tf.random.uniform([], 0, 1) > cutoff, lambda: aug(img, y, update_labels), lambda: (img, y))
 
     return img, y
