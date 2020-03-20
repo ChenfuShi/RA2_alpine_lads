@@ -2,7 +2,7 @@ import numpy as np
 
 import tensorflow.keras as keras
 
-from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric, rmse_metric, class_rmse_metric, mae_metric, class_filter_rmse_metric, softmax_rmse_mae
+from model.utils.metrics import argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric, rmse_metric, class_rmse_metric, mae_metric, class_filter_rmse_metric, softmax_mae_metric
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
 
 def load_joint_damage_model(model_file, no_classes, is_regression = False):
@@ -84,7 +84,7 @@ def _add_outputs(class_weights, base_output, is_regression = False):
             reg_metrics.append(rmse_metric(max_outcome))
             reg_metrics.append(class_filter_rmse_metric(max_outcome, 0))
             
-            class_metrics.extend([softmax_rmse_mae(np.arange(no_outcomes)), softmax_rmse_metric(np.arange(no_outcomes)), class_softmax_rmse_metric(np.arange(no_outcomes), 0)])
+            class_metrics.extend([softmax_mae_metric(np.arange(no_outcomes)), softmax_rmse_metric(np.arange(no_outcomes)), class_softmax_rmse_metric(np.arange(no_outcomes), 0)])
                 
             outputs.append(req_output)
             outputs.append(class_output)

@@ -8,7 +8,7 @@ import dataset.ops.landmark_ops as lm_ops
 PNG_EXTENSION_REGEX = '(?i).*png'
 JPG_EXTENSION_REGEX = '(?i).*jp[e]?g'
 
-def _create_boxes(scales = np.arange(0.7, 1, 0.01)):
+def _create_boxes(scales = np.arange(0.8, 1, 0.01)):
     boxes = np.zeros((scales.size, 4))
     
     for i, scale in enumerate(scales):
@@ -55,7 +55,7 @@ def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels
 
     return img, y
 
-def apply_augment(img, y, aug, update_labels = False, cutoff = 0.25):
+def apply_augment(img, y, aug, update_labels = False, cutoff = 0.4):
     img, y = tf.cond(tf.random.uniform([], 0, 1) > cutoff, lambda: aug(img, y, update_labels), lambda: (img, y))
 
     return img, y
@@ -65,7 +65,7 @@ def clip_image(img):
 
     return img
 
-def random_brightness_and_contrast(img, y, update_labels, max_delta = 0.3, max_contrast = 0.3):
+def random_brightness_and_contrast(img, y, update_labels, max_delta = 0.2, max_contrast = 0.2):
     img = tf.image.random_brightness(img, max_delta = max_delta)
     img = tf.image.random_contrast(img, 1 - max_contrast, 1 + max_contrast)
     

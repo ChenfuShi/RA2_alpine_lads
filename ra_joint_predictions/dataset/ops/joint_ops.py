@@ -48,11 +48,11 @@ def _extract_joint_from_image(img, x, y, joint_scale):
     x = tf.cast(x, tf.float64)
     y = tf.cast(y, tf.float64)
 
-    # box_width = img_shape[1] / joint_scale
-    # box_height = box_width * 0.8
-    
-    box_height = img_shape[0] / joint_scale
     box_width = img_shape[1] / joint_scale
+    box_height = box_width * 0.8
+    
+    #box_height = img_shape[0] / joint_scale
+    #box_width = img_shape[1] / joint_scale
 
     # get top left corner of image
     x_box = x - (box_width / 2)

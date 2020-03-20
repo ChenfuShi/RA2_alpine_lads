@@ -12,14 +12,14 @@ def argmax_rmse(y_true, y_pred):
     
     return _rmse(true, pred)
 
-def softmax_rmse_mae(classes):
-    def softmax_rmse(y_true, y_pred):
+def softmax_mae_metric(classes):
+    def softmax_mae(y_true, y_pred):
         true = tf.cast(K.argmax(y_true), K.floatx())
         pred = K.sum(y_pred * classes, axis = 1)
         
         return _mae(true, pred)
     
-    return softmax_rmse
+    return softmax_mae
 
 def softmax_rmse_metric(classes):
     def softmax_rmse(y_true, y_pred):

@@ -85,11 +85,13 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             
             if not self.is_regression:
                 outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+                dummy_outcomes = None
             else:
                 dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
                 outcomes = outcomes.to_numpy()
         else:
             outcomes = np.zeros(file_info.shape[0])
+            dummy_outcomes = None
 
         if dummy_outcomes is None:
             dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
