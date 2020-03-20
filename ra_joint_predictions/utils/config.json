@@ -22,5 +22,6 @@
     "joint_img_height": 224,
     "joint_img_width": 224,
     "rsna_img_dir": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/checked_rsna_training",
-    "rsna_labels": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/boneage-training-dataset.csv"
+    "rsna_labels": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/boneage-training-dataset.csv",
+    "test_template_path": "../resources/template.csv"
 }

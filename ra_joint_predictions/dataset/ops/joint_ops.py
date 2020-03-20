@@ -6,7 +6,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 round_to_int = lambda x: tf.cast(tf.round(x), tf.int32)
 
-def load_joints(dataset, directory, imagenet = False):
+def load_joints(dataset, directory, imagenet = False, joint_scale = 5):
     def __load_joints(file_info, y, z):
         joint_key = file_info[3]
 
@@ -17,7 +17,7 @@ def load_joints(dataset, directory, imagenet = False):
 
         #TODO: Use joint_key to decide on box dimensions
 
-        joint_img = _extract_joint_from_image(full_img, x_coord, y_coord)
+        joint_img = _extract_joint_from_image(full_img, x_coord, y_coord, joint_scale = joint_scale)
 
         return joint_img, z
 
@@ -43,13 +43,16 @@ def load_wrists(dataset, directory, imagenet = False):
 
     return dataset.map(__load_wrists, num_parallel_calls=AUTOTUNE)
 
-def _extract_joint_from_image(img, x, y):
+def _extract_joint_from_image(img, x, y, joint_scale):
     img_shape = tf.cast(tf.shape(img), tf.float64)
     x = tf.cast(x, tf.float64)
     y = tf.cast(y, tf.float64)
 
-    box_height = img_shape[0] / 8
-    box_width = img_shape[1] / 8
+    box_width = img_shape[1] / joint_scale
+    box_height = box_width * 0.8
+    
+    #box_height = img_shape[0] / joint_scale
+    #box_width = img_shape[1] / joint_scale
 
     # get top left corner of image
     x_box = x - (box_width / 2)
