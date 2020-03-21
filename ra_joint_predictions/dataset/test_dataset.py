@@ -6,12 +6,13 @@ import tensorflow as tf
 import dataset.ops.image_ops as img_ops
 import dataset.joint_dataset as joint_dataset
 import dataset.ops.joint_ops as joint_ops
+import model.joint_damage_model as joint_damage_model
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_test_dataset(joint_dataset.dream_dataset):
-    def __init__(self, config, img_dir, is_regression = False):
-        super().__init__(config, is_regression = is_regression)
+    def __init__(self, config, img_dir, model_type = 'R'):
+        super().__init__(config, model_type = model_type)
 
         self.img_dir = img_dir
         
@@ -81,10 +82,22 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         if params:
             outcomes = df[params['outcomes']]
             
-            if not self.is_regression:
-                outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
-            else:
-                outcomes = outcomes.to_numpy()
+            tf_dummy_outcomes = None
+            tf_outcomes = None
+
+            if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
+                tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+
+                outcomes = tf_dummy_outcomes
+            elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
+                tf_outcomes = outcomes.to_numpy()
+
+                outcomes = tf_outcomes
+            elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
+                tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+                tf_outcomes = outcomes.to_numpy()
+
+                outcomes = (tf_outcomes, tf_dummy_outcomes)
         else:
             outcomes = np.zeros(file_info.shape[0])
 

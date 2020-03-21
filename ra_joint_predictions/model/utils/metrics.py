@@ -21,8 +21,8 @@ def softmax_rmse_metric(classes):
     
     return softmax_rmse
 
-def class_softmax_rmse_metric(classes, class_filter):
-    def class_softmax_rmse(y_true, y_pred):
+def class_filter_softmax_rmse_metric(classes, class_filter):
+    def class_filter_softmax_rmse(y_true, y_pred):
         true = tf.cast(K.argmax(y_true), K.floatx())
         pred = K.sum(y_pred * classes, axis = 1)
 
@@ -39,9 +39,9 @@ def class_softmax_rmse_metric(classes, class_filter):
 
         return rmse_val
     
-    class_softmax_rmse.__name__ = 'class_softmax_rmse_{}'.format(class_filter)
+    class_filter_softmax_rmse.__name__ = 'filter_{}_softmax_rmse'.format(class_filter)
     
-    return class_softmax_rmse
+    return class_filter_softmax_rmse
         
 def class_rmse_metric(class_filter):
     def class_rmse(y_true, y_pred):
