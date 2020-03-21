@@ -165,6 +165,7 @@ class dream_dataset(joint_dataset):
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
         self.model_type = model_type
+        self.cache = self.cache + '_' + model_type
 
     def _create_dream_datasets(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
@@ -294,13 +295,13 @@ class dream_dataset(joint_dataset):
         return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R'):
-        super().__init__(config, 'feet_joints', model_type = model_type)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_scale = 5):
+        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000
 
-    def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data.csv', erosion_flag = False):
+    def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
         outcome_column = 'narrowing_0'
         no_classes = 5
         self.cache = self.cache + '_narrowing'
@@ -318,7 +319,7 @@ class hands_joints_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000
 
-    def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', erosion_flag = False):
+    def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_column = 'narrowing_0'
         no_classes = 5
         self.cache = self.cache + '_narrow'
@@ -335,7 +336,7 @@ class hands_wrists_dataset(dream_dataset):
 
         self.image_dir = config.train_fixed_location
 
-    def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data.csv', erosion_flag = False):
+    def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
         no_classes = 5
         self.cache = self.cache + '_narrow'
@@ -344,7 +345,7 @@ class hands_wrists_dataset(dream_dataset):
             no_classes = 6
             self.cache = self.cache + '_erosion'
             
-        dataset = self._create_dream_datasets(outcomes_source, joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist=True)
+        dataset = self._create_dream_datasets(outcomes_source, joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist = True)
 
         return self._split_outcomes(dataset, no_classes)
 
@@ -354,7 +355,7 @@ class hands_wrists_dataset(dream_dataset):
         return np.count_nonzero(outcomes, axis = 1) == 0
     
     def _split_outcomes(self, dataset, no_classes):
-        if self.is_regression:
+        if self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
             no_classes = 1
 
         def __split_outcomes(x, y):
@@ -365,25 +366,19 @@ class hands_wrists_dataset(dream_dataset):
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
 class joint_narrowing_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R'):
-        super().__init__(config, 'narrowing_joints', model_type = model_type)
+    def __init__(self, config, model_type = 'R', pad_resize = True, joint_scale = 5):
+        super().__init__(config, 'narrowing_joints', model_type = model_type, pad_resize = False, joint_scale = 5)
 
         self.image_dir = config.train_fixed_location
         self.outcome_columns = ['narrowing_0']
         self.no_classes = 5
         self.buffer_size = 4000
 
-    def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data.csv', feet_joints_source = './data/predictions/feet_joint_data.csv', hand_joints_val_source = None, feet_joints_val_source = None):
-        hand_joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
-        hand_joint_narrowing_dataset = self._create_dream_dataset(hand_joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
+    def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv'):
+        joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
+        joint_narrowing_dataset = self._create_dream_dataset(joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
 
-        if hand_joints_val_source is not None and feet_joints_val_source is not None:
-            hand_joint_narrowing_val_df = self._create_combined_df(outcomes_source, hand_joints_val_source, feet_joints_val_source)
-            hand_joint_narrowing_val_dataset = self._create_dream_dataset(hand_joint_narrowing_val_df, self.outcome_columns, self.no_classes, is_train = False)
-
-            return hand_joint_narrowing_dataset, hand_joint_narrowing_val_dataset
-
-        return hand_joint_narrowing_dataset
+        return joint_narrowing_dataset
 
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
         combined_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)

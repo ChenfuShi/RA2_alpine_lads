@@ -2,25 +2,25 @@ import numpy as np
 
 import tensorflow.keras as keras
 
-from model.utils.metrics import rmse, argmax_rmse, softmax_rmse_metric, class_softmax_rmse_metric, rmse_metric, class_rmse_metric, mae_metric, class_filter_rmse_metric, softmax_mae_metric
+from model.utils.metrics import _rmse, argmax_rmse, softmax_rmse_metric, class_filter_softmax_rmse_metric, rmse_metric, class_rmse_metric, mae_metric, class_filter_rmse_metric, softmax_mae_metric
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
 
 MODEL_TYPE_CLASSIFICATION = "C"
 MODEL_TYPE_REGRESSION = "R"
 MODEL_TYPE_COMBINED = "RC"
 
-def load_joint_damage_model(model_file, no_classes, is_regression = False):
-    if not is_regression:
+def load_joint_damage_model(model_file, no_classes, model_type = False):
+    if model_type == MODEL_TYPE_CLASSIFICATION:
         dependencies = {
             'softmax_rmse': softmax_rmse_metric(np.arange(no_classes)),
-            'class_softmax_rmse_0': class_softmax_rmse_metric(np.arange(no_classes), 0),
+            'class_softmax_rmse_0': class_filter_softmax_rmse_metric(np.arange(no_classes), 0),
             'argmax_rmse': argmax_rmse,
-            'class_softmax_rsme_0': class_softmax_rmse_metric(np.arange(no_classes), 0), # Added for compatibility with models saved with the previous spelling mistake
+            'class_softmax_rsme_0': class_filter_softmax_rmse_metric(np.arange(no_classes), 0), # Added for compatibility with models saved with the previous spelling mistake
             'softmax_rsme': softmax_rmse_metric(np.arange(no_classes)) # Added for compatibility with models saved with the previous spelling mistake
         }
     else:
         dependencies = {
-            'rmse': rmse
+            'rmse': _rmse
         }
 
         for n in range(no_classes):

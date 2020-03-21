@@ -51,7 +51,47 @@ def class_filter_softmax_rmse_metric(classes, class_filter):
     class_filter_softmax_rmse.__name__ = 'filter_{}_softmax_rmse'.format(class_filter)
     
     return class_filter_softmax_rmse
+    
+# RMSE for Regression Task
+def rmse_metric(max_outcome):
+    def rmse(y_true, y_pred):
+        y_pred = K.maximum(y_pred, tf.constant(0, tf.float32))
+        y_pred = K.minimum(y_pred, tf.constant(max_outcome, tf.float32))
+    
+        return _rmse(y_true, y_pred)
+    
+    return rmse
 
+def mae_metric(max_outcome):
+    def mae(y_true, y_pred):
+        y_pred = K.maximum(y_pred, tf.constant(0, tf.float32))
+        y_pred = K.minimum(y_pred, tf.constant(max_outcome, tf.float32))
+    
+        return _mae(y_true, y_pred)
+    
+    return mae
+    
+def class_filter_rmse_metric(max_outcome, class_filter):
+    rmse_calc = rmse_metric(max_outcome)
+    
+    def class_filter_rmse(y_true, y_pred):
+        idx = tf.where(tf.math.not_equal(tf.cast(class_filter, K.floatx()), y_true))
+ 
+        true = tf.gather(y_true, idx)
+        pred = tf.gather(y_pred, idx)
+
+        idx_size = tf.size(idx)
+
+        rmse_val = tf.cond(idx_size == 0,
+                    lambda: tf.constant(0, tf.float32),
+                    lambda: rmse_calc(true, pred))
+        
+        return rmse_val
+        
+    class_filter_rmse.__name__ = 'class_filter_{}_rmse'.format(class_filter)
+    
+    return class_filter_rmse
+    
 def _mae(y_true, y_pred):
     return K.mean(K.abs(y_true - y_pred))
 
