@@ -89,28 +89,30 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_dataset(base_dataset):
-    def __init__(self, config, cache_postfix = '', imagenet = False):
+    def __init__(self, config, cache_postfix = '', imagenet = False, pad_resize = False, joint_scale = 5):
         super().__init__(config)
         self.imagenet = imagenet
         self.cache = config.cache_loc + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
         self.buffer_size = 200
+        self.pad_resize = pad_resize
+        self.joint_scale = joint_scale
 
     def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         if wrist:
             dataset = joint_ops.load_wrists(dataset, self.image_dir, imagenet = self.imagenet)
         else:
-            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet)
+            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_scale = self.joint_scale)
         
         return dataset
 
-    def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True):
+    def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True, buffer_size = 200):
         dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
 
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache)
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size)
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache, buffer_size = buffer_size)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize, augment = augment)
         
         return dataset
 
@@ -157,8 +159,8 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R'):
-        super().__init__(config, cache_postfix)
+    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_scale = 5):
+        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
@@ -276,7 +278,7 @@ class dream_dataset(joint_dataset):
 
         # Prepare for training
 
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 
         return dataset
 
@@ -310,8 +312,8 @@ class feet_joint_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R'):
-        super().__init__(config, 'hands_joints', model_type = model_type)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_scale = 5):
+        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
         self.buffer_size = 2000

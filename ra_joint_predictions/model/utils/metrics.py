@@ -10,14 +10,23 @@ def argmax_rmse(y_true, y_pred):
     true = tf.cast(K.argmax(y_true), K.floatx())
     pred = tf.cast(K.argmax(y_pred), K.floatx())
     
-    return rmse(true, pred)
+    return _rmse(true, pred)
+
+def softmax_mae_metric(classes):
+    def softmax_mae(y_true, y_pred):
+        true = tf.cast(K.argmax(y_true), K.floatx())
+        pred = K.sum(y_pred * classes, axis = 1)
+        
+        return _mae(true, pred)
+    
+    return softmax_mae
 
 def softmax_rmse_metric(classes):
     def softmax_rmse(y_true, y_pred):
         true = tf.cast(K.argmax(y_true), K.floatx())
         pred = K.sum(y_pred * classes, axis = 1)
         
-        return rmse(true, pred)
+        return _rmse(true, pred)
     
     return softmax_rmse
 
@@ -35,14 +44,20 @@ def class_filter_softmax_rmse_metric(classes, class_filter):
 
         rmse_val = tf.cond(idx_size == 0,
                     lambda: tf.constant(0, tf.float32),
-                    lambda: rmse(true, pred))
+                    lambda: _rmse(true, pred))
 
         return rmse_val
     
     class_filter_softmax_rmse.__name__ = 'filter_{}_softmax_rmse'.format(class_filter)
     
     return class_filter_softmax_rmse
-        
+
+def _mae(y_true, y_pred):
+    return K.mean(K.abs(y_true - y_pred))
+
+def _rmse(y_true, y_pred):
+    return K.sqrt(K.mean(K.square(y_true - y_pred)))
+
 def class_rmse_metric(class_filter):
     def class_rmse(y_true, y_pred):
         idx = tf.where(tf.math.equal(tf.cast(class_filter, K.floatx()), y_true))
@@ -52,13 +67,10 @@ def class_rmse_metric(class_filter):
 
         rmse_val = tf.cond(tf.size(idx) == 0,
                     lambda: tf.constant(0, tf.float32),
-                    lambda: rmse(true, pred))
+                    lambda: _rmse(true, pred))
 
         return rmse_val
 
     class_rmse.__name__ = 'class_{}_rmse'.format(class_filter)
     
     return class_rmse
-
-def rmse(y_true, y_pred):
-    return K.sqrt(K.mean(K.square(y_true - y_pred)))

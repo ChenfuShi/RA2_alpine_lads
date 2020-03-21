@@ -7,18 +7,18 @@ from sklearn.model_selection import train_test_split
 
 from dataset.joint_dataset import joint_dataset
 
-hand_joint_keys = ['mcp', 'pip_2', 'pip_3', 'pip_4', 'pip_5', 'mcp_1', 'mcp_2', 'mcp_3', 'mcp_4', 'mcp_5','w1', 'w2', 'w3']
+hand_joint_keys = ['mcp', 'pip_2', 'pip_3', 'pip_4', 'pip_5', 'mcp_1', 'mcp_2', 'mcp_3', 'mcp_4', 'mcp_5']
 
 hand_wrist_keys = ['w1', 'w2', 'w3']
 
 class rsna_joint_dataset(joint_dataset):
-    def __init__(self, config, imagenet = False):
-        super().__init__(config, 'rsna_joints', imagenet = imagenet)
+    def __init__(self, config, imagenet = False, pad_resize = False, joint_scale = 5):
+        super().__init__(config, 'rsna_joints', imagenet = imagenet, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
 
-    def create_rsna_joints_dataset(self, joints_source = './data/predictions/rsna_joint_data_v2.csv', val_split = False, include_wrist_joints = False):
+    def create_rsna_joints_dataset(self, joints_source = './data/predictions/rsna_joint_data_v3.csv', val_split = False, include_wrist_joints = True):
         joint_keys = hand_joint_keys
         if(include_wrist_joints):
             joint_keys.extend(hand_wrist_keys)
@@ -28,7 +28,7 @@ class rsna_joint_dataset(joint_dataset):
         joints_df = self._create_intermediate_joints_df(joints_source, joint_keys)
         joints_df = joints_df.astype({'image_name': 'str'})
         
-        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'])
+        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'], how = "inner")
 
         return self._create_rsna_datasets(outcome_joint_df, val_split)
 
@@ -57,6 +57,8 @@ class rsna_joint_dataset(joint_dataset):
         return rsna_img_df.merge(outcomes_df, on = 'id')
 
     def _create_rsna_datasets(self, outcomes_df, val_split = False, wrist = False):
+        outcomes_df = outcomes_df.sample(frac = 1).reset_index(drop = True)
+        
         file_info = outcomes_df[['image_name', 'file_type', 'flip', 'key']].astype(np.str).to_numpy()
         if wrist:
             coords = outcomes_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].to_numpy()
@@ -68,28 +70,28 @@ class rsna_joint_dataset(joint_dataset):
         outcomes = outcomes.to_numpy(np.float64)
 
         if(val_split):
-            file_info, file_test, coords, coords_test, outcomes, outcomes_test = train_test_split(file_info, coords, outcomes, test_size = 0.2)
+            file_info, file_test, coords, coords_test, outcomes, outcomes_test = train_test_split(file_info, coords, outcomes, test_size = 0.1)
 
-            rsna_dataset = self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
+            rsna_dataset = self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist, buffer_size = 4000)
             rsna_val_dataset = self._create_non_split_joint_dataset(file_test, coords_test, outcomes_test, augment = False, wrist = wrist)
             
             return rsna_dataset, rsna_val_dataset
         else:
-            return self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist)
+            return self._create_non_split_joint_dataset(file_info, coords, outcomes, cache = self.cache, wrist = wrist, buffer_size = 4000)
 
 class rsna_wrist_dataset(rsna_joint_dataset):
-    def __init__(self, config, imagenet = False):
-        joint_dataset.__init__(self, config, 'rsna_wrists', imagenet = imagenet)
+    def __init__(self, config, imagenet = False, pad_resize = False):
+        joint_dataset.__init__(self, config, 'rsna_wrists', imagenet = imagenet, pad_resize = pad_resize)
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
 
-    def create_rsna_wrist_dataset(self, joints_source = './data/predictions/rsna_joint_data_v2.csv', val_split = False):
+    def create_rsna_wrist_dataset(self, joints_source = './data/predictions/rsna_joint_data_v3.csv', val_split = False):
         outcomes_df = self._create_intermediate_outcomes_wrists_df(self.image_dir, hand_wrist_keys) 
         joints_df = self._create_intermediate_wrists_df(joints_source, hand_wrist_keys)
         joints_df = joints_df.astype({'image_name': 'str'})
         
-        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'])
+        outcome_joint_df = outcomes_df.merge(joints_df, left_on = ['id', 'key'], right_on = ['image_name', 'key'], how = "inner")
 
         return self._create_rsna_datasets(outcome_joint_df, val_split, wrist = True)
 

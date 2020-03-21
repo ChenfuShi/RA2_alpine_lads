@@ -3,7 +3,7 @@ import model
 import dataset
 import logging
 import dataset.NIH_pretrain_dataset as dpd
-from model.NIH_model import create_VGG_multioutput_imagenet,create_resnet_multioutput_imagenet,create_densenet_multioutput_imagenet,create_NASnet_multioutupt_imagenet, create_Xception_multioutput
+from model.NIH_model import create_VGG_multioutput_imagenet,create_resnet_multioutput_imagenet,create_densenet_multioutput_imagenet,create_NASnet_multioutupt_imagenet, create_Xception_multioutput_imagenet
 
 from train.pretrain_NIH import pretrain_NIH_chest
 from tensorflow.keras.models import load_model
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     dataset = dpd.pretrain_dataset_NIH_chest(configuration)
     chest_dataset, chest_dataset_val = dataset.initialize_pipeline(imagenet = True)
 
-    model = create_Xception_multioutput(configuration)
+    model = create_Xception_multioutput_imagenet(configuration)
 
     model.summary()
     # check if there is weights to load
