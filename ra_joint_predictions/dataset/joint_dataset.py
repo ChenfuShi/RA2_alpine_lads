@@ -331,8 +331,8 @@ class hands_joints_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
 
 class hands_wrists_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R'):
-        super().__init__(config, 'wrists_joints', model_type = model_type)
+    def __init__(self, config, model_type = 'R', pad_resize = False):
+        super().__init__(config, 'wrists_joints', model_type = model_type, pad_resize = pad_resize)
 
         self.image_dir = config.train_fixed_location
 

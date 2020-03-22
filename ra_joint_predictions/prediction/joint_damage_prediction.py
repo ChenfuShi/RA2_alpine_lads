@@ -10,7 +10,7 @@ class joint_damage_predictor():
         self.is_wrist = model_parameters.get('is_wrist', False)
         self.model_type = model_parameters['model_type']
 
-        self.joint_damage_prediction_model = joint_damage_model.load_joint_damage_model(self.model_file, self.no_classes, model_type = self.model_type)
+        self.joint_damage_prediction_model = joint_damage_model.load_joint_damage_model(self.model_file)
 
         if self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
             self.prediction_transformation = _transform_regression_prediction

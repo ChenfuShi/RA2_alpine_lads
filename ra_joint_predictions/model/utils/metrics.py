@@ -88,7 +88,7 @@ def class_filter_rmse_metric(max_outcome, class_filter):
         
         return rmse_val
         
-    class_filter_rmse.__name__ = 'class_filter_{}_rmse'.format(class_filter)
+    class_filter_rmse.__name__ = 'filter_{}_rmse'.format(class_filter)
     
     return class_filter_rmse
     
@@ -97,20 +97,3 @@ def _mae(y_true, y_pred):
 
 def _rmse(y_true, y_pred):
     return K.sqrt(K.mean(K.square(y_true - y_pred)))
-
-def class_rmse_metric(class_filter):
-    def class_rmse(y_true, y_pred):
-        idx = tf.where(tf.math.equal(tf.cast(class_filter, K.floatx()), y_true))
-
-        true = tf.gather(y_true, idx)
-        pred = tf.gather(y_pred, idx)
-
-        rmse_val = tf.cond(tf.size(idx) == 0,
-                    lambda: tf.constant(0, tf.float32),
-                    lambda: _rmse(true, pred))
-
-        return rmse_val
-
-    class_rmse.__name__ = 'class_{}_rmse'.format(class_filter)
-    
-    return class_rmse
