@@ -40,9 +40,10 @@ def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_bef
 
     tensorboard_callback = _get_tensorboard_callback(model_name, log_dir = 'logs/tensorboard_RSNA/')
 
-    saver = CustomSaver(model_name + "before", n = 10)
-    model.fit(joint_dataset,
-    epochs = epochs_before, steps_per_epoch = 1750, validation_data = joint_val_dataset, validation_steps = 175, verbose = 2, callbacks = [saver, tensorboard_callback])
+    if epochs_before > 0:
+        saver = CustomSaver(model_name + "before", n = 10)
+        model.fit(joint_dataset,
+            epochs = epochs_before, steps_per_epoch = 1750, validation_data = joint_val_dataset, validation_steps = 175, verbose = 2, callbacks = [saver, tensorboard_callback])
 
     for layer in model.layers:
         layer.trainable = True
