@@ -125,7 +125,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
 
             full_img, _ = img_ops.load_image(file_info, [], self.img_dir)
 
-            joint_img = joint_ops._extract_joint_from_image(full_img, x_coord, y_coord, joint_scale = self.joint_scale)
+            joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_scale = self.joint_scale)
 
             return file_info, joint_img, y
 

@@ -6,6 +6,8 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 round_to_int = lambda x: tf.cast(tf.round(x), tf.int32)
 
+feet_joints = ['mtp', 'mtp_1', 'mtp_2', 'mtp_3', 'mtp_4', 'mtp_5']
+
 def load_joints(dataset, directory, imagenet = False, joint_scale = 5):
     def __load_joints(file_info, y, z):
         joint_key = file_info[3]
@@ -17,7 +19,7 @@ def load_joints(dataset, directory, imagenet = False, joint_scale = 5):
 
         #TODO: Use joint_key to decide on box dimensions
 
-        joint_img = _extract_joint_from_image(full_img, x_coord, y_coord, joint_scale = joint_scale)
+        joint_img = _extract_joint_from_image(full_img, joint_key, x_coord, y_coord, joint_scale = joint_scale)
 
         return joint_img, z
 
@@ -43,13 +45,19 @@ def load_wrists(dataset, directory, imagenet = False):
 
     return dataset.map(__load_wrists, num_parallel_calls=AUTOTUNE)
 
-def _extract_joint_from_image(img, x, y, joint_scale):
+def _extract_joint_from_image(img, joint_key, x, y, joint_scale):
     img_shape = tf.cast(tf.shape(img), tf.float64)
     x = tf.cast(x, tf.float64)
     y = tf.cast(y, tf.float64)
-
-    box_width = img_shape[1] / joint_scale
-    box_height = box_width * 0.8
+    
+    if joint_key == 'mtp_1':
+        box_height = img_shape[0] / joint_scale
+        box_width = box_height * 1.2
+    else:
+        box_height = img_shape[0] / joint_scale
+        box_width = box_height * 0.7
+    
+    y = tf.cond( tf.math.count_nonzero(tf.equal(joint_key, feet_joints)) > 0, lambda: y - box_height * 0.1, lambda: y)
     
     #box_height = img_shape[0] / joint_scale
     #box_width = img_shape[1] / joint_scale
@@ -72,12 +80,7 @@ def _extract_joint_from_image(img, x, y, joint_scale):
 
     if x_box + box_width > img_shape[1]:
         box_width = img_shape[1] - x_box
-    
-    # # make sure the box is big enough
-    # box_height = tf.math.maximum(box_height, tf.constant(50,dtype=tf.float64))
-    # box_width = tf.math.maximum(box_width, tf.constant(50,dtype=tf.float64))
-
-    # hope
+        
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
 
     return img
