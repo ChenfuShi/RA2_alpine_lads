@@ -65,10 +65,12 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     return predictions_df
     
 def _get_test_datasets(config, hands_joint_source, feet_joints_source):
-    test_dataset = joint_test_dataset(config, config.train_fixed_location)
+    test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = True, joint_scale = 5)
 
     hands_test_dataset, _ = test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)
-    wrists_test_dataset, _ = test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)
+    
+    wrist_test_dataset = joint_test_dataset(config, config.train_fixed_location)
+    wrists_test_dataset, _ = wrist_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)
     feet_test_dataset, _ = test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)
 
     return hands_test_dataset, wrists_test_dataset, feet_test_dataset

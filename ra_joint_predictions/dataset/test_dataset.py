@@ -102,12 +102,8 @@ class joint_test_dataset(joint_dataset.dream_dataset):
                 outcomes = (tf_outcomes, tf_dummy_outcomes)
         else:
             outcomes = np.zeros(file_info.shape[0])
-            dummy_outcomes = None
 
-        if dummy_outcomes is None:
-            dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
-        else:
-            dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, (outcomes, dummy_outcomes)))
+        dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
 
         if load_wrists:
             dataset = self._load_wrists_without_outcomes(dataset)
@@ -174,7 +170,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         return dataset.map(_remove_file_info, num_parallel_calls = AUTOTUNE)
 
     def _split_outcomes(self, dataset, no_classes):
-        if self.is_regression:
+        if self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
             no_classes = 1
         
         def __split_outcomes(x, y):

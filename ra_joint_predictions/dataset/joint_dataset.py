@@ -95,7 +95,6 @@ class joint_dataset(base_dataset):
         self.cache = config.cache_loc + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
-        self.buffer_size = 200
         self.pad_resize = pad_resize
         self.joint_scale = joint_scale
 
@@ -270,15 +269,14 @@ class dream_dataset(joint_dataset):
         maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], maj_outcomes, wrist = wrist)
         min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], min_outcomes, wrist = wrist)
 
-        # Cache the partial datasets
-        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj')
-        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min')
+        # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
+        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
+        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
         dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
 
         # Prepare for training
-
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 
         return dataset
@@ -299,7 +297,6 @@ class feet_joint_dataset(dream_dataset):
         super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
-        self.buffer_size = 2000
 
     def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
         outcome_column = 'narrowing_0'
@@ -317,7 +314,6 @@ class hands_joints_dataset(dream_dataset):
         super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
 
         self.image_dir = config.train_fixed_location
-        self.buffer_size = 2000
 
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_column = 'narrowing_0'
@@ -372,7 +368,6 @@ class joint_narrowing_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.outcome_columns = ['narrowing_0']
         self.no_classes = 5
-        self.buffer_size = 4000
 
     def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv'):
         joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
