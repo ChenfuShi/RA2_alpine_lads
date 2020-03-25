@@ -9,7 +9,7 @@ from prediction.joint_damage_prediction import joint_damage_predictor
 
 def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv'):
     hands_test_dataset, wrists_test_dataset, feet_test_dataset = _get_test_datasets(config, hands_joint_source, feet_joint_source)
-    hand_narrowing_predictor, wrists_narrowing_predictor, feet_narrowing_predictor, hand_erosion_predictor, wrists_erosion_predictor, feet_erosion_predictor = _get_joint_damage_predictors(model_parameters_collection)
+    hand_narrowing_predictor, wrists_narrowing_predictor, feet_narrowing_predictor, hand_erosion_predictor, wrists_erosion_predictor, feet_erosion_predictor = _get_joint_damage_predictors(model_paramefpters_collection)
     
     preds = {}
     
@@ -65,13 +65,12 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     return predictions_df
     
 def _get_test_datasets(config, hands_joint_source, feet_joints_source):
-    test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = True, joint_scale = 5)
+    test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_scale = 5)
+    feet_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = True, joint_scale = 5)
 
     hands_test_dataset, _ = test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)
-    
-    wrist_test_dataset = joint_test_dataset(config, config.train_fixed_location)
     wrists_test_dataset, _ = wrist_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)
-    feet_test_dataset, _ = test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)
+    feet_test_dataset, _ = feet_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)
 
     return hands_test_dataset, wrists_test_dataset, feet_test_dataset
 
