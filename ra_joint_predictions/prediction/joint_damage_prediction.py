@@ -1,6 +1,6 @@
 import numpy as np
 
-from model.joint_damage_model import load_joint_damage_model
+import model.joint_damage_model as joint_damage_model
 
 class joint_damage_predictor():
     def __init__(self, model_parameters):
@@ -8,11 +8,11 @@ class joint_damage_predictor():
         self.no_outcomes = model_parameters['no_outcomes']
         self.no_classes = model_parameters['no_classes']
         self.is_wrist = model_parameters.get('is_wrist', False)
-        self.is_regression = model_parameters['is_regression']
+        self.model_type = model_parameters['model_type']
 
-        self.joint_damage_prediction_model = load_joint_damage_model(self.model_file, self.no_classes, is_regression = self.is_regression)
+        self.joint_damage_prediction_model = joint_damage_model.load_joint_damage_model(self.model_file)
 
-        if self.is_regression:
+        if self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
             self.prediction_transformation = _transform_regression_prediction
         else:
             self.prediction_transformation = _tansform_classification_prediction
