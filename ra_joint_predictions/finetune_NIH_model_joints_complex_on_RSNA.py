@@ -23,4 +23,4 @@ model = RSNA_model.complex_joint_finetune_model(configuration, weights = "weight
 
 model.summary()
 
-finetune_model(model, "complex_model_RSNA_joints_pretrain_without_NIH_pretrain_fixed_joints_moreaug", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 0, epochs_after = 101)
+finetune_model(model, "complex_model_RSNA_joints_pretrain_RSNA_changed_joints_js6", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 0, epochs_after = 101)
