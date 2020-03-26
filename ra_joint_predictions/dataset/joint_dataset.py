@@ -89,21 +89,21 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_dataset(base_dataset):
-    def __init__(self, config, cache_postfix = '', imagenet = False, pad_resize = False, joint_scale = 5):
+    def __init__(self, config, cache_postfix = '', imagenet = False, pad_resize = False, joint_extractor = None):
         super().__init__(config)
         self.imagenet = imagenet
         self.cache = config.cache_loc + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
         self.pad_resize = pad_resize
-        self.joint_scale = joint_scale
+        self.joint_extractor = joint_extractor
 
     def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         if wrist:
             dataset = joint_ops.load_wrists(dataset, self.image_dir, imagenet = self.imagenet)
         else:
-            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_scale = self.joint_scale)
+            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_extractor = self.joint_extractor)
         
         return dataset
 
@@ -158,8 +158,8 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_scale = 5):
-        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_scale = joint_scale)
+    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
@@ -293,8 +293,8 @@ class dream_dataset(joint_dataset):
         return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_scale = 5):
-        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.image_dir = config.train_fixed_location
 
@@ -310,8 +310,8 @@ class feet_joint_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_scale = 5):
-        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.image_dir = config.train_fixed_location
 
@@ -327,8 +327,8 @@ class hands_joints_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
 
 class hands_wrists_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False):
-        super().__init__(config, 'wrists_joints', model_type = model_type, pad_resize = pad_resize)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, 'wrists_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.image_dir = config.train_fixed_location
 
@@ -362,8 +362,8 @@ class hands_wrists_dataset(dream_dataset):
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
 class joint_narrowing_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = True, joint_scale = 5):
-        super().__init__(config, 'narrowing_joints', model_type = model_type, pad_resize = False, joint_scale = 5)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, 'narrowing_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.image_dir = config.train_fixed_location
         self.outcome_columns = ['narrowing_0']

@@ -8,15 +8,16 @@ import dataset.joint_dataset as joint_dataset
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
 
+from dataset.joints.joint_exractor import default_joint_extractor
+
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_test_dataset(joint_dataset.dream_dataset):
-    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_scale = 5):
-        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_extractor = default_joint_extractor()):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.img_dir = img_dir
         self.pad_resize = pad_resize
-        self.joint_scale = joint_scale
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if erosion_flag is False:
@@ -132,7 +133,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
 
             full_img, _ = img_ops.load_image(file_info, [], self.img_dir)
 
-            joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_scale = self.joint_scale)
+            joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_extractor = self.joint_extractor)
 
             return file_info, joint_img, y
 
