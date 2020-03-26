@@ -59,8 +59,13 @@ def _extract_joint_from_image(img, joint_key, x, y, joint_scale):
     
     # y = tf.cond( tf.math.count_nonzero(tf.equal(joint_key, feet_joints)) > 0, lambda: y - box_height * 0.1, lambda: y)
     
+    if joint_key == 'mtp' or joint_key == 'mtp_1':
+        joint_scale = 3
+        
+    joint_scale = tf.cast(joint_scale, tf.float64)
+    
     box_height = img_shape[0] / joint_scale
-    box_width = box_height * 0.9
+    box_width = img_shape[1] / joint_scale
 
     # get top left corner of image
     x_box = x - (box_width / 2)
