@@ -101,10 +101,16 @@ def random_crop(img, y, update_labels, boxes = _create_boxes()):
 
     return img, y
 
-def random_gaussian_noise(img, y, update_labels, noise_strength = 5):
-    noise = tf.random.normal(shape = tf.shape(img), stddev = (noise_strength / 255), dtype = tf.float32)
-    noise_img = img + noise
-    noise_img = clip_image(noise_img)
+def random_gaussian_noise(img, y, update_labels, max_noise_strength = 3):
+    def _apply_noise(image):
+        noise_factor = tf.random.uniform([], minval = 1e-6, maxval = max_noise_strength)
+        noise = tf.random.normal(shape = tf.shape(image), stddev = (noise_factor / 255), dtype = tf.float32)
+        noise_img = image + noise
+        noise_img = clip_image(noise_img)
+        
+        return noise_img
+    
+    noise_img = tf.cond(tf.random.uniform([], 0, 1) > 0.8, lambda: _apply_noise(img), lambda: (img))
         
     return noise_img, y
 

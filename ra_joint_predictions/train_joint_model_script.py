@@ -26,10 +26,10 @@ if __name__ == '__main__':
 
     do_validation = sys.argv[5] == 'Y'
 
-    is_regression = sys.argv[6] == 'Y'
+    model_type = sys.argv[6]
     
     # load pretrained model
-    trained_model, hist_df = train_joints_damage_model(config, model_name, '../trained_models/' + pretrained_model + '.h5', joint_type, dmg_type, do_validation = do_validation, is_regression = is_regression)
+    trained_model, hist_df = train_joints_damage_model(config, model_name, '../trained_models/' + pretrained_model + '.h5', joint_type, dmg_type, do_validation = do_validation, model_type = model_type)
 
     save_pretrained_model(trained_model, 0, '../trained_models/' + model_name)
     hist_df.to_csv('../trained_models/' + model_name + '_hist.csv')

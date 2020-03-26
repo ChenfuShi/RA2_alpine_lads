@@ -4,28 +4,28 @@
             "model": "../resources/hands_narrowing_adam_no_weights_reg_shuffle.h5", 
             "no_outcomes": 1, 
             "no_classes": 5, 
-            "is_regression": true 
+            "model_type": "R" 
         },
     "wrists_narrowing_model": { 
             "model": "../resources/wrists_narrowing_adam_no_weights_reg_shuffle.h5", 
             "no_outcomes": 6, 
             "no_classes": 5, 
             "is_wrist": true, 
-            "is_regression": true 
+            "model_type": "R" 
         },
     "feet_narrowing_model": 
         { 
             "model": "../resources/feet_narrowing_adam_no_weights_reg_shuffle_hand_pretrain.h5", 
             "no_outcomes": 1, 
             "no_classes": 5, 
-            "is_regression": true 
+            "model_type": "R" 
         },
     "hands_erosion_model": 
         { 
             "model": "../resources/hands_erosion_adam_no_weights_reg_shuffle.h5", 
             "no_outcomes": 1, 
             "no_classes": 6, 
-            "is_regression": true 
+            "model_type": "R" 
         },
     "wrists_erosion_model": 
         { 
@@ -33,13 +33,13 @@
             "no_outcomes": 6, 
             "no_classes": 6, 
             "is_wrist": true, 
-            "is_regression": true 
+            "model_type": "R" 
         },
     "feet_erosion_model": 
         { 
             "model": "../resources/feet_erosion_adam_no_weights_reg_shuffle_hand_pretrain.h5", 
             "no_outcomes": 1, 
             "no_classes": 11, 
-            "is_regression": true 
+            "model_type": "R" 
         }
 }
