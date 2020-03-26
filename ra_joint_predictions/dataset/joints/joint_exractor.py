@@ -13,6 +13,8 @@ def feet_joint_extractor(main_joint_scale = 6, mtp_joint_scale = 3):
     def _feet_joint_extractor(img_shape, joint_key):
         if joint_key == 'mtp' or joint_key == 'mtp_1':
             joint_scale = mtp_joint_scale
+        else:
+            joint_scale = main_joint_scale
         
         joint_scale = tf.cast(joint_scale, tf.float64)
     
