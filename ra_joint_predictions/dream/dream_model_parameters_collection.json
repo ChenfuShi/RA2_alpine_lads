@@ -37,7 +37,7 @@
         },
     "feet_erosion_model": 
         { 
-            "model": "../resources/feet_erosion_reg_old_pretrain_adam_shuffle.h5", 
+            "model": "../resources/feet_erosion_reg_old_pretrain_adam_shuffle_js3and6.h5", 
             "no_outcomes": 1, 
             "no_classes": 11, 
             "model_type": "R" 
