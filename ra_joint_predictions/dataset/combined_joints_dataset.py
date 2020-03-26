@@ -57,6 +57,8 @@ class overall_test_hand():
         while True:
             images = joints_dataframe.index.to_list()
             random.shuffle(images) 
+            selected_images = random.sample(images, 10)
+            batch = []
             for image in images:
                 full_image = image_ops.load_image([image,joints_dataframe.loc[image,"file_type"],joints_dataframe.loc[image,"flip"]], None, 
                                                  self.img_dir, imagenet = self.imagenet)[0]
@@ -72,10 +74,13 @@ class overall_test_hand():
                     
                     list_of_joints[joint_img] = list_of_joints[joint_img].numpy()
                     
-                if is_test:
-                    yield list_of_joints, image
-                else:
-                    yield list_of_joints, outcomes.loc[image,"value"]
+                batch.append(list_of_joints)
+
+            batch = list(map(list, zip(*batch)))
+            if is_test:
+                yield batch, selected_images
+            else:
+                yield batch, outcomes.loc[selected_images,"value"].values
 
 
 class overall_test_feet():
@@ -119,7 +124,9 @@ class overall_test_feet():
         while True:
             images = joints_dataframe.index.to_list()
             random.shuffle(images) 
-            for image in images:
+            selected_images = random.sample(images, 10)
+            batch = []
+            for image in selected_images:
                 full_image = image_ops.load_image([image,joints_dataframe.loc[image,"file_type"],joints_dataframe.loc[image,"flip"]], None, 
                                                  self.img_dir, imagenet = self.imagenet)[0]
                 
@@ -134,10 +141,13 @@ class overall_test_feet():
                     
                     list_of_joints[joint_img] = list_of_joints[joint_img].numpy()
                     
-                if is_test:
-                    yield list_of_joints, image
-                else:
-                    yield list_of_joints, outcomes.loc[image,"value"]
+                batch.append(list_of_joints)
+                
+            batch = list(map(list, zip(*batch)))
+            if is_test:
+                yield batch, selected_images
+            else:
+                yield batch, outcomes.loc[selected_images,"value"].values
 
 
 def _get_hand_joints(full_image, coords, joint_scale):

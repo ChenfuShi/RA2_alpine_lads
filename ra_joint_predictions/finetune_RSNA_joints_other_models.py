@@ -9,9 +9,24 @@ from tensorflow.keras.models import load_model
 from dataset.rsna_joint_dataset import rsna_joint_dataset, rsna_wrist_dataset
 
 
-# configuration = Config()
+configuration = Config()
 
-# joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, pad_resize = True, joint_scale = 8).create_rsna_joints_dataset(val_split = True)
+joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, pad_resize = False, joint_scale = 3.5).create_rsna_joints_dataset(val_split = True)
+
+
+
+models = ["NIH_new_pretrain_model_0.h5", "NIH_densenet_model_0.h5", "NIH_Xception_model_0.h5"]
+
+names = ["complex_no_NIH_scale3.5","densenet_no_NIH_scale3.5","Xception_no_NIH_scale3.5"]
+
+for model_file, name in zip(models,names):
+
+    model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/" + model_file, no_joint_types = 13, name = name + "_RSNA_joint")
+
+    model.summary()
+
+    finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 0, epochs_after = 76, n_outputs = 13)
+
 
 
 
@@ -19,22 +34,7 @@ from dataset.rsna_joint_dataset import rsna_joint_dataset, rsna_wrist_dataset
 
 # names = ["complex_no_NIH","densenet_no_NIH","Xception_no_NIH"]
 
-# for model_file, name in zip(models,names):
-
-#     model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/" + model_file, no_joint_types = 13, name = name + "_RSNA_joint")
-
-#     model.summary()
-
-#     finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 76, n_outputs = 13)
-
-
-
-
-# models = ["NIH_new_pretrain_model_0.h5", "NIH_densenet_model_0.h5", "NIH_Xception_model_0.h5"]
-
-# names = ["complex_no_NIH","densenet_no_NIH","Xception_no_NIH"]
-
-# wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, pad_resize = True).create_rsna_wrist_dataset(val_split = True)
+# wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, pad_resize = False).create_rsna_wrist_dataset(val_split = True)
 
 # for model_file, name in zip(models,names):
 
@@ -49,17 +49,17 @@ from dataset.rsna_joint_dataset import rsna_joint_dataset, rsna_wrist_dataset
 # imagenet models
 
 configuration = Config()
-name = "densent_imagenet_no_NIH"
-joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, imagenet = True, pad_resize = True, joint_scale = 8).create_rsna_joints_dataset(val_split = True)
+name = "densent_imagenet_no_NIH_scale3.5"
+joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, imagenet = True, pad_resize = False, joint_scale = 3.5).create_rsna_joints_dataset(val_split = True)
 
 model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_densenet_imagenet_model_0.h5", no_joint_types = 13, name = name + "_RSNA_joint")
 
 model.summary()
 
-finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 76, n_outputs = 13)
+finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 0, epochs_after = 76, n_outputs = 13)
 
 
-# wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, imagenet = True, pad_resize = True).create_rsna_wrist_dataset(val_split = True)
+# wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, imagenet = True, pad_resize = False).create_rsna_wrist_dataset(val_split = True)
 
 # model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_densenet_imagenet_model_0.h5", no_joint_types = 1, name = name + "_RSNA_wrist")
 
@@ -70,23 +70,23 @@ finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, ep
 
 
 configuration = Config()
-name = "Xception_imagenet_no_NIH"
+name = "Xception_imagenet_no_NIH_scale3.5"
 configuration.img_height = 299
 configuration.img_width = 299
 configuration.joint_img_height = 299
 configuration.joint_img_width = 299
 configuration.batch_size = 32
 
-joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, imagenet = True, pad_resize = True, joint_scale = 8).create_rsna_joints_dataset(val_split = True)
+joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, imagenet = True, pad_resize = False, joint_scale = 3.5).create_rsna_joints_dataset(val_split = True)
 
 model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_Xception_imagenet_model_0.h5", no_joint_types = 13, name = name + "_RSNA_joint")
 
 model.summary()
 
-finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 11, epochs_after = 76, n_outputs = 13)
+finetune_model(model,f"{name}_RSNA_joint_v2",joint_dataset,joint_val_dataset, epochs_before = 0, epochs_after = 76, n_outputs = 13)
 
 
-# wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, imagenet = True, pad_resize = True).create_rsna_wrist_dataset(val_split = True)
+# wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, imagenet = True, pad_resize = False).create_rsna_wrist_dataset(val_split = True)
 
 # model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_Xception_imagenet_model_0.h5", no_joint_types = 1, name = name + "_RSNA_wrist")
 
