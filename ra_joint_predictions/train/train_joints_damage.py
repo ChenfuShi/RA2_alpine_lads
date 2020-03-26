@@ -46,7 +46,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
         hand_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv'
         feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'
 
-        val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = False, joint_scale = 5)
+        val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = False, joint_scale = 6)
     else:
         hand_joints_source = './data/predictions/hand_joint_data_v2.csv'
         feet_joints_source = './data/predictions/feet_joint_data_v2.csv'
@@ -59,14 +59,14 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
     erosion_flag = dmg_type == 'E'
     
     if joint_type == 'F':
-        joint_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = False, joint_scale = 5)
+        joint_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = False, joint_scale = 6)
         tf_dataset = joint_dataset.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
             tf_val_dataset, no_samples = val_dataset.get_feet_joint_test_dataset(feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'H':
-        joint_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = False, joint_scale = 5)
+        joint_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = False, joint_scale = 6)
         tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
@@ -80,7 +80,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
             tf_val_dataset, no_samples = val_dataset.get_wrists_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'HF' and not erosion_flag:
-        joint_dataset = joint_narrowing_dataset(config, model_type = model_type, pad_resize = False, joint_scale = 5)
+        joint_dataset = joint_narrowing_dataset(config, model_type = model_type, pad_resize = False, joint_scale = 6)
         tf_dataset = joint_dataset.create_combined_narrowing_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
 
         if do_validation:
