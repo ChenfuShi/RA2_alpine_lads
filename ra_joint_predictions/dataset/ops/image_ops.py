@@ -55,7 +55,7 @@ def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels
 
     return img, y
 
-def apply_augment(img, y, aug, update_labels = False, cutoff = 0.4):
+def apply_augment(img, y, aug, update_labels = False, cutoff = 0.1):
     img, y = tf.cond(tf.random.uniform([], 0, 1) > cutoff, lambda: aug(img, y, update_labels), lambda: (img, y))
 
     return img, y
@@ -70,7 +70,7 @@ def random_brightness_and_contrast(img, y, update_labels, max_delta = 0.2, max_c
     img = tf.image.random_contrast(img, 1 - max_contrast, 1 + max_contrast)
     
     return img, y
-    
+
 def random_rotation(img, y, update_labels, min_rot = -20, max_rot = 20):
     random_degree_angle = tf.random.uniform(shape=[], minval = min_rot, maxval = max_rot)
     
