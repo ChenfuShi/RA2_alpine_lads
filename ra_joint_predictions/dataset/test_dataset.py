@@ -82,27 +82,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         else:
             joint_coords = df[['coord_x', 'coord_y']].to_numpy()
 
-        if params:
-            outcomes = df[params['outcomes']]
-            
-            tf_dummy_outcomes = None
-            tf_outcomes = None
-
-            if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
-                tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
-
-                outcomes = tf_dummy_outcomes
-            elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
-                tf_outcomes = outcomes.to_numpy()
-
-                outcomes = tf_outcomes
-            elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
-                tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
-                tf_outcomes = outcomes.to_numpy()
-
-                outcomes = (tf_outcomes, tf_dummy_outcomes)
-        else:
-            outcomes = np.zeros(file_info.shape[0])
+        outcomes = self._get_outcomes(df, params)
 
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
 
@@ -125,6 +105,37 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             dataset = self._remove_outcome(dataset)
 
         return dataset.prefetch(buffer_size = AUTOTUNE), file_info.shape[0]
+
+    def _get_outcomes(self, df, params):
+        if params:
+            outcomes = df[params['outcomes']]
+            
+            tf_dummy_outcomes = None
+            tf_outcomes = None
+
+            if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
+                tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+
+                outcomes = tf_dummy_outcomes
+            elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
+                tf_outcomes = outcomes.to_numpy()
+
+                outcomes = tf_outcomes
+            elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
+                tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, params['no_classes'])
+                tf_outcomes = outcomes.to_numpy()
+
+                outcomes = (tf_outcomes, tf_dummy_outcomes)
+            elif self.model_type == 'DT':
+                maj_idx = outcomes == 0
+
+                # Set majority samples to 0
+                tf_outcomes = np.ones(df.shape[0])
+                tf_outcomes[np.where(maj_idx)[0]] = 0
+        else:
+            outcomes = np.zeros(df.shape[0])
+
+        return outcomes
         
     def _load_joints_without_outcomes(self, dataset):
         def __load_joints(file_info, coords, y):
