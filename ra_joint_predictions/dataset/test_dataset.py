@@ -4,6 +4,7 @@ import pandas as pd
 import tensorflow as tf
 
 import dataset.ops.image_ops as img_ops
+import dataset.ops.dataset_ops as ds_ops
 import dataset.joint_dataset as joint_dataset
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
@@ -92,15 +93,18 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             dataset = self._load_joints_without_outcomes(dataset)
 
         dataset = self._resize_images_without_outcomes(dataset)
-
+        dataset = dataset.cache()
+        
         if params:
             dataset = self._remove_file_info(dataset)
 
             if load_wrists:
                 dataset = self._split_outcomes(dataset, params['no_classes'])
            
+            #if self.model_type == 'DT':
+                #dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = 2000)
+        
             dataset = dataset.batch(self.config.batch_size)
-            dataset = dataset.cache()
         else:
             dataset = self._remove_outcome(dataset)
 
@@ -132,6 +136,8 @@ class joint_test_dataset(joint_dataset.dream_dataset):
                 # Set majority samples to 0
                 tf_outcomes = np.ones(df.shape[0])
                 tf_outcomes[np.where(maj_idx)[0]] = 0
+                
+                outcomes = tf_outcomes
         else:
             outcomes = np.zeros(df.shape[0])
 

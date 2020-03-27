@@ -16,7 +16,7 @@ class joint_damage_type_dataset(dream_dataset):
 
         return self._create_joint_damage_dataset(outcomes_source, joints_source, joint_dataset.hand_outcome_mapping, joint_dataset.dream_hand_parts, [outcome_column])
 
-    def get_hands_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2_train.csv', joints_val_source = './data/predictions/hand_joint_data_v2_test.csv', erosion_flag = False):
+    def get_hands_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_hands_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
 
         val_dataset, val_no_samples = self._create_test_dataset().get_hands_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
@@ -28,7 +28,7 @@ class joint_damage_type_dataset(dream_dataset):
 
         return self._create_joint_damage_dataset(outcomes_source, joints_source, joint_dataset.foot_outcome_mapping, joint_dataset.dream_foot_parts, [outcome_column])
 
-    def get_feet_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2_train.csv', joints_val_source = './data/predictions/feet_joint_data_v2_test.csv', erosion_flag = False):
+    def get_feet_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_train_v2.csv', joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_feet_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
 
         val_dataset, val_no_samples = self._create_test_dataset().get_feet_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
@@ -67,6 +67,8 @@ class joint_damage_type_dataset(dream_dataset):
         outcomes = outcome_joint_df[outcome_column]
         maj_idx = outcomes == 0
 
+        self.alpha = np.count_nonzero(maj_idx) / maj_idx.shape[0]
+        
         # Set majority samples to 0
         joint_damage_type_outcome = np.ones(file_info.shape[0])
         joint_damage_type_outcome[np.where(maj_idx)[0]] = 0
