@@ -5,7 +5,7 @@ import tensorflow as tf
 import dataset.joint_dataset as joint_dataset
 
 from dataset.test_dataset import joint_test_dataset
-from prediction.joint_damage_prediction import joint_damage_predictor
+from prediction.joint_damage_prediction import joint_damage_predictor, filtered_joint_damage_predictor
 from dataset.joints.joint_exractor import default_joint_extractor, feet_joint_extractor
 
 def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv'):
@@ -86,7 +86,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     }
 
 def _get_joint_damage_predictors(model_parameters_collection):
-    hand_narrowing_predictor = joint_damage_predictor(model_parameters_collection['hands_narrowing_model'])
+    hand_narrowing_predictor = filtered_joint_damage_predictor(model_parameters_collection['hands_narrowing_model'])
     wrists_narrowing_predictor = joint_damage_predictor(model_parameters_collection['wrists_narrowing_model'])
     feet_narrowing_predictor = joint_damage_predictor(model_parameters_collection['feet_narrowing_model'])
 
