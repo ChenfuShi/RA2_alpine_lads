@@ -1,8 +1,14 @@
 import tensorflow as tf
 import tensorflow.keras.backend as K
+import tensorflow_addons as tfa
+
+def focal_loss(gamma = 2., alpha = 0.25):
+    def _focal_loss_fixed(y_true, y_pred):
+        return tfa.losses.focal_loss.sigmoid_focal_crossentropy(y_true, y_pred, gamma = gamma, alpha = alpha)
+    
+    return _focal_loss_fixed
 
 # source: https://github.com/umbertogriffo/focal-loss-keras/blob/master/losses.py
-
 def categorical_focal_loss(gamma=2., alpha=.25):
     """
     Softmax version of focal loss.

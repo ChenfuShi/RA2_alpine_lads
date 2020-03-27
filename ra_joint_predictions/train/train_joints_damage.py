@@ -57,34 +57,34 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
 
     erosion_flag = dmg_type == 'E'
     
-    df_joint_extractor = default_joint_extractor()
+    df_joint_extractor = default_joint_extractor(joint_scale = 7)
 
     if joint_type == 'F':
         f_joint_extractor = df_joint_extractor
         if erosion_flag:
-            f_joint_extractor = feet_joint_extractor
+            f_joint_extractor = df_joint_extractor
 
         joint_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = f_joint_extractor)
         tf_dataset = joint_dataset.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
-            val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = False, joint_extractor = f_joint_extractor)
+            val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = True, joint_extractor = f_joint_extractor)
             tf_val_dataset, no_samples = val_dataset.get_feet_joint_test_dataset(feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'H':
-        joint_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor)
+        joint_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = True, joint_extractor = df_joint_extractor, imagenet = False)
         tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
-            val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor)
+            val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, imagenet = False)
             tf_val_dataset, no_samples = val_dataset.get_hands_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'W':
-        joint_dataset = hands_wrists_dataset(config, model_type = model_type)
+        joint_dataset = hands_wrists_dataset(config, model_type = model_type, pad_resize = True, imagenet = True)
         tf_dataset = joint_dataset.create_wrists_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
 
         if do_validation:
-            val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor)
+            val_dataset = joint_test_dataset(config, config.train_fixed_location, model_type = model_type, pad_resize = True, joint_extractor = df_joint_extractor, imagenet = True)
             tf_val_dataset, no_samples = val_dataset.get_wrists_joint_test_dataset(hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
     elif joint_type == 'HF' and not erosion_flag:

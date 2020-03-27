@@ -1,4 +1,5 @@
 import os
+import logging
 
 import numpy as np
 import pandas as pd
@@ -10,16 +11,16 @@ from model.joint_damage_type_model import get_joint_damage_type_model
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
 train_params = {
-    'epochs': 125,
+    'epochs': 50,
     'batch_size': 64,
     'steps_per_epoch': 125
 }
 
 def train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False):
-    tf_dataset, tf_val_dataset, val_no_samples = _get_dataset(config, joint_type, dmg_type, do_validation)
+    tf_dataset, alpha, tf_val_dataset, val_no_samples = _get_dataset(config, joint_type, dmg_type, do_validation)
 
     optimizer = 'adam'
-    model = get_joint_damage_type_model(config, pretrained_model, model_name = model_name, optimizer = optimizer)
+    model = get_joint_damage_type_model(config, pretrained_model, model_name = model_name, optimizer = optimizer, alpha = alpha)
 
     return _fit_joints_damage_type_model(model, tf_dataset, train_params, val_dataset = tf_val_dataset, no_val_samples = val_no_samples)
 
@@ -45,7 +46,9 @@ def _get_dataset(config, joint_type, dmg_type, do_validation):
         else:
             tf_dataset = dataset.get_feet_joint_damage_type_dataset(outcomes_source, erosion_flag = erosion_flag)
 
-    return tf_dataset, tf_val_dataset, val_no_samples
+    alpha = dataset.alpha
+            
+    return tf_dataset, alpha, tf_val_dataset, val_no_samples
     
 
 def _fit_joints_damage_type_model(model, dataset, train_params, val_dataset = None, no_val_samples = 0):
@@ -61,7 +64,7 @@ def _fit_joints_damage_type_model(model, dataset, train_params, val_dataset = No
             dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = [saver, tensorboard_callback])
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
-
+        
         history = model.fit(
             dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = [saver, tensorboard_callback],
                 validation_data = val_dataset, validation_steps = val_steps)

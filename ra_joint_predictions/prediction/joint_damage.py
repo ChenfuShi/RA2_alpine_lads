@@ -82,7 +82,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
         'feet_narrowing_dataset': df_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)[0],
         'hands_erosion_dataset': df_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
         'wrists_erosion_dataset': df_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)[0],
-        'feet_erosion_dataset': joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_joint_extractor()).get_feet_joint_test_dataset(joints_source = feet_joints_source)[0],
+        'feet_erosion_dataset': df_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)[0]
     }
 
 def _get_joint_damage_predictors(model_parameters_collection):

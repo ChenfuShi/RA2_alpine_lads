@@ -4,6 +4,7 @@ import pandas as pd
 import tensorflow as tf
 
 import dataset.ops.image_ops as img_ops
+import dataset.ops.dataset_ops as ds_ops
 import dataset.joint_dataset as joint_dataset
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
@@ -13,8 +14,8 @@ from dataset.joints.joint_exractor import default_joint_extractor
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_test_dataset(joint_dataset.dream_dataset):
-    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_extractor = default_joint_extractor()):
-        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor()):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.img_dir = img_dir
         self.pad_resize = pad_resize
@@ -92,15 +93,18 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             dataset = self._load_joints_without_outcomes(dataset)
 
         dataset = self._resize_images_without_outcomes(dataset)
-
+        dataset = dataset.cache()
+        
         if params:
             dataset = self._remove_file_info(dataset)
 
             if load_wrists:
                 dataset = self._split_outcomes(dataset, params['no_classes'])
            
+            #if self.model_type == 'DT':
+                #dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = 2000)
+        
             dataset = dataset.batch(self.config.batch_size)
-            dataset = dataset.cache()
         else:
             dataset = self._remove_outcome(dataset)
 
@@ -132,6 +136,8 @@ class joint_test_dataset(joint_dataset.dream_dataset):
                 # Set majority samples to 0
                 tf_outcomes = np.ones(df.shape[0])
                 tf_outcomes[np.where(maj_idx)[0]] = 0
+                
+                outcomes = tf_outcomes
         else:
             outcomes = np.zeros(df.shape[0])
 
@@ -142,7 +148,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             x_coord = coords[0]
             y_coord = coords[1]
 
-            full_img, _ = img_ops.load_image(file_info, [], self.img_dir)
+            full_img, _ = img_ops.load_image(file_info, [], self.img_dir, imagenet = self.imagenet)
 
             joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_extractor = self.joint_extractor)
 
@@ -159,7 +165,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             w2_y = coords[3]
             w3_y = coords[5]
 
-            full_img, _ = img_ops.load_image(file_info, [], self.img_dir)
+            full_img, _ = img_ops.load_image(file_info, [], self.img_dir, imagenet = self.imagenet)
 
             joint_img = joint_ops._extract_wrist_from_image(full_img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y)
 

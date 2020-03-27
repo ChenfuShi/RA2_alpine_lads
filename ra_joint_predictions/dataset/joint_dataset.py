@@ -158,8 +158,8 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None):
-        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor)
+    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
+        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
@@ -293,8 +293,8 @@ class dream_dataset(joint_dataset):
         return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
-        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
+        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
 
@@ -310,8 +310,8 @@ class feet_joint_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
-        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
+        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
 
@@ -327,8 +327,8 @@ class hands_joints_dataset(dream_dataset):
         return self._create_dream_datasets(outcomes_source, joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
 
 class hands_wrists_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
-        super().__init__(config, 'wrists_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
+        super().__init__(config, 'wrists_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
 
