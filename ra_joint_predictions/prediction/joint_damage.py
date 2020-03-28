@@ -86,9 +86,9 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     }
 
 def _get_joint_damage_predictors(model_parameters_collection):
-    hand_narrowing_predictor = filtered_joint_damage_predictor(model_parameters_collection['hands_narrowing_model'])
+    hand_narrowing_predictor = filtered_joint_damage_predictor(joint_damage_predictor(model_parameters_collection['hands_narrowing_model']))
     wrists_narrowing_predictor = joint_damage_predictor(model_parameters_collection['wrists_narrowing_model'])
-    feet_narrowing_predictor = joint_damage_predictor(model_parameters_collection['feet_narrowing_model'])
+    feet_narrowing_predictor = filtered_joint_damage_predictor(joint_damage_predictor(model_parameters_collection['feet_narrowing_model']))
 
     hand_erosion_predictor = joint_damage_predictor(model_parameters_collection['hands_erosion_model'])
     wrists_erosion_predictor = joint_damage_predictor(model_parameters_collection['wrists_erosion_model'])

@@ -9,9 +9,6 @@ class Config:
         # Init default output dir in case it's missing from config
         self.output_dir = './logs'
 
-        tf.config.threading.set_intra_op_parallelism_threads(8)
-        tf.config.threading.set_inter_op_parallelism_threads(8)
-
         with open(config_path) as config_file:
             config_data = json.load(config_file)
             

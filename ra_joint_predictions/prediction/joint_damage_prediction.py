@@ -4,6 +4,8 @@ import model.joint_damage_model as joint_damage_model
 
 class joint_damage_predictor():
     def __init__(self, model_parameters):
+        self.model_parameters = model_parameters
+        
         self.model_file = model_parameters['model']
         self.no_outcomes = model_parameters['no_outcomes']
         self.no_classes = model_parameters['no_classes']
@@ -21,7 +23,7 @@ class joint_damage_predictor():
         predicted_joint_damage = np.zeros(self.no_outcomes)
 
         y_preds = self.joint_damage_prediction_model.predict(img)
-
+        
         for n in range(self.no_outcomes):
             y_pred = y_preds[n][0]
 
@@ -34,23 +36,25 @@ class joint_damage_predictor():
 
         return predicted_joint_damage
 
-class filtered_joint_damage_predictor(joint_damage_predictor):
-    def __init__(self, model_parameters):
-        super().__init__(model_parameters)
+class filtered_joint_damage_predictor():
+    def __init__(self, joint_damage_predictor):
+        self.model_parameters = joint_damage_predictor.model_parameters
+        
+        self.joint_damage_predictor = joint_damage_predictor
 
-        self.cutoff = model_parameters.get('damage_type_cutoff', 0.4)
-        self.damage_type_model_file = model_parameters['damage_type_model']
+        self.cutoff = self.model_parameters.get('damage_type_cutoff', 0.3)
+        self.damage_type_model_file = self.model_parameters['damage_type_model']
 
         self.joint_damage_type_prediction_model = joint_damage_model.load_joint_damage_model(self.damage_type_model_file)
 
     def predict_joint_damage(self, img):
-        y_pred = self.joint_damage_type_prediction_model.predict(img)[0]
-
+        sig_pred = self.joint_damage_type_prediction_model.predict(img)[0][0]
+        
         # If the probability of it not being 0 is > cutoff, pass it on to the next predictor
-        if y_pred > self.cutoff:
-            return super().predict_joint_damage(img)
+        if sig_pred > self.cutoff:
+            return self.joint_damage_predictor.predict_joint_damage(img)
         else:
-            return 0.0
+            return [0.0]
 
 def _tansform_classification_prediction(joint_damage_predictor, prediction):
     # Calculate the output as softmax weighted sum of possible outcomes
