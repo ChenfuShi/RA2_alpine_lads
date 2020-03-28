@@ -16,6 +16,7 @@ import model.joint_damage_model as joint_damage_model
 from dataset.base_dataset import base_dataset
 from utils.class_weight_utils import calc_adapted_class_weights
 from dataset.test_dataset import joint_test_dataset, narrowing_test_dataset
+from dataset.joints.joint_exractor import width_based_joint_extractor
 
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
@@ -23,7 +24,8 @@ dream_foot_parts = ['LF', 'RF']
 hands_narrowing_params = {
     'no_classes': 5,
     'outcomes': ['narrowing_0'],
-    'parts': dream_hand_parts
+    'parts': dream_hand_parts,
+    'joint_extractor': width_based_joint_extractor()
 }
 
 wrists_narrowing_params = {
@@ -275,7 +277,7 @@ class dream_dataset(joint_dataset):
         min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
-        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
+        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.2, 0.8])
 
         # Prepare for training
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
