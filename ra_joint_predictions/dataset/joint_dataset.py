@@ -15,6 +15,7 @@ import model.joint_damage_model as joint_damage_model
 
 from dataset.base_dataset import base_dataset
 from utils.class_weight_utils import calc_adapted_class_weights
+from dataset.test_dataset import joint_test_dataset, narrowing_test_dataset
 
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
@@ -291,6 +292,9 @@ class dream_dataset(joint_dataset):
         column_transformer = ColumnTransformer([('one_hot_encoder', one_hot_encoder, np.arange(D))], remainder = 'passthrough')
 
         return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
+    
+    def _create_test_dataset(self):
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
 
 class feet_joint_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
@@ -309,6 +313,13 @@ class feet_joint_dataset(dream_dataset):
 
         return self._create_dream_datasets(outcomes_source, joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
 
+    def create_feet_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_train_v2.csv', joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
+        dataset = self.create_feet_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
+        
+        val_dataset, val_no_samples = self._create_test_dataset().get_feet_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+
+        return dataset, val_dataset, val_no_samples
+
 class hands_joints_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
         super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
@@ -325,6 +336,13 @@ class hands_joints_dataset(dream_dataset):
             self.cache = self.cache + '_erosion'
 
         return self._create_dream_datasets(outcomes_source, joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
+
+    def create_hands_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
+        dataset = self.create_hands_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
+        
+        val_dataset, val_no_samples = self._create_test_dataset().get_hands_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+
+        return dataset, val_dataset, val_no_samples
 
 class hands_wrists_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
@@ -344,6 +362,13 @@ class hands_wrists_dataset(dream_dataset):
         dataset = self._create_dream_datasets(outcomes_source, joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist = True)
 
         return self._split_outcomes(dataset, no_classes)
+
+    def create_wrists_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
+        dataset = self.create_wrists_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
+        
+        val_dataset, val_no_samples = self._create_test_dataset().get_wrists_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+
+        return dataset, val_dataset, val_no_samples
 
     # Overwrite method for wrist dataset to change how maj elements are found
     def _find_maj_indices(self, outcomes):
@@ -374,6 +399,18 @@ class joint_narrowing_dataset(dream_dataset):
         joint_narrowing_dataset = self._create_dream_dataset(joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
 
         return joint_narrowing_dataset
+
+    def create_combined_narrowing_joint_dataset_with_validation(self, outcomes_source, 
+            hand_joints_source = './data/predictions/hand_joint_data_train_v2.csv', hand_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', 
+            feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'):
+
+        dataset = self.create_combined_narrowing_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
+        
+        test_dataset = narrowing_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
+        val_dataset, val_no_samples = test_dataset.get_joint_narrowing_test_dataset(hand_joints_source = hand_joints_val_source,
+            feet_joints_source = feet_joints_val_source, outcomes_source = outcomes_source)
+
+        return dataset, val_dataset, val_no_samples
 
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
         combined_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)

@@ -205,8 +205,8 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         return dataset.map(__remove_outcome, num_parallel_calls = AUTOTUNE)
 
 class narrowing_test_dataset(joint_test_dataset, joint_dataset.joint_narrowing_dataset):
-    def __init__(self, config, img_dir, is_regression = False):
-        super().__init__(config, img_dir, is_regression = is_regression)
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, img_dir, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
     def get_joint_narrowing_test_dataset(self, hand_joints_source = './data/predictions/hand_joint_data_test.csv', feet_joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None):
         combined_joints_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
