@@ -5,18 +5,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
-
-import dataset.ops.joint_ops as joint_ops
-import dataset.ops.dataset_ops as ds_ops
+from dataset.base_dataset import dream_dataset
 import model.joint_damage_model as joint_damage_model
-
-from dataset.base_dataset import base_dataset
-from utils.class_weight_utils import calc_adapted_class_weights
-from dataset.test_dataset import joint_test_dataset, narrowing_test_dataset
-from dataset.joints.joint_exractor import width_based_joint_extractor
 
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
@@ -24,8 +14,7 @@ dream_foot_parts = ['LF', 'RF']
 hands_narrowing_params = {
     'no_classes': 5,
     'outcomes': ['narrowing_0'],
-    'parts': dream_hand_parts,
-    'joint_extractor': width_based_joint_extractor()
+    'parts': dream_hand_parts
 }
 
 wrists_narrowing_params = {
@@ -91,213 +80,6 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-class joint_dataset(base_dataset):
-    def __init__(self, config, cache_postfix = '', imagenet = False, pad_resize = False, joint_extractor = None):
-        super().__init__(config)
-        self.imagenet = imagenet
-        self.cache = config.cache_loc + cache_postfix
-        self.joint_height = config.joint_img_height
-        self.joint_width = config.joint_img_width
-        self.pad_resize = pad_resize
-        self.joint_extractor = joint_extractor
-
-    def _create_joint_dataset(self, file_info, joint_coords, outcomes, wrist = False):
-        dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
-        if wrist:
-            dataset = joint_ops.load_wrists(dataset, self.image_dir, imagenet = self.imagenet)
-        else:
-            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_extractor = self.joint_extractor)
-        
-        return dataset
-
-    def _create_non_split_joint_dataset(self, file_info, coords, outcomes, cache = True, wrist = False, augment = True, buffer_size = 200):
-        dataset = self._create_joint_dataset(file_info, coords, outcomes, wrist)
-
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = cache, buffer_size = buffer_size)
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize, augment = augment)
-        
-        return dataset
-
-    def _create_intermediate_joints_df(self, joints_source, joint_keys):
-        joints_df = pd.read_csv(joints_source)
-
-        mapped_joints = []
-        for _, row in joints_df.iterrows():
-            image_name = row['image_name']
-  
-            for key in joint_keys:
-                mapped_joint = {
-                    'image_name': image_name,
-                    'key': key,
-                    'flip': row['flip'],
-                    'file_type': row['file_type'],
-                    'coord_x': row[key + '_x'],
-                    'coord_y': row[key + '_y']
-                }
-
-                mapped_joints.append(mapped_joint)
-
-        return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
-        
-    def _create_intermediate_wrists_df(self, joints_source, joint_keys):
-        joints_df = pd.read_csv(joints_source)
-
-        mapped_joints = []
-        for _, row in joints_df.iterrows():
-            image_name = row['image_name']
-            mapped_joint = {
-                'image_name': image_name,
-                'key': "wrist",
-                'flip': row['flip'],
-                'file_type': row['file_type'],
-            }
-
-            for key in joint_keys:
-                mapped_joint[key + "_x"] = row[key + '_x']
-                mapped_joint[key + "_y"] = row[key + '_y']
-                
-            mapped_joints.append(mapped_joint)
-
-        return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
-
-class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
-        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
-
-        self.image_dir = config.train_fixed_location
-        self.batch_size = config.batch_size
-        self.model_type = model_type
-        self.cache = self.cache + '_' + model_type
-
-    def _create_dream_datasets(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
-        outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
-        outcome_joint_df = outcome_joint_df.dropna(subset = outcome_columns)
-
-        dataset = self._create_dream_dataset(outcome_joint_df, outcome_columns, no_classes, cache = self.cache, wrist = wrist)
-        
-        return dataset
-
-    def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts, wrist = False):
-        outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)
-        if wrist:
-            joints_df = self._create_intermediate_wrists_df(joints_source, hand_wrist_keys)
-        else:
-            joints_df = self._create_intermediate_joints_df(joints_source, outcome_mapping.keys())
-
-        return outcomes_df.merge(joints_df, on = ['image_name', 'key'])
-
-    def _create_intermediate_outcomes_df(self, outcomes_source, outcome_mapping, parts):
-        outcomes_df = pd.read_csv(outcomes_source)
-
-        outcome_joints = []
-        for _, row in outcomes_df.iterrows():
-            patient_id = row['Patient_ID']
-
-            for part in parts:
-                image_name = patient_id + '-' + part
-
-                for idx, key in enumerate(outcome_mapping.keys()):
-                    joint_mapping = outcome_mapping[key]
-
-                    outcome_joint = {
-                        'image_name': image_name,
-                        'key': key
-                    }
-                    
-                    mapped_narrowing_keys = [key_val.format(part = part) for key_val in joint_mapping[0]]
-                    for idx, mapped_key in enumerate(mapped_narrowing_keys):
-                        outcome_joint[f'narrowing_{idx}'] = row[mapped_key]
-
-                    mapped_erosion_keys = [key_val.format(part = part) for key_val in joint_mapping[1]]
-                    for idx, mapped_key in enumerate(mapped_erosion_keys):
-                        outcome_joint[f'erosion_{idx}'] = row[mapped_key]
-
-                    outcome_joints.append(outcome_joint)
-
-        return pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))    
-
-    def _create_dream_dataset(self, outcome_joint_df, outcome_columns, no_classes, augment = True, cache = True, wrist = False, is_train = True):
-        outcome_joint_df = outcome_joint_df.sample(frac = 1).reset_index(drop = True)
-
-        file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].values
-
-        outcomes = outcome_joint_df[outcome_columns]
-        if is_train:
-            self._init_model_outcomes_bias(outcomes, no_classes)
-
-        tf_dummy_outcomes = None
-        tf_outcomes = None
-
-        if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
-            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
-        elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
-            tf_outcomes = outcomes.to_numpy()
-        elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
-            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
-            tf_outcomes = outcomes.to_numpy()
-        
-        if wrist:
-            coords = outcome_joint_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].values
-        else:
-            coords = outcome_joint_df[['coord_x', 'coord_y']].values
-
-        if is_train:
-            maj_idx = self._find_maj_indices(outcomes)
-
-            return self._create_interleaved_joint_datasets(file_info, coords, maj_idx, outcomes = tf_outcomes, dummy_outcomes = tf_dummy_outcomes, wrist = wrist)
-        else:
-            return self._create_non_split_joint_dataset(file_info, coords, tf_outcomes, wrist = wrist, augment = False)
-
-    def _find_maj_indices(self, outcomes):
-        return outcomes == 0
-
-    def _create_interleaved_joint_datasets(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
-        min_idx = np.logical_not(maj_idx)
-
-        # Tranform boolean mask into indices
-        maj_idx = np.where(maj_idx)[0]
-        min_idx = np.where(min_idx)[0]
-
-        if self.model_type == 'C':
-            maj_outcomes = dummy_outcomes[maj_idx, :]
-            min_outcomes = dummy_outcomes[min_idx, :]
-        elif self.model_type == 'R':
-            maj_outcomes = outcomes[maj_idx]
-            min_outcomes = outcomes[min_idx]
-        elif self.model_type == 'RC':
-            maj_outcomes = (outcomes[maj_idx], dummy_outcomes[maj_idx, :])
-            min_outcomes = (outcomes[min_idx], dummy_outcomes[min_idx, :])
-
-        # Create 2 datasets, one with the majority class, one with the other classes
-        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], maj_outcomes, wrist = wrist)
-        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], min_outcomes, wrist = wrist)
-
-        # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
-        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
-        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
-
-        # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
-        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.2, 0.8])
-
-        # Prepare for training
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
-
-        return dataset
-
-    def _init_model_outcomes_bias(self, outcomes, no_classes):
-        self.class_weights = calc_adapted_class_weights(outcomes, no_classes)
-
-    def _dummy_encode_outcomes(self, outcomes, no_classes):
-        D = outcomes.shape[1]
-
-        one_hot_encoder = OneHotEncoder(sparse = False, categories = [np.arange(no_classes)] * D)
-        column_transformer = ColumnTransformer([('one_hot_encoder', one_hot_encoder, np.arange(D))], remainder = 'passthrough')
-
-        return column_transformer.fit_transform(outcomes.to_numpy()).astype(dtype = np.float64)
-    
-    def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
-
 class feet_joint_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
         super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
@@ -314,14 +96,7 @@ class feet_joint_dataset(dream_dataset):
             self.cache = self.cache + '_erosion'
 
         return self._create_dream_datasets(outcomes_source, joints_source, foot_outcome_mapping, dream_foot_parts, [outcome_column], no_classes)
-
-    def create_feet_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_train_v2.csv', joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
-        dataset = self.create_feet_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
-        
-        val_dataset, val_no_samples = self._create_test_dataset().get_feet_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-
-        return dataset, val_dataset, val_no_samples
-
+    
 class hands_joints_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
         super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
@@ -338,13 +113,6 @@ class hands_joints_dataset(dream_dataset):
             self.cache = self.cache + '_erosion'
 
         return self._create_dream_datasets(outcomes_source, joints_source, hand_outcome_mapping, dream_hand_parts, [outcome_column], no_classes)
-
-    def create_hands_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
-        dataset = self.create_hands_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
-        
-        val_dataset, val_no_samples = self._create_test_dataset().get_hands_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-
-        return dataset, val_dataset, val_no_samples
 
 class hands_wrists_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
@@ -364,14 +132,6 @@ class hands_wrists_dataset(dream_dataset):
         dataset = self._create_dream_datasets(outcomes_source, joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist = True)
 
         return self._split_outcomes(dataset, no_classes)
-
-    def create_wrists_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
-        dataset = self.create_wrists_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
-        
-        val_dataset, val_no_samples = self._create_test_dataset().get_wrists_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-
-        return dataset, val_dataset, val_no_samples
-
     # Overwrite method for wrist dataset to change how maj elements are found
     def _find_maj_indices(self, outcomes):
         # Find elements with all 0
@@ -398,21 +158,9 @@ class joint_narrowing_dataset(dream_dataset):
 
     def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv'):
         joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
-        joint_narrowing_dataset = self._create_dream_dataset(joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
+        dataset = self._create_dream_dataset(joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
 
-        return joint_narrowing_dataset
-
-    def create_combined_narrowing_joint_dataset_with_validation(self, outcomes_source, 
-            hand_joints_source = './data/predictions/hand_joint_data_train_v2.csv', hand_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', 
-            feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'):
-
-        dataset = self.create_combined_narrowing_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
-        
-        test_dataset = narrowing_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
-        val_dataset, val_no_samples = test_dataset.get_joint_narrowing_test_dataset(hand_joints_source = hand_joints_val_source,
-            feet_joints_source = feet_joints_val_source, outcomes_source = outcomes_source)
-
-        return dataset, val_dataset, val_no_samples
+        return dataset
 
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
         combined_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
