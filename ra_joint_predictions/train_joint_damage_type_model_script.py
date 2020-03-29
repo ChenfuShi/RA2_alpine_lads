@@ -1,3 +1,8 @@
+import tensorflow as tf
+
+tf.config.threading.set_intra_op_parallelism_threads(8)
+tf.config.threading.set_inter_op_parallelism_threads(8)
+
 import logging
 import os
 import sys

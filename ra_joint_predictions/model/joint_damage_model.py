@@ -46,6 +46,9 @@ def _get_base_model(config, pretrained_model_file):
     if pretrained_model_file is not None:
         pretrained_model = keras.models.load_model(pretrained_model_file)
 
+        for layer in pretrained_model.layers[:-12]:
+            layer.trainable = False
+        
         return pretrained_model.input, pretrained_model.output
     else:
         input = get_joint_model_input(config)

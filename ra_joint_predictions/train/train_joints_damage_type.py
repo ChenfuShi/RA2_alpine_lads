@@ -3,12 +3,14 @@ import logging
 
 import numpy as np
 import pandas as pd
+import tensorflow.keras as keras
 
 from dataset.joint_damage_type_dataset import joint_damage_type_dataset
-from dataset.joints.joint_exractor import default_joint_extractor
+from dataset.joints.joint_extractor_factory import get_joint_extractor
 from dataset.test_dataset import joint_test_dataset
 from model.joint_damage_type_model import get_joint_damage_type_model
 from utils.saver import CustomSaver, _get_tensorboard_callback
+
 
 train_params = {
     'epochs': 50,
@@ -19,14 +21,14 @@ train_params = {
 def train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False):
     tf_dataset, alpha, tf_val_dataset, val_no_samples = _get_dataset(config, joint_type, dmg_type, do_validation)
 
-    optimizer = 'adam'
+    optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.9)
     model = get_joint_damage_type_model(config, pretrained_model, model_name = model_name, optimizer = optimizer, alpha = alpha)
 
     return _fit_joints_damage_type_model(model, tf_dataset, train_params, val_dataset = tf_val_dataset, no_val_samples = val_no_samples)
 
 def _get_dataset(config, joint_type, dmg_type, do_validation):
     outcomes_source = os.path.join(config.train_location, 'training.csv')
-    joint_extractor = default_joint_extractor()
+    df_joint_extractor = get_joint_extractor(joint_type, dmg_type)
 
     dataset = joint_damage_type_dataset(config, pad_resize = False, joint_extractor = joint_extractor)
 

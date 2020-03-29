@@ -2,7 +2,7 @@ import tensorflow as tf
 
 import dataset.ops.image_ops as img_ops
 
-from dataset.joints.joint_exractor import default_joint_extractor
+from dataset.joints.joint_extractor import default_joint_extractor
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 

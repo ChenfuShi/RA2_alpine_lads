@@ -9,11 +9,12 @@ import dataset.joint_dataset as joint_dataset
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
 
-from dataset.joints.joint_exractor import default_joint_extractor
+from dataset.base_dataset import dream_dataset
+from dataset.joints.joint_extractor import default_joint_extractor
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-class joint_test_dataset(joint_dataset.dream_dataset):
+class joint_test_dataset(dream_dataset):
     def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor()):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 

@@ -43,7 +43,7 @@ def _build_lookup_table_from_dict(dictionary, default_value):
     
     return lookup_table
 
-def width_based_joint_extractor(joint_scale = 8., height_scale = 0.8, key_joint_scales = {}, key_height_scales = {}):
+def width_based_joint_extractor(joint_scale = 6., height_scale = 0.8, key_joint_scales = {}, key_height_scales = {}):
     joint_scale_table = _build_lookup_table_from_dict(key_joint_scales, joint_scale)
     height_scale_table = _build_lookup_table_from_dict(key_height_scales, height_scale)
     
