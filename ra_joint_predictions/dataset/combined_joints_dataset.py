@@ -48,18 +48,21 @@ class overall_test_hand():
         joints_dataframe = pd.read_csv(joints_source,index_col=0).set_index("image_name")
         
         if self.is_test :
-            return self._image_generator(joints_dataframe, is_test = True)
+            return self._image_test_generator(joints_dataframe)
         else:
             outcomes_dataframe = __get_hand_outcome(pd.read_csv(outcomes_source),erosion_flag).set_index("image")
             return self._image_generator(joints_dataframe, outcomes = outcomes_dataframe)
 
-    def _image_generator(self, joints_dataframe, is_test = False, outcomes = None):
+    def _image_generator(self, joints_dataframe, outcomes = None):
         while True:
-            images = joints_dataframe.index.to_list()
-            random.shuffle(images) 
-            selected_images = random.sample(images, 10)
+            merged_joints_dataframe = joints_dataframe.merge(outcomes, left_index=True, right_index=True)
+            images = merged_joints_dataframe.index.to_list()
+            weights = [0.4 if x < 2 else 1 for x in merged_joints_dataframe["value"].values]
+            p_weights = [x/sum(weights) for x in weights]
+            selected_images = np.random.choice(images,20,False,p=p_weights)
+
             batch = []
-            for image in images:
+            for image in selected_images:
                 full_image = image_ops.load_image([image,joints_dataframe.loc[image,"file_type"],joints_dataframe.loc[image,"flip"]], None, 
                                                  self.img_dir, imagenet = self.imagenet)[0]
                 
@@ -73,15 +76,34 @@ class overall_test_hand():
                         list_of_joints[joint_img] = image_ops.get_3_channels(list_of_joints[joint_img], None)[0]
                     
                     list_of_joints[joint_img] = list_of_joints[joint_img].numpy()
-                    
+                
                 batch.append(list_of_joints)
-
+                
             batch = list(map(list, zip(*batch)))
-            if is_test:
-                yield batch, selected_images
-            else:
-                yield batch, outcomes.loc[selected_images,"value"].values
+            
+            yield batch, outcomes.loc[selected_images,"value"].values
+                
+    def _image_test_generator(self, joints_dataframe):
+        # this will go through all images before reshuffling
+        while True:
+            images = joints_dataframe.index.to_list()
 
+            for image in images:
+                full_image = image_ops.load_image([image,joints_dataframe.loc[image,"file_type"],joints_dataframe.loc[image,"flip"]], None, 
+                                                 self.img_dir, imagenet = self.imagenet)[0]
+                
+                list_of_joints = _get_hand_joints(full_image,joints_dataframe.loc[image,:], joint_scale = self.joint_scale)
+                
+                for joint_img in range(len(list_of_joints)):
+                    list_of_joints[joint_img] = dataset_ops._augment_and_clip_image(list_of_joints[joint_img], None,)[0]
+                    list_of_joints[joint_img] = image_ops.resize_image(list_of_joints[joint_img], None, self.joint_height, self.joint_width,
+                                                                      pad_resize = self.pad_resize)[0]
+                    if self.imagenet:
+                        list_of_joints[joint_img] = image_ops.get_3_channels(list_of_joints[joint_img], None)[0]
+                    
+                    list_of_joints[joint_img] = np.expand_dims(list_of_joints[joint_img].numpy(),0)
+            
+                yield list_of_joints, image
 
 class overall_test_feet():
     def __init__(self, config, img_dir, is_regression = True ,pad_resize = False, joint_scale = 5, cache_postfix = '', imagenet = False, is_test = False):
@@ -115,16 +137,19 @@ class overall_test_feet():
         joints_dataframe = pd.read_csv(joints_source,index_col=0).set_index("image_name")
         
         if self.is_test :
-            return self._image_generator(joints_dataframe, is_test = True)
+            return self._image_test_generator(joints_dataframe)
         else:
             outcomes_dataframe = __get_feet_outcome(pd.read_csv(outcomes_source),erosion_flag).set_index("image")
             return self._image_generator(joints_dataframe, outcomes = outcomes_dataframe)
 
-    def _image_generator(self, joints_dataframe, is_test = False, outcomes = None):
+    def _image_generator(self, joints_dataframe, outcomes = None):
         while True:
-            images = joints_dataframe.index.to_list()
-            random.shuffle(images) 
-            selected_images = random.sample(images, 10)
+            merged_joints_dataframe = joints_dataframe.merge(outcomes, left_index=True, right_index=True)
+            images = merged_joints_dataframe.index.to_list()
+            weights = [0.4 if x < 2 else 1 for x in merged_joints_dataframe["value"].values]
+            p_weights = [x/sum(weights) for x in weights]
+            selected_images = np.random.choice(images,20,False,p=p_weights)
+
             batch = []
             for image in selected_images:
                 full_image = image_ops.load_image([image,joints_dataframe.loc[image,"file_type"],joints_dataframe.loc[image,"flip"]], None, 
@@ -140,25 +165,46 @@ class overall_test_feet():
                         list_of_joints[joint_img] = image_ops.get_3_channels(list_of_joints[joint_img], None)[0]
                     
                     list_of_joints[joint_img] = list_of_joints[joint_img].numpy()
-                    
+                
                 batch.append(list_of_joints)
                 
             batch = list(map(list, zip(*batch)))
-            if is_test:
-                yield batch, selected_images
-            else:
-                yield batch, outcomes.loc[selected_images,"value"].values
+            
+            yield batch, outcomes.loc[selected_images,"value"].values
+                
+    def _image_test_generator(self, joints_dataframe):
+        # this will go through all images before reshuffling
+        while True:
+            images = joints_dataframe.index.to_list()
+
+            for image in images:
+                full_image = image_ops.load_image([image,joints_dataframe.loc[image,"file_type"],joints_dataframe.loc[image,"flip"]], None, 
+                                                 self.img_dir, imagenet = self.imagenet)[0]
+                
+                list_of_joints = _get_feet_joints(full_image,joints_dataframe.loc[image,:], joint_scale = self.joint_scale)
+                
+                for joint_img in range(len(list_of_joints)):
+                    list_of_joints[joint_img] = dataset_ops._augment_and_clip_image(list_of_joints[joint_img], None,)[0]
+                    list_of_joints[joint_img] = image_ops.resize_image(list_of_joints[joint_img], None, self.joint_height, self.joint_width,
+                                                                      pad_resize = self.pad_resize)[0]
+                    if self.imagenet:
+                        list_of_joints[joint_img] = image_ops.get_3_channels(list_of_joints[joint_img], None)[0]
+                    
+                    list_of_joints[joint_img] = np.expand_dims(list_of_joints[joint_img].numpy(),0)
+            
+                yield list_of_joints, image
+
 
 
 def _get_hand_joints(full_image, coords, joint_scale):
     joints = []
     for key in hand_joint_keys:
-        joints.append(joint_ops._extract_joint_from_image(full_image,coords[key + "_x"], coords[key + "_y"], joint_scale))
+        joints.append(joint_ops._extract_joint_from_image(full_image, key, coords[key + "_x"], coords[key + "_y"], joint_scale))
     joints.append(joint_ops._extract_wrist_from_image(full_image, *coords[["w1_x", "w2_x", "w3_x", "w1_y", "w2_y", "w3_y"]].to_list()))
     return joints
 
 def _get_feet_joints(full_image, coords, joint_scale):
     joints = []
     for key in feet_joints_keys:
-        joints.append(joint_ops._extract_joint_from_image(full_image,coords[key + "_x"], coords[key + "_y"], joint_scale))
+        joints.append(joint_ops._extract_joint_from_image(full_image, key, coords[key + "_x"], coords[key + "_y"], joint_scale))
     return joints
