@@ -6,6 +6,11 @@
 
 ########################################
 
+import tensorflow as tf
+
+tf.config.threading.set_intra_op_parallelism_threads(8)
+tf.config.threading.set_inter_op_parallelism_threads(8)
+
 from utils.config import Config
 from utils.dataset_preprocessing import fix_images
 import model

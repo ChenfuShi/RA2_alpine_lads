@@ -6,6 +6,8 @@ from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metri
 
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
 
+from keras_adamw import AdamW
+
 MODEL_TYPE_CLASSIFICATION = "C"
 MODEL_TYPE_REGRESSION = "R"
 MODEL_TYPE_COMBINED = "RC"
@@ -22,6 +24,8 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
         inputs = base_input,
         outputs = outputs,
         name = model_name)
+    
+    optimizer = _get_optimizier(joint_damage_model)
 
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = 'categorical_crossentropy', metrics = metrics_dir, optimizer = optimizer)
@@ -46,6 +50,9 @@ def _get_base_model(config, pretrained_model_file):
     if pretrained_model_file is not None:
         pretrained_model = keras.models.load_model(pretrained_model_file)
 
+        #for layer in pretrained_model.layers[:-10]:
+            #layer.trainable = False
+        
         return pretrained_model.input, pretrained_model.output
     else:
         input = get_joint_model_input(config)
@@ -77,3 +84,19 @@ def _add_outputs(class_weights, base_output, model_type):
             metrics_dir[f'class_output_{idx}'] = [softmax_mae_metric(np.arange(no_outcomes)), softmax_rmse_metric(np.arange(no_outcomes)), class_filter_softmax_rmse_metric(np.arange(no_outcomes), 0)]
 
     return outputs, metrics_dir
+
+def _get_optimizier(model):
+    weight_decays = {}
+
+    for layer in model.layers:
+        layer.kernel_regularizer = keras.regularizers.l2(0)
+        weight_decays.update({layer.name: 1e-8})
+
+    # Update Convs less
+    lr_multipliers = {'_conv_': 0.8}
+
+    steps = 175
+
+    optimizer = AdamW(lr=5e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 125, init_verbose = False)
+    
+    return optimizer

@@ -5,15 +5,15 @@ import pandas as pd
 
 from sklearn.model_selection import train_test_split
 
-from dataset.joint_dataset import joint_dataset
+from dataset.base_dataset import joint_dataset
 
 hand_joint_keys = ['mcp', 'pip_2', 'pip_3', 'pip_4', 'pip_5', 'mcp_1', 'mcp_2', 'mcp_3', 'mcp_4', 'mcp_5']
 
 hand_wrist_keys = ['w1', 'w2', 'w3']
 
 class rsna_joint_dataset(joint_dataset):
-    def __init__(self, config, imagenet = False, pad_resize = False, joint_scale = 5):
-        super().__init__(config, 'rsna_joints', imagenet = imagenet, pad_resize = pad_resize, joint_scale = joint_scale)
+    def __init__(self, config, imagenet = False, pad_resize = False, joint_extractor = None):
+        super().__init__(config, 'rsna_joints', imagenet = imagenet, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels

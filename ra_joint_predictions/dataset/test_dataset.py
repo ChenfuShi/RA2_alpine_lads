@@ -4,19 +4,22 @@ import pandas as pd
 import tensorflow as tf
 
 import dataset.ops.image_ops as img_ops
+import dataset.ops.dataset_ops as ds_ops
 import dataset.joint_dataset as joint_dataset
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
 
+from dataset.base_dataset import dream_dataset
+from dataset.joints.joint_extractor import default_joint_extractor
+
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-class joint_test_dataset(joint_dataset.dream_dataset):
-    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_scale = 5):
-        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_scale = joint_scale)
+class joint_test_dataset(dream_dataset):
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor()):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.img_dir = img_dir
         self.pad_resize = pad_resize
-        self.joint_scale = joint_scale
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if erosion_flag is False:
@@ -81,6 +84,34 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         else:
             joint_coords = df[['coord_x', 'coord_y']].to_numpy()
 
+        outcomes = self._get_outcomes(df, params)
+
+        dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
+
+        if load_wrists:
+            dataset = self._load_wrists_without_outcomes(dataset)
+        else:
+            dataset = self._load_joints_without_outcomes(dataset)
+
+        dataset = self._resize_images_without_outcomes(dataset)
+        dataset = dataset.cache()
+        
+        if params:
+            dataset = self._remove_file_info(dataset)
+
+            if load_wrists:
+                dataset = self._split_outcomes(dataset, params['no_classes'])
+           
+            #if self.model_type == 'DT':
+                #dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = 2000)
+        
+            dataset = dataset.batch(self.config.batch_size)
+        else:
+            dataset = self._remove_outcome(dataset)
+
+        return dataset.prefetch(buffer_size = AUTOTUNE), file_info.shape[0]
+
+    def _get_outcomes(self, df, params):
         if params:
             outcomes = df[params['outcomes']]
             
@@ -100,39 +131,27 @@ class joint_test_dataset(joint_dataset.dream_dataset):
                 tf_outcomes = outcomes.to_numpy()
 
                 outcomes = (tf_outcomes, tf_dummy_outcomes)
+            elif self.model_type == 'DT':
+                maj_idx = outcomes == 0
+
+                # Set majority samples to 0
+                tf_outcomes = np.ones(df.shape[0])
+                tf_outcomes[np.where(maj_idx)[0]] = 0
+                
+                outcomes = tf_outcomes
         else:
-            outcomes = np.zeros(file_info.shape[0])
+            outcomes = np.zeros(df.shape[0])
 
-        dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
-
-        if load_wrists:
-            dataset = self._load_wrists_without_outcomes(dataset)
-        else:
-            dataset = self._load_joints_without_outcomes(dataset)
-
-        dataset = self._resize_images_without_outcomes(dataset)
-
-        if params:
-            dataset = self._remove_file_info(dataset)
-
-            if load_wrists:
-                dataset = self._split_outcomes(dataset, params['no_classes'])
-           
-            dataset = dataset.batch(self.config.batch_size)
-            dataset = dataset.cache()
-        else:
-            dataset = self._remove_outcome(dataset)
-
-        return dataset.prefetch(buffer_size = AUTOTUNE), file_info.shape[0]
+        return outcomes
         
     def _load_joints_without_outcomes(self, dataset):
         def __load_joints(file_info, coords, y):
             x_coord = coords[0]
             y_coord = coords[1]
 
-            full_img, _ = img_ops.load_image(file_info, [], self.img_dir)
+            full_img, _ = img_ops.load_image(file_info, [], self.img_dir, imagenet = self.imagenet)
 
-            joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_scale = self.joint_scale)
+            joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_extractor = self.joint_extractor)
 
             return file_info, joint_img, y
 
@@ -147,7 +166,7 @@ class joint_test_dataset(joint_dataset.dream_dataset):
             w2_y = coords[3]
             w3_y = coords[5]
 
-            full_img, _ = img_ops.load_image(file_info, [], self.img_dir)
+            full_img, _ = img_ops.load_image(file_info, [], self.img_dir, imagenet = self.imagenet)
 
             joint_img = joint_ops._extract_wrist_from_image(full_img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y)
 
@@ -187,8 +206,8 @@ class joint_test_dataset(joint_dataset.dream_dataset):
         return dataset.map(__remove_outcome, num_parallel_calls = AUTOTUNE)
 
 class narrowing_test_dataset(joint_test_dataset, joint_dataset.joint_narrowing_dataset):
-    def __init__(self, config, img_dir, is_regression = False):
-        super().__init__(config, img_dir, is_regression = is_regression)
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_extractor = None):
+        super().__init__(config, img_dir, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
     def get_joint_narrowing_test_dataset(self, hand_joints_source = './data/predictions/hand_joint_data_test.csv', feet_joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None):
         combined_joints_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
