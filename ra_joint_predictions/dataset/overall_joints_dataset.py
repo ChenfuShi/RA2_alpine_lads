@@ -64,18 +64,36 @@ dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
 
 class overall_joints_dataset(dream_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
+    def __init__(self, config, ds_type, cache_postfix = '', erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
-        self.model_type = model_type
-        self.cache = self.cache + '_' + model_type
         self.batch_size = 16
 
-    def _create_overall_joints_dataset(self, outcomes_source, outcome_mapping, parts, joints_source, coord_keys, outcome_column):
-        intermediate_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts, joints_source)
-        
-        dataset = self._prepare_dataset(intermediate_outcomes_df, coord_keys, outcome_column)
+        self.ds_type = ds_type
+        self.erosion_flag = erosion_flag
+        if ds_type != 'test':
+            if erosion_flag is False: 
+                self.cache = self.cache + '_J'
+                self.outcome = 'narrowing_sum'
+            elif erosion_flag is True:
+                self.cache = self.cache + '_E'
+                self.outcome = 'erosion_sum'
+
+            self.cache = self.cache + '_' + ds_type
+        else:
+            self.cache = True
+            self.outcome = None
+
+    def _create_overall_joints_dataset(self, outcomes_source, outcome_mapping, parts, joints_source, coord_keys):
+        joints_df = pd.read_csv(joints_source)
+
+        if outcomes_source is not None:
+            intermediate_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts, joints_source)
+
+            joints_df = joints_df.merge(intermediate_outcomes_df, on = ['image_name'])
+
+        dataset = self._prepare_dataset(joints_df, coord_keys)
 
         return dataset
 
@@ -112,38 +130,60 @@ class overall_joints_dataset(dream_dataset):
                     
                 outcome_joints.append(outcome_joint)
 
-        outcomes_df = pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))
-        joints_df = pd.read_csv(joints_source)
+        return pd.DataFrame(outcome_joints, index = np.arange(len(outcome_joints)))
 
-        return outcomes_df.merge(joints_df, on = ['image_name'])
+    def _prepare_dataset(self, outcome_joint_df, coord_keys):
+        self.no_samples = outcome_joint_df.shape[0]
 
-    def _prepare_dataset(self, outcome_joint_df, coord_keys, outcome_column):
         outcome_joint_df = outcome_joint_df.sample(frac = 1).reset_index(drop = True)
 
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip']].to_numpy()
         joint_coords = outcome_joint_df[coord_keys].to_numpy()
-        outcomes = outcome_joint_df[outcome_column].to_numpy(dtype = np.float32)
+        outcomes = self._get_outcomes(outcome_joint_df)
         
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         dataset = self._load_images(dataset)
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = 300)
-        dataset = self._augment_images(dataset)
+
+        shuffle_and_augment = self.ds_type == 'train'
+
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = 300, do_shuffle = shuffle_and_augment)
+        if shuffle_and_augment:
+            dataset = self._augment_images(dataset)
 
         return dataset
+
+    def _finalize_dataset(self, dataset):
+        if self.ds_type != 'test':
+            dataset = self._remove_file_info(dataset)
+
+            dataset = ds_ops.batch_and_prefetch_dataset(dataset, self.batch_size)
+        else:
+            dataset = self._remove_outcome(dataset)
+            dataset = dataset.prefetch(buffer_size = AUTOTUNE)  
+
+        return dataset
+
+    def _get_outcomes(self, df, outcome_column = None):
+        if self.outcome is not None:
+            outcomes = df[self.outcome].to_numpy(dtype = np.float32)
+        else:
+            outcomes = np.zeros(df.shape[0], dtype = np.float32)
+
+        return outcomes
 
     def _load_images(self, dataset):
         def __load_images(file_info, coords, outcomes):
             img, _ = img_ops.load_image(file_info, [], self.image_dir, imagenet = self.imagenet)
 
-            return img, coords, outcomes
+            return file_info, img, coords, outcomes
 
         return dataset.map(__load_images, num_parallel_calls = AUTOTUNE)
 
     def _augment_images(self, dataset):
-        def __augment_images(img, coords, outcomes):
+        def __augment_images(file_info, img, coords, outcomes):
             img, coords = ds_ops._augment_and_clip_image(img, coords, update_labels = True)
 
-            return img, coords, outcomes
+            return file_info, img, coords, outcomes
 
         return dataset.map(__augment_images, num_parallel_calls = AUTOTUNE)
 
@@ -153,37 +193,44 @@ class overall_joints_dataset(dream_dataset):
 
         return joint_img
 
-    def _load_wrist(self, img, coords):
-        wrist_img = js_ops._extract_wrist_from_image(img, coords[0], coords[2], coords[4], coords[1], coords[3], coords[5])
-        wrist_img = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
+    def _remove_file_info(self, dataset):
+        def _remove_file_info(file_info, img, y):
+            return img, y
 
-        return wrist_img
+        return dataset.map(_remove_file_info, num_parallel_calls = AUTOTUNE)
+
+    def _remove_outcome(self, dataset):
+        def __remove_outcome(file_info, img, y):
+            return file_info, img
+
+        return dataset.map(__remove_outcome, num_parallel_calls = AUTOTUNE)
 
 class hands_overall_joints_dataset(overall_joints_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
-        super().__init__(config, 'hands_overall_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+    def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
+        super().__init__(config, ds_type, cache_postfix = 'hands_overall_joints', erosion_flag = erosion_flag, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
-    def create_hands_overall_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
-        if erosion_flag:
-            outcome = 'erosion_sum'
-            self.cache = self.cache + '_E'
-        else:
-            outcome = 'narrowing_sum'
-            self.cache = self.cache + '_J'
+    def create_hands_overall_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv'):
+        dataset = self._create_overall_joints_dataset(outcomes_source, hand_outcome_mapping, dream_hand_parts, joints_source, hand_coord_keys)
+        dataset = self._load_hand_joints(dataset)
+        dataset = self._finalize_dataset(dataset)
 
-        dataset = self._create_overall_joints_dataset(outcomes_source, hand_outcome_mapping, dream_hand_parts, joints_source, hand_coord_keys, outcome)
-        dataset = self._load_hand_joints(dataset, erosion_flag)
-        dataset = ds_ops.batch_and_prefetch_dataset(dataset, self.batch_size)
-        
         return dataset
-        
-    def _load_hand_joints(self, dataset, erosion_flag):
-        def __load_hand_joints(img, coords, y):
+
+    def create_hands_overall_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv'):
+        dataset = self.create_hands_overall_joints_dataset(outcomes_source, joints_source = joints_source)
+
+        validation_dataset = self._create_validation_dataset()
+        val_dataset = validation_dataset.create_hands_overall_joints_dataset(outcomes_source, joints_source = joints_val_source)
+
+        return dataset, val_dataset, validation_dataset.no_samples
+
+    def _load_hand_joints(self, dataset):
+        def __load_hand_joints(file_info, img, coords, y):
             joints = []
 
             for joint_key in hand_coord_mapping.keys():
                 # Skip MCP for narrowing
-                if not erosion_flag and joint_key == 'mcp':
+                if not self.erosion_flag and joint_key == 'mcp':
                     continue
                 
                 coord_idx = hand_coord_mapping[joint_key]
@@ -196,8 +243,15 @@ class hands_overall_joints_dataset(overall_joints_dataset):
             wrist = self._load_wrist(img, coords[wrist_coords[0]:wrist_coords[1]])
             joints.append(wrist)
 
-            return tuple(joints), y
+            return file_info, tuple(joints), y
 
         return dataset.map(__load_hand_joints, num_parallel_calls = AUTOTUNE)
 
-        
+    def _load_wrist(self, img, coords):
+        wrist_img = js_ops._extract_wrist_from_image(img, coords[0], coords[2], coords[4], coords[1], coords[3], coords[5])
+        wrist_img = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
+
+        return wrist_img
+
+    def _create_validation_dataset(self):
+        return hands_overall_joints_dataset(self.config, 'val', erosion_flag = self.erosion_flag, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet)
