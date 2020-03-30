@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import tensorflow as tf
 
@@ -52,14 +53,39 @@ class augmented_joint_damage_predictor(joint_damage_predictor):
             aug_img, _ = _augment_and_clip_image(img, [])
             aug_img = tf.expand_dims(aug_img, 0)
             
-            preds[n] = super().predict_joint_damage(aug_img)
+            aug_img_pred = super().predict_joint_damage(aug_img)
+            
+            preds[n] = aug_img_pred
             
         img = tf.expand_dims(img, 0)
         preds[self.no_augments, :] = super().predict_joint_damage(img)
         
-        pred = np.mean(preds, axis = 0)
+        pred = self._robust_mean(preds)
         
         return pred
+    
+    def _robust_mean(self, scores):
+        N = scores.shape[1]
+        
+        mean_score = np.zeros(N)
+        
+        for n in range(N):
+            n_scores = scores[:, n]
+            n_scores = n_scores[~np.isnan(n_scores)]
+            
+            if n_scores.size != 0:
+                max_score = np.percentile(n_scores, 90)
+                min_score = np.percentile(n_scores, 10)
+
+                filtered_min = np.extract(n_scores >= min_score, n_scores)
+                filtered_max = np.extract(filtered_min <= max_score, filtered_min)
+                mean_score[n] = np.mean(filtered_max)
+            else:
+                logging.warn('All preds nan - output 0!')
+                
+                mean_score[n] = 0
+        
+        return mean_score
     
 class filtered_joint_damage_predictor():
     def __init__(self, joint_damage_predictor):

@@ -121,7 +121,7 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
         #model.compile(loss = 'mean_squared_error', metrics = metrics, optimizer = optimizer)
             
         history = model.fit(tf_joint_dataset, 
-            epochs = 300, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [adamW_warm_restart_callback, saver, tensorboard_callback])
+            epochs = 300, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, adamW_warm_restart_callback, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
 

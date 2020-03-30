@@ -90,7 +90,7 @@ def _get_optimizier(model):
 
     for layer in model.layers:
         layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: 1e-6})
+        weight_decays.update({layer.name: 1e-8})
 
     # Update Convs less
     lr_multipliers = {'_conv_': 0.8}

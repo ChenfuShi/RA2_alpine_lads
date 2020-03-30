@@ -24,26 +24,28 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
         for file_info, img in narrowing_dataset:
             patient_id, part, key = _get_details(file_info)
         
-            _init_preds(patient_id)
-            
-            y_preds = narrowing_predictor.predict_joint_damage(img)
-            narrowing_outcome_keys = [outcome_key.format(part = part) for outcome_key in outcome_mapping[key][0]]
-            for idx, narrowing_outcome_key in enumerate(narrowing_outcome_keys):
-                y_pred = y_preds[idx]
-                
-                preds[patient_id][narrowing_outcome_key] = y_pred
+            if len(outcome_mapping[key][0]) > 0:
+                _init_preds(patient_id)
+
+                y_preds = narrowing_predictor.predict_joint_damage(img)
+                narrowing_outcome_keys = [outcome_key.format(part = part) for outcome_key in outcome_mapping[key][0]]
+                for idx, narrowing_outcome_key in enumerate(narrowing_outcome_keys):
+                    y_pred = y_preds[idx]
+
+                    preds[patient_id][narrowing_outcome_key] = y_pred
 
         for file_info, img in erosion_dataset:
             patient_id, part, key = _get_details(file_info)
         
-            _init_preds(patient_id)
+            if len(outcome_mapping[key][1]) > 0:
+                _init_preds(patient_id)
 
-            y_preds = erosion_predictor.predict_joint_damage(img)
-            erosion_outcome_keys = [outcome_key.format(part = part) for outcome_key in outcome_mapping[key][1]]
-            for idx, erosion_outcome_key in enumerate(erosion_outcome_keys):
-                y_pred = y_preds[idx]
-                
-                preds[patient_id][erosion_outcome_key] = y_pred
+                y_preds = erosion_predictor.predict_joint_damage(img)
+                erosion_outcome_keys = [outcome_key.format(part = part) for outcome_key in outcome_mapping[key][1]]
+                for idx, erosion_outcome_key in enumerate(erosion_outcome_keys):
+                    y_pred = y_preds[idx]
+
+                    preds[patient_id][erosion_outcome_key] = y_pred
 
     _predict(joint_dataset.hand_outcome_mapping, hand_narrowing_predictor, datasets['hands_narrowing_dataset'], hand_erosion_predictor, datasets['hands_erosion_dataset'])
     _predict(joint_dataset.wrist_outcome_mapping, wrists_narrowing_predictor, datasets['wrists_narrowing_dataset'], wrists_erosion_predictor, datasets['wrists_erosion_dataset'])
