@@ -1,8 +1,11 @@
+import os
 import datetime
 import json
 import logging
 import sys
 import tensorflow as tf
+
+os.environ['TF_KERAS'] = '1'
 
 class Config:
     def __init__(self, config_path = './utils/config.json'):

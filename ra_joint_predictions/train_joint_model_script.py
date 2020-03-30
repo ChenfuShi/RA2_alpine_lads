@@ -5,6 +5,7 @@ tf.config.threading.set_inter_op_parallelism_threads(8)
 
 import logging
 import os
+os.environ['TF_KERAS'] = '1'
 import sys
 
 from utils.config import Config
@@ -14,7 +15,7 @@ from train.train_joints_damage import train_joints_damage_model
 
 if __name__ == '__main__':
     os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
-
+    
     config = Config()
     logging.info('Command line arguments: %s', sys.argv)
 

@@ -5,7 +5,6 @@ import numpy as np
 from .utils import _apply_weight_decays, _compute_eta_t
 from .utils import _apply_lr_multiplier, _check_args, K_eval
 
-
 class AdamW(Optimizer):
     """AdamW optimizer.
     Default parameters follow those provided in the original paper.

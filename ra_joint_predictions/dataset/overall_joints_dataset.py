@@ -21,7 +21,8 @@ hand_coord_keys = [
     'mcp_2_x', 'mcp_2_y',
     'mcp_3_x', 'mcp_3_y', 
     'mcp_4_x', 'mcp_4_y',
-    'mcp_5_x', 'mcp_5_y']
+    'mcp_5_x', 'mcp_5_y',
+    'w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']
 
 wrist_coord_keys = [
     'w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y'
@@ -69,10 +70,11 @@ class overall_joints_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.model_type = model_type
         self.cache = self.cache + '_' + model_type
+        self.batch_size = 16
 
     def _create_overall_joints_dataset(self, outcomes_source, outcome_mapping, parts, joints_source, coord_keys, outcome_column):
         intermediate_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts, joints_source)
-
+        
         dataset = self._prepare_dataset(intermediate_outcomes_df, coord_keys, outcome_column)
 
         return dataset
@@ -120,13 +122,11 @@ class overall_joints_dataset(dream_dataset):
 
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip']].to_numpy()
         joint_coords = outcome_joint_df[coord_keys].to_numpy()
-        outcomes = outcome_joint_df[outcome_column].to_numpy()
-
-        outcomes = outcome_joint_df[outcome_column]
+        outcomes = outcome_joint_df[outcome_column].to_numpy(dtype = np.float32)
         
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
         dataset = self._load_images(dataset)
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = 2000)
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = 300)
         dataset = self._augment_images(dataset)
 
         return dataset
@@ -154,8 +154,8 @@ class overall_joints_dataset(dream_dataset):
         return joint_img
 
     def _load_wrist(self, img, coords):
-        wrist_img = js_ops._extract_wrist_from_image(img, coords[0], coords[1], coords[2], coords[3], coords[4], coords[5])
-        wrist_img = img_ops.resize_image(wrist_img, [], self.img_height, self.img_width, pad_resize = self.pad_resize)
+        wrist_img = js_ops._extract_wrist_from_image(img, coords[0], coords[2], coords[4], coords[1], coords[3], coords[5])
+        wrist_img = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
 
         return wrist_img
 
@@ -172,15 +172,20 @@ class hands_overall_joints_dataset(overall_joints_dataset):
             self.cache = self.cache + '_J'
 
         dataset = self._create_overall_joints_dataset(outcomes_source, hand_outcome_mapping, dream_hand_parts, joints_source, hand_coord_keys, outcome)
-        dataset = self._load_hand_joints(dataset)
+        dataset = self._load_hand_joints(dataset, erosion_flag)
+        dataset = ds_ops.batch_and_prefetch_dataset(dataset, self.batch_size)
         
         return dataset
         
-    def _load_hand_joints(self, dataset):
+    def _load_hand_joints(self, dataset, erosion_flag):
         def __load_hand_joints(img, coords, y):
             joints = []
 
             for joint_key in hand_coord_mapping.keys():
+                # Skip MCP for narrowing
+                if not erosion_flag and joint_key == 'mcp':
+                    continue
+                
                 coord_idx = hand_coord_mapping[joint_key]
 
                 joint_img = self._load_joint(img, joint_key, coords[coord_idx[0]:coord_idx[1]])
@@ -188,9 +193,8 @@ class hands_overall_joints_dataset(overall_joints_dataset):
                 joints.append(joint_img)
 
             wrist_coords = wrist_coord_mapping['wrist']
-            tf.print(wrist_coords)
-            #wrist = self._load_wrist(img, coords[wrist_coords[0]:wrist_coords[1]])
-            #joints.append(wrist)
+            wrist = self._load_wrist(img, coords[wrist_coords[0]:wrist_coords[1]])
+            joints.append(wrist)
 
             return tuple(joints), y
 

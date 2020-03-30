@@ -4,7 +4,7 @@ from tensorflow.python.keras.optimizer_v2.optimizer_v2 import OptimizerV2
 from tensorflow.python.keras.optimizer_v2 import learning_rate_schedule
 from tensorflow.python.ops import array_ops, control_flow_ops, math_ops, state_ops
 from tensorflow.python.util.tf_export import keras_export
-import keras.backend as K
+import tensorflow.keras.backend as K
 from .utils import _apply_weight_decays, _compute_eta_t
 from .utils import _apply_lr_multiplier, _check_args, K_eval
 
@@ -255,14 +255,14 @@ class AdamW(OptimizerV2):
             'beta_2': self._serialize_hyperparameter('beta_2'),
             'epsilon': self.epsilon,
             'amsgrad': self.amsgrad,
-            'batch_size': int(K_eval(self.batch_size)),
+            # 'batch_size': int(K_eval(self.batch_size)),
             'total_iterations': int(self.total_iterations),
             'weight_decays': self.weight_decays,
             'use_cosine_annealing': self.use_cosine_annealing,
-            't_cur': int(K_eval(self.t_cur)),
-            'eta_t': float(K_eval(self.eta_t)),
-            'eta_min': float(K_eval(self.eta_min)),
-            'eta_max': float(K_eval(self.eta_max)),
+            #'t_cur': int(K_eval(self.t_cur)),
+            #'eta_t': float(K_eval(self.eta_t)),
+            #'eta_min': float(K_eval(self.eta_min)),
+            #'eta_max': float(K_eval(self.eta_max)),
             'init_verbose': self.init_verbose
         })
         return config

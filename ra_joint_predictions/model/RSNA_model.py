@@ -17,21 +17,30 @@ def model_finetune_RSNA(config, no_joint_types = 10, weights = "weights/NIH_new_
     
     NIH_model = keras.models.load_model(weights)
 
-    NEW_model = keras.Model(NIH_model.input, NIH_model.layers[-4].output)
+    NEW_model = keras.Model(NIH_model.layers[1].input, NIH_model.layers[-4].output)
 
     # this is blocking the fully connected as well...
     for layer in NEW_model.layers:
         layer.trainable=False
 
     # split into three parts
-
-    boneage_fc = _fc_block(NEW_model.output, 32, 'boneage_1')
+    
+    boneage_fc = keras.layers.Dense(32, activation = "relu", name = 'boneage_1' + '_fc')(NEW_model.output)
+    boneage_fc = keras.layers.BatchNormalization(name = 'boneage_1' + '_batch')(boneage_fc)
+    boneage_fc = keras.layers.Dropout(0.5, name = 'boneage_1' + '_dropout')(boneage_fc)
+    
     boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred')(boneage_fc)
 
-    sex_fc = _fc_block(NEW_model.output, 32, 'sex_1')
+    sex_fc = keras.layers.Dense(32, activation = "relu", name = 'sex_1' + '_fc')(NEW_model.output)
+    sex_fc = keras.layers.BatchNormalization(name = 'sex_1' + '_batch')(sex_fc)
+    sex_fc = keras.layers.Dropout(0.5, name = 'sex_1' + '_dropout')(sex_fc)
+    
     sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred')(sex_fc)
 
-    joint_type_fc = _fc_block(NEW_model.output, 64, 'joint_type_1')
+    joint_type_fc = keras.layers.Dense(64, activation = "relu", name = 'joint_type_1' + '_fc')(NEW_model.output)
+    joint_type_fc = keras.layers.BatchNormalization(name = 'joint_type_1' + '_batch')(joint_type_fc)
+    joint_type_fc = keras.layers.Dropout(0.5, name = 'joint_type_1' + '_dropout')(joint_type_fc)
+    
     joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred')(joint_type_fc)
 
     # get final model

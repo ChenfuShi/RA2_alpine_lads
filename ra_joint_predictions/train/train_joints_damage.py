@@ -84,6 +84,12 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
     return joint_dataset, tf_dataset, tf_val_dataset, no_val_samples
 
 def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params, tf_joint_val_dataset = None, no_val_samples = 0, optimizer = 'adam'):
+    class AdamWWarmRestartCallback(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs = None):
+            K.set_value(model.optimizer.t_cur, 0)
+            
+    adamW_warm_restart_callback = AdamWWarmRestartCallback()
+    
     saver = CustomSaver(model.name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model.name)
 
@@ -105,17 +111,17 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
         
-        history = model.fit(tf_joint_dataset, 
-            epochs = 50, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
+        #history = model.fit(tf_joint_dataset, 
+            #epochs = 25, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, adamW_warm_restart_callback, tensorboard_callback])
         
-        for layer in model.layers:
-            layer.trainable=True
+        #for layer in model.layers:
+            #layer.trainable=True
         
-        metrics = [mae_metric(4), rmse_metric(4), class_filter_rmse_metric(4, 0)]
-        model.compile(loss = 'mean_squared_error', metrics = metrics, optimizer = optimizer)
+        #metrics = [mae_metric(4), rmse_metric(4), class_filter_rmse_metric(4, 0)]
+        #model.compile(loss = 'mean_squared_error', metrics = metrics, optimizer = optimizer)
             
         history = model.fit(tf_joint_dataset, 
-            epochs = 250, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
+            epochs = 300, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [adamW_warm_restart_callback, saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
 

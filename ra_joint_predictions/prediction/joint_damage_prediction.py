@@ -1,6 +1,9 @@
 import numpy as np
+import tensorflow as tf
 
 import model.joint_damage_model as joint_damage_model
+
+from dataset.ops.dataset_ops import _augment_and_clip_image
 
 class joint_damage_predictor():
     def __init__(self, model_parameters):
@@ -36,6 +39,28 @@ class joint_damage_predictor():
 
         return predicted_joint_damage
 
+class augmented_joint_damage_predictor(joint_damage_predictor):
+    def __init__(self, model_parameters, no_augments = 50):
+        super().__init__(model_parameters)
+        
+        self.no_augments = no_augments
+        
+    def predict_joint_damage(self, img):
+        preds = np.zeros((self.no_augments + 1, self.no_outcomes))
+        
+        for n in range(self.no_augments):
+            aug_img, _ = _augment_and_clip_image(img, [])
+            aug_img = tf.expand_dims(aug_img, 0)
+            
+            preds[n] = super().predict_joint_damage(aug_img)
+            
+        img = tf.expand_dims(img, 0)
+        preds[self.no_augments, :] = super().predict_joint_damage(img)
+        
+        pred = np.mean(preds, axis = 0)
+        
+        return pred
+    
 class filtered_joint_damage_predictor():
     def __init__(self, joint_damage_predictor):
         self.model_parameters = joint_damage_predictor.model_parameters
