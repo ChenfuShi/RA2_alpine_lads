@@ -51,7 +51,7 @@ def get_hand_model(base_model_joints_loc, base_model_wrist_loc, erosion_flag = F
     outs = []
     for i in range(n_joints):
         outs.append(individual_model_joints_no_dense(inputs[i]))
-    outs.append(individual_model_wrist_no_dense(inputs[10]))
+    outs.append(individual_model_wrist_no_dense(inputs[-1]))
 
     pred = keras.layers.Concatenate()(outs)
     pred = keras.layers.Dense(512, activation = "relu")(pred)
