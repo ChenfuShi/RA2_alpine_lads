@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -24,7 +25,6 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     def _predict(outcome_mapping, narrowing_predictor, narrowing_dataset, erosion_predictor, erosion_dataset):
         for file_info, img in narrowing_dataset:
             patient_id, part, key = _get_details(file_info)
-        
             if len(outcome_mapping[key][0]) > 0:
                 _init_preds(patient_id)
 
@@ -32,6 +32,8 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                 narrowing_outcome_keys = [outcome_key.format(part = part) for outcome_key in outcome_mapping[key][0]]
                 for idx, narrowing_outcome_key in enumerate(narrowing_outcome_keys):
                     y_pred = y_preds[idx]
+
+                    logging.info(f"Predicted narrowing {y_pred} for {key} for patient {patient_id}")
 
                     preds[patient_id][narrowing_outcome_key] = y_pred
 
@@ -46,14 +48,21 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                 for idx, erosion_outcome_key in enumerate(erosion_outcome_keys):
                     y_pred = y_preds[idx]
 
+                    logging.info(f"Predicted erosion {y_pred} for {key} for patient {patient_id}")
+
                     preds[patient_id][erosion_outcome_key] = y_pred
 
+    logging.info("Predicting hands")
     _predict(joint_dataset.hand_outcome_mapping, hand_narrowing_predictor, datasets['hands_narrowing_dataset'], hand_erosion_predictor, datasets['hands_erosion_dataset'])
+    logging.info("Predicting wrists")
     _predict(joint_dataset.wrist_outcome_mapping, wrists_narrowing_predictor, datasets['wrists_narrowing_dataset'], wrists_erosion_predictor, datasets['wrists_erosion_dataset'])
+    logging.info("Predicting feet")
     _predict(joint_dataset.foot_outcome_mapping, feet_narrowing_predictor, datasets['feet_narrowing_dataset'], feet_erosion_predictor, datasets['feet_erosion_dataset'])
 
     predictions_df = pd.DataFrame(preds.values(), index = np.arange(len(preds.values())))
     
+    logging.info("Calculate damage totals")
+
     narrowing_mask = ['_J_' in column_name for column_name in predictions_df.columns]
     erosion_mask = ['_E_' in column_name for column_name in predictions_df.columns]
 
@@ -69,6 +78,8 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     template = pd.read_csv(config.test_template_path)
     predictions_df = predictions_df[template.columns]
     
+    logging.info("Finished predictions")
+
     return predictions_df
     
 def _get_test_datasets(config, hands_joint_source, feet_joints_source):
