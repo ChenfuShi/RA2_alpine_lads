@@ -5,8 +5,9 @@ import tensorflow as tf
 import dataset.joint_dataset as joint_dataset
 
 from dataset.test_dataset import joint_test_dataset
-from prediction.joint_damage_prediction import joint_damage_predictor, filtered_joint_damage_predictor, augmented_joint_damage_predictor
-from dataset.joints.joint_extractor import default_joint_extractor, feet_joint_extractor
+
+from dataset.joints.joint_extractor import default_joint_extractor
+from prediction.joint_damage_prediction import joint_damage_type_predictor, joint_damage_predictor, augmented_predictor, filtered_joint_damage_predictor
 
 def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv'):
     datasets = _get_test_datasets(config, hands_joint_source, feet_joint_source)
@@ -73,7 +74,7 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
 def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     df_joint_extractor = default_joint_extractor(joint_scale = 5)
     df_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
-
+    
     return {
         'hands_narrowing_dataset': df_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
         'wrists_narrowing_dataset': df_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)[0],
@@ -84,13 +85,23 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     }
 
 def _get_joint_damage_predictors(model_parameters_collection):
-    hand_narrowing_predictor = augmented_joint_damage_predictor(model_parameters_collection['hands_narrowing_model'])
-    wrists_narrowing_predictor = augmented_joint_damage_predictor(model_parameters_collection['wrists_narrowing_model'])
-    feet_narrowing_predictor = augmented_joint_damage_predictor(model_parameters_collection['feet_narrowing_model'])
+    def _get_predictor(model_parameters, filter = True):
+        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 100)
 
-    hand_erosion_predictor = augmented_joint_damage_predictor(model_parameters_collection['hands_erosion_model'])
-    wrists_erosion_predictor = augmented_joint_damage_predictor(model_parameters_collection['wrists_erosion_model'])
-    feet_erosion_predictor = augmented_joint_damage_predictor(model_parameters_collection['feet_erosion_model'])
+        if filter is True:
+            filter_pred = augmented_predictor(joint_damage_type_predictor(model_parameters), no_augments = 100)
+
+            dmg_pred = filtered_joint_damage_predictor(model_parameters, filter_pred, dmg_pred)
+
+        return dmg_pred
+
+    hand_narrowing_predictor = _get_predictor(model_parameters_collection['hands_narrowing_model'])
+    wrists_narrowing_predictor = _get_predictor(model_parameters_collection['wrists_narrowing_model'], filter = False)
+    feet_narrowing_predictor = _get_predictor(model_parameters_collection['feet_narrowing_model'])
+
+    hand_erosion_predictor = _get_predictor(model_parameters_collection['hands_erosion_model'])
+    wrists_erosion_predictor = _get_predictor(model_parameters_collection['wrists_erosion_model'], filter = False) 
+    feet_erosion_predictor = _get_predictor(model_parameters_collection['feet_erosion_model'])
 
     return hand_narrowing_predictor, wrists_narrowing_predictor, feet_narrowing_predictor, hand_erosion_predictor, wrists_erosion_predictor, feet_erosion_predictor
 

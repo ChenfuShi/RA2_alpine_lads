@@ -1,3 +1,9 @@
+import tensorflow as tf
+
+tf.config.threading.set_intra_op_parallelism_threads(8)
+tf.config.threading.set_inter_op_parallelism_threads(8)
+
+import json
 import logging
 import os
 import sys
@@ -12,13 +18,12 @@ if __name__ == '__main__':
 
     config = Config()
 
-    model_parameters_collection = {
-        'hands_narrowing_model': { 'model': '../trained_models/adam_no_weights_reg/hands_narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'wrists_narrowing_model': { 'model': '../trained_models/adam_no_weights_reg/wrists_narrowing_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'feet_narrowing_model': { 'model': '../trained_models/adam_no_weights_reg/feet_narrowing_adam_no_weights_reg_shuffle_hand_pretrain.h5', 'is_regression': True },
-        'hands_erosion_model': { 'model': '../trained_models/adam_no_weights_reg/hands_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'wrists_erosion_model': { 'model': '../trained_models/adam_no_weights_reg/wrists_erosion_adam_no_weights_reg_shuffle.h5', 'is_regression': True },
-        'feet_erosion_model': { 'model': '../trained_models/adam_no_weights_reg/feet_erosion_adam_no_weights_reg_shuffle_hand_pretrain.h5', 'is_regression': True }
-    }
+    output_file = sys.argv[1]
 
-    predict_test_set(config, model_parameters_collection)
+    with open('./dream/dream_model_parameters_collection.json') as model_parameters_collection_file:
+        model_parameters_collection = json.load(model_parameters_collection_file)
+
+    logging.info(f"Running full holdout predictions, with params {model_parameters_collection}, writing to output file: {output_file}")
+
+    predictions = predict_test_set(config, model_parameters_collection)
+    predictions.to_csv(f'../trained_models/{output_file}.csv', index = False)

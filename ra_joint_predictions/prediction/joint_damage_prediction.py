@@ -32,7 +32,7 @@ def _robust_mean(scores):
     return mean_score
 
 class predictor():
-    def __init__(self, model_file, no_outcomes, is_wrist = False, prediction_transformer = _default_transformation):
+    def __init__(self, model_file, no_outcomes = 1, is_wrist = False, prediction_transformer = _default_transformation):
         self.model_file = model_file
         self.no_outcomes = no_outcomes
         self.is_wrist = False
@@ -52,7 +52,7 @@ class predictor():
             if self.is_wrist:
                 y_pred = y_pred[0]
 
-            y_pred = self.prediction_transformer(self, y_pred)
+            y_pred = self.prediction_transformer(y_pred)
 
             predicted_joint_damage[n] = y_pred
 
@@ -63,7 +63,7 @@ class predictor():
 
 class joint_damage_predictor(predictor):
     def __init__(self, model_parameters):
-        super().__init__(model_parameters['model'], model_parameters['no_outcomes'], is_wrist = model_parameters.get('is_wrist', False))
+        super().__init__(model_parameters['model'], no_outcomes = model_parameters['no_outcomes'], is_wrist = model_parameters.get('is_wrist', False))
 
         self.model_parameters = model_parameters
         self.no_classes = model_parameters['no_classes']
@@ -98,7 +98,7 @@ class joint_damage_predictor(predictor):
 
 class joint_damage_type_predictor(predictor):
     def __init__(self, model_parameters):
-        super().__init__(model_parameters['damage_type_model'], 2)
+        super().__init__(model_parameters['damage_type_model'])
 
         self.model_parameters = model_parameters
 
