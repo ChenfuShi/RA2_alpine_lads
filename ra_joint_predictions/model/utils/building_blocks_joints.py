@@ -3,6 +3,37 @@ from tensorflow import keras
 def get_joint_model_input(config):
     return keras.layers.Input(shape = [config.joint_img_height, config.joint_img_width, 1])
 
+def vvg_joint_model(input):
+    model = _vvg_conv_block(input, 40, 'conv_1')
+    model = _vvg_conv_block(model, 40, 'conv_1')
+    model = _vvg_conv_block(model, 80, 'conv_1')
+    model = _vvg_conv_block(model, 80, 'conv_1')
+    model = _vvg_conv_block(model, 160, 'conv_1')
+    model = _vvg_conv_block(model, 160, 'conv_1')
+
+    model = keras.layers.Flatten()(model)
+
+    model = _vvg_fc_block(model, 512, 'fc_1')
+    model = _vvg_fc_block(model, 256, 'fc_2')
+
+    return model
+
+def _vvg_conv_block(input, n_filters, block_prefix):
+    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), activation = 'relu', padding = 'same',  name = block_prefix + '_conv_1')(input)
+    conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_1')(conv)
+    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), activation = 'relu', padding='same', name = block_prefix + '_conv_2')(conv)
+    conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_2')(conv)
+    conv = keras.layers.MaxPooling2D((2, 2), name = block_prefix + '_max_pool')(conv)
+
+    return conv
+
+def _vvg_fc_block(input, n_neurons, block_prefix):
+    fc = keras.layers.Dense(n_neurons, activation = 'relu', name = block_prefix + '_fc')(input)
+    fc = keras.layers.BatchNormalization(name = block_prefix + '_batch')(fc)
+    fc = keras.layers.Dropout(0.5, name = block_prefix + '_dropout')(fc)
+
+    return fc
+
 def create_complex_joint_model(input):
     model = _conv_block(input, 32, 'conv_1')
     model = _conv_block(model, 32, 'conv_2')

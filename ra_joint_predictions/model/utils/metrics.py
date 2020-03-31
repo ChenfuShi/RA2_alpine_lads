@@ -3,6 +3,9 @@ import tensorflow.keras.backend as K
 
 from tensorflow.keras.metrics import top_k_categorical_accuracy
 
+def brier_score(y_true, y_pred):
+    return K.mean(K.square(y_pred - y_true))
+
 def top_2_categorical_accuracy(y_true, y_pred):
     return top_k_categorical_accuracy(y_true, y_pred, k = 2)
 

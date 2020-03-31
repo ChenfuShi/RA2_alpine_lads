@@ -2,13 +2,15 @@ import tensorflow as tf
 
 import dataset.ops.image_ops as img_ops
 
+from dataset.joints.joint_extractor import default_joint_extractor
+
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 round_to_int = lambda x: tf.cast(tf.round(x), tf.int32)
 
 feet_joints = ['mtp', 'mtp_1', 'mtp_2', 'mtp_3', 'mtp_4', 'mtp_5']
 
-def load_joints(dataset, directory, imagenet = False, joint_scale = 5):
+def load_joints(dataset, directory, imagenet = False, joint_extractor = default_joint_extractor()):
     def __load_joints(file_info, y, z):
         joint_key = file_info[3]
 
@@ -17,9 +19,7 @@ def load_joints(dataset, directory, imagenet = False, joint_scale = 5):
 
         full_img, _ = img_ops.load_image(file_info, [], directory, imagenet = imagenet)
 
-        #TODO: Use joint_key to decide on box dimensions
-
-        joint_img = _extract_joint_from_image(full_img, joint_key, x_coord, y_coord, joint_scale = joint_scale)
+        joint_img = _extract_joint_from_image(full_img, joint_key, x_coord, y_coord, joint_extractor)
 
         return joint_img, z
 
@@ -27,7 +27,6 @@ def load_joints(dataset, directory, imagenet = False, joint_scale = 5):
     
 def load_wrists(dataset, directory, imagenet = False):
     def __load_wrists(file_info, y, z):
-        joint_key = file_info[3]
         w1_x = y[0]
         w2_x = y[2]
         w3_x = y[4]
@@ -37,30 +36,18 @@ def load_wrists(dataset, directory, imagenet = False):
 
         full_img, _ = img_ops.load_image(file_info, [], directory, imagenet = imagenet)
 
-        #TODO: Use joint_key to decide on box dimensions
-
         joint_img = _extract_wrist_from_image(full_img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y)
 
         return joint_img, z
 
     return dataset.map(__load_wrists, num_parallel_calls=AUTOTUNE)
 
-def _extract_joint_from_image(img, joint_key, x, y, joint_scale):
+def _extract_joint_from_image(img, joint_key, x, y, joint_extractor):
     img_shape = tf.cast(tf.shape(img), tf.float64)
     x = tf.cast(x, tf.float64)
     y = tf.cast(y, tf.float64)
     
-    #if joint_key == 'mtp_1':
-        #box_height = img_shape[0] / joint_scale
-        #box_width = box_height * 1.2
-    #else:
-        #box_height = img_shape[0] / joint_scale
-        #box_width = box_height * 0.8
-    
-    # y = tf.cond( tf.math.count_nonzero(tf.equal(joint_key, feet_joints)) > 0, lambda: y - box_height * 0.1, lambda: y)
-    
-    box_height = img_shape[0] / joint_scale
-    box_width = box_height * 0.9
+    box_height, box_width = joint_extractor(img_shape, joint_key)
 
     # get top left corner of image
     x_box = x - (box_width / 2)
