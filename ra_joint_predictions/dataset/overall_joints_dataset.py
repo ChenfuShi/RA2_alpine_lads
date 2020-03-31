@@ -216,7 +216,7 @@ class overall_joints_dataset(dream_dataset):
 
     def _load_joint(self, img, joint_key, coords):
         joint_img = js_ops._extract_joint_from_image(img, joint_key, coords[0], coords[1], self.joint_extractor)
-        joint_img = img_ops.resize_image(joint_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
+        joint_img, _ = img_ops.resize_image(joint_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
 
         return joint_img
 
@@ -276,7 +276,7 @@ class hands_overall_joints_dataset(overall_joints_dataset):
 
     def _load_wrist(self, img, coords):
         wrist_img = js_ops._extract_wrist_from_image(img, coords[0], coords[2], coords[4], coords[1], coords[3], coords[5])
-        wrist_img = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
+        wrist_img, _ = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
 
         return wrist_img
 
