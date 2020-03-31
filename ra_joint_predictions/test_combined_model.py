@@ -52,5 +52,6 @@ def train_hands():
 
 
 # lose the variables because it fucks memory or something
-train_feet()
+
 train_hands()
+train_feet()
