@@ -97,10 +97,10 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
 
 def _get_joint_damage_predictors(model_parameters_collection):
     def _get_predictor(model_parameters, filter = True):
-        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 100)
+        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 25)
 
         if filter is True:
-            filter_pred = augmented_predictor(joint_damage_type_predictor(model_parameters), no_augments = 100)
+            filter_pred = augmented_predictor(joint_damage_type_predictor(model_parameters), no_augments = 25)
 
             dmg_pred = filtered_joint_damage_predictor(model_parameters, filter_pred, dmg_pred)
 
