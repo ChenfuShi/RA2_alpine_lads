@@ -42,10 +42,10 @@ def get_hand_model(base_model_joints_loc, base_model_wrist_loc, erosion_flag = F
 
     inputs = []
     if erosion_flag:
-        n_joints = 9
-    else:
         n_joints = 10
-        
+    else:
+        n_joints = 9
+
     for i in range(n_joints + 1):
         inputs.append(keras.layers.Input(shape=(224,224,1)))
     outs = []
