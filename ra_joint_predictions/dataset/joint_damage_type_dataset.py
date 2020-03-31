@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 import dataset.joint_dataset as joint_dataset
 
@@ -6,10 +7,11 @@ from dataset.joint_dataset import dream_dataset
 from dataset.test_dataset import joint_test_dataset
 
 class joint_damage_type_dataset(dream_dataset):
-    def __init__(self, config, pad_resize = False, joint_extractor = None):
+    def __init__(self, config, pad_resize = False, joint_extractor = None, alpha = 0.75):
         super().__init__(config, 'joint_damage_type', pad_resize = pad_resize, joint_extractor = joint_extractor, model_type = "DT")
 
         self.image_dir = config.train_fixed_location
+        self.alpha = alpha
 
     def get_hands_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_column = self._get_outcome_column(erosion_flag)
@@ -66,8 +68,6 @@ class joint_damage_type_dataset(dream_dataset):
 
         outcomes = outcome_joint_df[outcome_column]
         maj_idx = outcomes == 0
-
-        self.alpha = np.count_nonzero(maj_idx) / maj_idx.shape[0]
         
         # Set majority samples to 0
         joint_damage_type_outcome = np.ones(file_info.shape[0])
@@ -76,6 +76,26 @@ class joint_damage_type_dataset(dream_dataset):
         coords = outcome_joint_df[['coord_x', 'coord_y']].to_numpy()
 
         return self._create_non_split_joint_dataset(file_info, coords, joint_damage_type_outcome, augment = True, cache = self.cache, buffer_size = 2000)
+
+    def _create_dataset(self, file_info, joint_coords, outcomes, maj_idx):
+        min_idx = np.logical_not(maj_idx)
+
+        # Tranform boolean mask into indices
+        maj_idx = np.where(maj_idx)[0]
+        min_idx = np.where(min_idx)[0]
+
+        # Create 2 datasets, one with the majority class, one with the other classes
+        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx])
+        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx])
+
+        # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
+        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
+        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
+
+        # Interleave datasets, inverse of alpha (if we want alpha to 0.75, then we want the minority to sample to be only 25% of samples)
+        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [1 - self.alpha, self.alpha])
+
+        return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 
     def _create_test_dataset(self):
         return joint_test_dataset(self.config, self.image_dir, model_type = 'DT', pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
