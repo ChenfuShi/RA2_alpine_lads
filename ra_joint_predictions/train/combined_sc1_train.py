@@ -12,7 +12,7 @@ def train_SC1_model(config, model, model_name, train_set, validation_set ,epochs
 
     if epochs_before > 0:
         saver = CustomSaver(model_name + "before", n = 5)
-        model.fit_generator(train_set,
+        model.fit(train_set,
             epochs = epochs_before, steps_per_epoch = 20, validation_data = validation_set, validation_steps = 5, verbose = 2, callbacks = [saver, tensorboard_callback])
 
     for layer in model.layers:
@@ -23,6 +23,6 @@ def train_SC1_model(config, model, model_name, train_set, validation_set ,epochs
 
 
     saver = CustomSaver(model_name + "after", n = 5)
-    model.fit_generator(train_set,
+    model.fit(train_set,
         epochs = epochs_after, steps_per_epoch = 20, validation_data = validation_set, validation_steps = 5, verbose = 2, callbacks = [saver, tensorboard_callback])
 

@@ -27,7 +27,7 @@ def create_complex_joint_multioutput(config):
 def create_densenet_multioutput_A(config):
 
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
-    base_net = keras.applications.densenet.DenseNet121(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="avg")   
+    base_net = keras.applications.densenet.DenseNet121(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="max")   
     # create new model with common part
     common_part = base_net(inputs)
     common_part = keras.layers.Dense(512, activation='relu')(common_part)
@@ -42,7 +42,7 @@ def create_densenet_multioutput_A(config):
 def create_densenet_multioutput_B(config):
 
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,3])
-    base_net = keras.applications.densenet.DenseNet121(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="avg")   
+    base_net = keras.applications.densenet.DenseNet121(include_top=False, weights="imagenet",input_shape=[config.img_height,config.img_width,3], pooling="max")   
     # create new model with common part
     common_part = base_net(inputs)
 
