@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     logging.info("datasets prepared")
 
-    for model_constr,name in zip([create_Xception_multioutput,],["NIH_Xception"]):
+    for model_constr,name in zip([create_rewritten_complex_joint_multioutput,],["NIH_rewritten"]):
         model = model_constr(configuration)
 
         #create_bigger_kernel_multioutput 
