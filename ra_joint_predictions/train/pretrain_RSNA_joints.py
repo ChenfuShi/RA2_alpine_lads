@@ -1,9 +1,11 @@
 import datetime
 
 import tensorflow as tf
+import tensorflow.keras.backend as K
 
 from utils.saver import CustomSaver, _get_tensorboard_callback
 from dataset.rsna_joint_dataset import rsna_joint_dataset
+from keras_adamw import AdamW
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -56,11 +58,27 @@ def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_bef
     }
 
     lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
-
+    
     model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
         metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
 
+    class AdamWWarmRestartCallback(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs = None):
+            K.set_value(model.optimizer.t_cur, 0)
+            
+    adamW_warm_restart_callback = AdamWWarmRestartCallback()
 
     saver = CustomSaver(model_name + "after", n = 10)
     model.fit(joint_dataset,
         epochs = epochs_after, steps_per_epoch = 1750, validation_data = joint_val_dataset, validation_steps = 175, verbose = 2, callbacks = [saver, tensorboard_callback])
+    
+def _get_optimizier(model):
+    weight_decays = {}
+
+    for layer in model.layers:
+        layer.kernel_regularizer = tf.keras.regularizers.l2(0)
+        weight_decays.update({layer.name: 1e-8})
+
+    optimizer = AdamW(lr=1e-3, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 125, init_verbose = False)
+    
+    return optimizer

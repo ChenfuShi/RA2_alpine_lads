@@ -94,7 +94,6 @@ class joint_test_dataset(dream_dataset):
             dataset = self._load_joints_without_outcomes(dataset)
 
         dataset = self._resize_images_without_outcomes(dataset)
-        dataset = dataset.cache()
         
         if params:
             dataset = self._remove_file_info(dataset)

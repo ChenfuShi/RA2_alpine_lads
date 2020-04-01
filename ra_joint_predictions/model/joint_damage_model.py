@@ -90,13 +90,8 @@ def _get_optimizier(model):
 
     for layer in model.layers:
         layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: 1e-8})
+        weight_decays.update({layer.name: 1e-4})
 
-    # Update Convs less
-    lr_multipliers = {'_conv_': 0.8}
-
-    steps = 175
-
-    optimizer = AdamW(lr=5e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 125, init_verbose = False)
+    optimizer = AdamW(lr = 3e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 10 * 60, init_verbose = False)
     
     return optimizer

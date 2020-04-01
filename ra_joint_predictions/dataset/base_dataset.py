@@ -229,7 +229,7 @@ class dream_dataset(joint_dataset):
         min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
-        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
+        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.8, 0.2])
 
         # Prepare for training
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)

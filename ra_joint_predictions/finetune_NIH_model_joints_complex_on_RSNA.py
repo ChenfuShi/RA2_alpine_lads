@@ -21,7 +21,7 @@ os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/R
 
 configuration = Config()
 
-joint_extractor = width_based_joint_extractor(joint_scale = 6.)
+joint_extractor = width_based_joint_extractor(joint_scale = 4.5, height_scale = 1.2)
 
 ## joints
 joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, pad_resize = False, joint_extractor = joint_extractor).create_rsna_joints_dataset(val_split = True, include_wrist_joints = True)
@@ -30,4 +30,4 @@ model = RSNA_model.complex_joint_finetune_model(configuration, weights = "../../
 
 model.summary()
 
-finetune_model(model, "complex_rewritten_pretrain_full", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 25, epochs_after = 201)
+finetune_model(model, "complex_rewritten_pretrain_full_adam_erosion_joints", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 25, epochs_after = 201)
