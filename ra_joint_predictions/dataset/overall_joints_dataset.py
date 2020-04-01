@@ -63,6 +63,33 @@ hand_outcome_mapping = {
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
 
+foot_coord_mapping = {
+    'mtp': [0, 2],
+    'mtp_1': [2, 4],
+    'mtp_2': [4, 6],
+    'mtp_3': [6, 8],
+    'mtp_4': [8, 10],
+    'mtp_5': [10, 12],
+}
+
+foot_coord_keys = [
+    'mtp_x', 'mtp_y', 
+    'mtp_1_x', 'mtp_1_y',
+    'mtp_2_x', 'mtp_2_y',
+    'mtp_3_x', 'mtp_3_y',
+    'mtp_4_x', 'mtp_4_y',
+    'mtp_5_x', 'mtp_5_y',
+]
+
+foot_outcome_mapping = {
+    'mtp': [['{part}_mtp_J__ip'], ['{part}_mtp_E__ip']], 
+    'mtp_1': [['{part}_mtp_J__1'], ['{part}_mtp_E__1']], 
+    'mtp_2': [['{part}_mtp_J__2'], ['{part}_mtp_E__2']],
+    'mtp_3': [['{part}_mtp_J__3'], ['{part}_mtp_E__3']],
+    'mtp_4': [['{part}_mtp_J__4'], ['{part}_mtp_E__4']],
+    'mtp_5': [['{part}_mtp_J__5'], ['{part}_mtp_E__5']]
+}
+
 class overall_joints_dataset(dream_dataset):
     def __init__(self, config, ds_type, cache_postfix = '', erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
@@ -189,7 +216,7 @@ class overall_joints_dataset(dream_dataset):
 
     def _load_joint(self, img, joint_key, coords):
         joint_img = js_ops._extract_joint_from_image(img, joint_key, coords[0], coords[1], self.joint_extractor)
-        joint_img = img_ops.resize_image(joint_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
+        joint_img, _ = img_ops.resize_image(joint_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
 
         return joint_img
 
@@ -249,9 +276,48 @@ class hands_overall_joints_dataset(overall_joints_dataset):
 
     def _load_wrist(self, img, coords):
         wrist_img = js_ops._extract_wrist_from_image(img, coords[0], coords[2], coords[4], coords[1], coords[3], coords[5])
-        wrist_img = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
+        wrist_img, _ = img_ops.resize_image(wrist_img, [], self.joint_height, self.joint_width, pad_resize = self.pad_resize)
 
         return wrist_img
 
     def _create_validation_dataset(self):
         return hands_overall_joints_dataset(self.config, 'val', erosion_flag = self.erosion_flag, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet)
+
+
+class feet_overall_joints_dataset(overall_joints_dataset):
+    def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
+        super().__init__(config, ds_type, cache_postfix = 'feet_overall_joints', erosion_flag = erosion_flag, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+
+    def create_feet_overall_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv'):
+        dataset = self._create_overall_joints_dataset(outcomes_source, foot_outcome_mapping, dream_foot_parts, joints_source, foot_coord_keys)
+        dataset = self._load_feet_joints(dataset)
+        dataset = self._finalize_dataset(dataset)
+
+        return dataset
+
+    def create_feet_overall_joints_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_train_v2.csv', joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'):
+        dataset = self.create_feet_overall_joints_dataset(outcomes_source, joints_source = joints_source)
+
+        validation_dataset = self._create_validation_dataset()
+        val_dataset = validation_dataset.create_feet_overall_joints_dataset(outcomes_source, joints_source = joints_val_source)
+
+        return dataset, val_dataset, validation_dataset.no_samples
+
+    def _load_feet_joints(self, dataset):
+        def __load_feet_joints(file_info, img, coords, y):
+            joints = []
+
+            for joint_key in foot_coord_mapping.keys():
+                
+                coord_idx = foot_coord_mapping[joint_key]
+
+                joint_img = self._load_joint(img, joint_key, coords[coord_idx[0]:coord_idx[1]])
+
+                joints.append(joint_img)
+
+            return file_info, tuple(joints), y
+
+        return dataset.map(__load_feet_joints, num_parallel_calls = AUTOTUNE)
+
+    def _create_validation_dataset(self):
+        return feet_overall_joints_dataset(self.config, 'val', erosion_flag = self.erosion_flag, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet)

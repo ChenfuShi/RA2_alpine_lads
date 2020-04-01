@@ -17,7 +17,7 @@ def model_finetune_RSNA(config, no_joint_types = 10, weights = "weights/NIH_new_
     
     NIH_model = keras.models.load_model(weights)
 
-    NEW_model = keras.Model(NIH_model.layers[1].input, NIH_model.layers[-4].output)
+    NEW_model = keras.Model(NIH_model.input, NIH_model.layers[-4].output)
 
     # this is blocking the fully connected as well...
     for layer in NEW_model.layers:

@@ -54,12 +54,12 @@ def _extract_joint_from_image(img, joint_key, x, y, joint_extractor):
     y_box = y - (box_height / 2)
 
     # make sure top left is within image
-    x_box = tf.math.maximum(x_box, 10)
-    y_box = tf.math.maximum(y_box, 10)
+    x_box = tf.math.maximum(x_box, 1)
+    y_box = tf.math.maximum(y_box, 1)
 
     # make sure top left is within image from the other two sides
-    x_box = tf.math.minimum(x_box, img_shape[1] - 10)
-    y_box = tf.math.minimum(y_box, img_shape[0] - 10)
+    x_box = tf.math.minimum(x_box, img_shape[1] - 1)
+    y_box = tf.math.minimum(y_box, img_shape[0] - 1)
 
     # make sure the resulting box is within the image, if it's too large new height and width to be within image
     if y_box + box_height > img_shape[0]:
@@ -90,14 +90,23 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     x_box = tf.math.minimum(x_box, img_shape[1] - 11)
     y_box = tf.math.minimum(y_box, img_shape[0] - 11)
 
-    # get the bottom right most point
+    # identify the most right point (total width)
     x_box_max = tf.reduce_max(tf.stack([w1_x, w2_x, w3_x]),0) + extra_pad_width
-    y_box_max = tf.reduce_max(tf.stack([w1_y, w2_y, w3_y]),0) + extra_pad_height
 
     # make sure they are within the image
     x_box_max = tf.math.maximum(x_box_max, 11)
-    y_box_max = tf.math.maximum(y_box_max, 11)
     x_box_max = tf.math.minimum(x_box_max, img_shape[1] - 10)
+
+    # calculate width
+    total_width = x_box_max - x_box
+
+    # calculate height as a ratio of the total width and calculate box
+    total_height = total_width * 0.7
+
+    y_box_max = y_box + total_height
+
+    # make sure it's inside the image
+    y_box_max = tf.math.maximum(y_box_max, 11)
     y_box_max = tf.math.minimum(y_box_max, img_shape[0] - 10)
 
     # calculate the resulting height and width
@@ -112,3 +121,6 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
 
     return img
+
+
+
