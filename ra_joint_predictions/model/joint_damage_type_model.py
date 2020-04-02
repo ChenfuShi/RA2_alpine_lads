@@ -10,7 +10,7 @@ from keras_adamw import AdamW
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_type_model(config, pretrained_model_file = None, model_name = 'joint_damage_type_model', optimizer = 'adam', alpha = .6):
+def get_joint_damage_type_model(config, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .6):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
     output, metrics_dir = _add_output(base_ouptut)
@@ -51,6 +51,6 @@ def _get_optimizier(model):
         layer.kernel_regularizer = keras.regularizers.l2(0)
         weight_decays.update({layer.name: 1e-4})
 
-    optimizer = AdamW(lr = 3e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 10 * 60, init_verbose = False)
+    optimizer = AdamW(lr = 1e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 60 * 10, init_verbose = False, batch_size = 64)
     
     return optimizer

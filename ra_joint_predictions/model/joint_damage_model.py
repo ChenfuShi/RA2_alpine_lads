@@ -15,7 +15,7 @@ MODEL_TYPE_COMBINED = "RC"
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_model(config, class_weights, pretrained_model_file = None, model_name = 'joint_damage_model', optimizer = 'adam', model_type = 'R'):
+def get_joint_damage_model(config, class_weights, pretrained_model_file = None, model_name = 'joint_damage_model', model_type = 'R'):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
     outputs, metrics_dir = _add_outputs(class_weights, base_ouptut, model_type = model_type)
@@ -49,9 +49,6 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
 def _get_base_model(config, pretrained_model_file):
     if pretrained_model_file is not None:
         pretrained_model = keras.models.load_model(pretrained_model_file)
-
-        #for layer in pretrained_model.layers[:-10]:
-            #layer.trainable = False
         
         return pretrained_model.input, pretrained_model.output
     else:
@@ -90,8 +87,8 @@ def _get_optimizier(model):
 
     for layer in model.layers:
         layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: 1e-4})
+        weight_decays.update({layer.name: 1e-6})
 
-    optimizer = AdamW(lr = 3e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 10 * 60, init_verbose = False)
+    optimizer = AdamW(lr = 3e-4, weight_decays = weight_decays, use_cosine_annealing = False, total_iterations = 125 * 300, init_verbose = False, batch_size = 64)
     
     return optimizer

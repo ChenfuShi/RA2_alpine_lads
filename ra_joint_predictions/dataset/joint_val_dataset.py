@@ -27,7 +27,7 @@ class hands_wrists_val_dataset(hands_wrists_dataset):
         return dataset, val_dataset, val_no_samples
     
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet)
     
 class feet_joint_val_dataset(feet_joint_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):

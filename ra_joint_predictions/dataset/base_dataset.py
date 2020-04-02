@@ -11,6 +11,8 @@ import model.joint_damage_model as joint_damage_model
 
 from utils.class_weight_utils import calc_adapted_class_weights
 
+hand_wrist_keys = ['w1', 'w2', 'w3']
+
 # TODO: Don't use config in constructor, but individual fields passed on from config
 class base_dataset():
     def __init__(self, config):
@@ -184,6 +186,7 @@ class dream_dataset(joint_dataset):
             tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
         elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
             tf_outcomes = outcomes.to_numpy()
+            self.outcomes = tf_outcomes
         elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
             tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
             tf_outcomes = outcomes.to_numpy()
@@ -229,7 +232,7 @@ class dream_dataset(joint_dataset):
         min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
-        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.8, 0.2])
+        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
 
         # Prepare for training
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)

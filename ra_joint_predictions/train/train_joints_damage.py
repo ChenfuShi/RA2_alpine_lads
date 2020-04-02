@@ -17,28 +17,27 @@ from dataset.joints.joint_extractor_factory import get_joint_extractor
 from model.joint_damage_model import get_joint_damage_model
 from utils.saver import CustomSaver, _get_tensorboard_callback
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric
+from train.utils.callbacks import AdamWWarmRestartCallback
 
 train_params = {
     'epochs': 300,
     'batch_size': 64,
-    'steps_per_epoch': 60
+    'steps_per_epoch': 125
 }
 
 def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R'):
     joint_dataset, tf_joint_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation)
     logging.info('Class Weights: %s', joint_dataset.class_weights)
     
-    optimizer = keras.optimizers.SGD(lr = 0.01, momentum = 0.9)
-    # optimizer = keras.optimizers.Adam()
-    model = get_joint_damage_model(config, joint_dataset.class_weights, pretrained_model, model_name = model_name, optimizer = optimizer, model_type = model_type)
+    model = get_joint_damage_model(config, joint_dataset.class_weights, pretrained_model, model_name = model_name, model_type = model_type)
 
     params = train_params.copy()
     if joint_type == 'W':
-        params['steps_per_epoch'] = 75
+        params['steps_per_epoch'] = 150
     elif joint_type == 'HF':
         params['steps_per_epoch'] = 175
 
-    return _fit_joint_damage_model(model, tf_joint_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples, optimizer = optimizer)
+    return _fit_joint_damage_model(model, tf_joint_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples)
 
 def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False):
     outcomes_source = os.path.join(config.train_location, 'training.csv')
@@ -66,7 +65,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
         else:
             tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
     elif joint_type == 'W':
-        joint_dataset = hands_wrists_dataset(config, model_type = model_type, pad_resize = False, imagenet = False)
+        joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = True)
 
         if do_validation:
             tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_wrists_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
@@ -83,24 +82,20 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
             
     return joint_dataset, tf_dataset, tf_val_dataset, no_val_samples
 
-def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params, tf_joint_val_dataset = None, no_val_samples = 0, optimizer = 'adam'):
-    class AdamWWarmRestartCallback(tf.keras.callbacks.Callback):
-        def on_epoch_begin(self, epoch, logs = None):
-            if epoch != 0 and epoch % 10 == 0:
-                K.set_value(model.optimizer.t_cur, 0)
-            
+def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params, tf_joint_val_dataset = None, no_val_samples = 0,):
     adamW_warm_restart_callback = AdamWWarmRestartCallback()
-    
     saver = CustomSaver(model.name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model.name)
-
-    def schedule(epoch, lr):
-        if epoch > 0:
-            return lr / np.sqrt(epoch)
-        else: 
-            return lr
     
-    lr_callback = keras.callbacks.LearningRateScheduler(schedule, verbose = 0)
+    def scheduler(epoch):
+        if epoch < 50:
+            return 1e-3
+        elif epoch < 150:
+            return 5e-4
+        else:
+            return 3e-4
+    
+    lr_schedule = keras.callbacks.LearningRateScheduler(scheduler)
     
     epochs = train_params['epochs']
     steps_per_epoch = train_params['steps_per_epoch']
@@ -111,18 +106,9 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
             tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = [saver, tensorboard_callback])
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
-        
-        #history = model.fit(tf_joint_dataset, 
-            #epochs = 25, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, adamW_warm_restart_callback, tensorboard_callback])
-        
-        #for layer in model.layers:
-            #layer.trainable=True
-        
-        #metrics = [mae_metric(4), rmse_metric(4), class_filter_rmse_metric(4, 0)]
-        #model.compile(loss = 'mean_squared_error', metrics = metrics, optimizer = optimizer)
             
         history = model.fit(tf_joint_dataset, 
-            epochs = 300, steps_per_epoch = 60, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, adamW_warm_restart_callback, tensorboard_callback])
+            epochs = 300, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
 
     hist_df = pd.DataFrame(history.history)
 

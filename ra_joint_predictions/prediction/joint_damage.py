@@ -6,6 +6,7 @@ import tensorflow as tf
 import dataset.joint_dataset as joint_dataset
 
 from dataset.test_dataset import joint_test_dataset
+from dataset.joints.joint_extractor_factory import get_joint_extractor
 
 from dataset.joints.joint_extractor import default_joint_extractor
 from prediction.joint_damage_prediction import joint_damage_type_predictor, joint_damage_predictor, augmented_predictor, filtered_joint_damage_predictor
@@ -86,13 +87,16 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     df_joint_extractor = default_joint_extractor(joint_scale = 5)
     df_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
     
+    feet_erosion_extractor = get_joint_extractor('F', 'E')
+    feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_erosion_extractor)
+    
     return {
         'hands_narrowing_dataset': df_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
         'wrists_narrowing_dataset': df_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)[0],
         'feet_narrowing_dataset': df_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)[0],
         'hands_erosion_dataset': df_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
         'wrists_erosion_dataset': df_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)[0],
-        'feet_erosion_dataset': df_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)[0]
+        'feet_erosion_dataset': feet_erosion_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)[0]
     }
 
 def _get_joint_damage_predictors(model_parameters_collection):
