@@ -25,6 +25,34 @@ def calc_default_class_weights(outcomes, no_classes):
 
     return outcomes_class_weights
 
+def calc_relative_class_weights(outcomes, no_classes):
+    outcomes = outcomes.to_numpy()
+    
+    outcomes_class_weights = []
+    
+    D = outcomes.shape[1]
+
+    for d in range(D):
+        class_weights = {}
+
+        classes, counts = np.unique(outcomes.iloc[:, d].to_numpy(), return_counts = True)
+
+        ref = np.minimum(counts)
+
+        weights = ref / counts
+        weights = weights / np.sum(weights)
+
+        for idx, c in enumerate(classes.astype(np.int64)):
+            class_weights[c] = weights[idx]
+           
+        for class_val in np.arange(no_classes):
+            if class_val not in class_weights.keys():                
+                class_weights[class_val] = 1
+
+        outcomes_class_weights.append(class_weights)
+
+    return outcomes_class_weights
+
 def calc_adapted_class_weights(outcomes, no_classes):
     outcomes = outcomes.to_numpy()
     

@@ -1,12 +1,11 @@
 import numpy as np
-
 import tensorflow.keras as keras
 
-from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric, softmax_mae_metric, softmax_rmse_metric, class_filter_softmax_rmse_metric
+from keras_adamw import AdamW
 
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
-
-from keras_adamw import AdamW
+from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric, softmax_mae_metric, softmax_rmse_metric, class_filter_softmax_rmse_metric
+from model.utils.losses import softmax_focal_loss
 
 MODEL_TYPE_CLASSIFICATION = "C"
 MODEL_TYPE_REGRESSION = "R"
@@ -28,7 +27,7 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
     optimizer = _get_optimizier(joint_damage_model)
 
     if model_type == MODEL_TYPE_CLASSIFICATION:
-        joint_damage_model.compile(loss = 'categorical_crossentropy', metrics = metrics_dir, optimizer = optimizer)
+        joint_damage_model.compile(loss = softmax_focal_loss(np.array(class_weights.values())), metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
         joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:

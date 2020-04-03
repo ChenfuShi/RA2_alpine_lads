@@ -9,7 +9,7 @@ import dataset.ops.dataset_ops as ds_ops
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
 
-from utils.class_weight_utils import calc_adapted_class_weights
+from utils.class_weight_utils import calc_adapted_class_weights, calc_relative_class_weights
 
 hand_wrist_keys = ['w1', 'w2', 'w3']
 
@@ -240,7 +240,7 @@ class dream_dataset(joint_dataset):
         return dataset
 
     def _init_model_outcomes_bias(self, outcomes, no_classes):
-        self.class_weights = calc_adapted_class_weights(outcomes, no_classes)
+        self.class_weights = calc_relative_class_weights(outcomes, no_classes)
 
     def _dummy_encode_outcomes(self, outcomes, no_classes):
         D = outcomes.shape[1]
