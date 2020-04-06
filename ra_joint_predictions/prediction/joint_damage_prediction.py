@@ -11,24 +11,13 @@ def _default_transformation(prediction):
 
 def _robust_mean(scores):
     N = scores.shape[1]
-        
-    mean_score = np.zeros(N)
-    for n in range(N):
-        n_scores = scores[:, n]
-        n_scores = n_scores[~np.isnan(n_scores)]
-            
-        if n_scores.size != 0:
-            max_score = np.percentile(n_scores, 90)
-            min_score = np.percentile(n_scores, 10)
 
-            filtered_min = np.extract(n_scores >= min_score, n_scores)
-            filtered_max = np.extract(filtered_min <= max_score, filtered_min)
-            mean_score[n] = np.mean(filtered_max)
-        else:
-            logging.warn('All preds nan - output 0!')
-                
-            mean_score[n] = 0
-        
+    start_idx = N // 10
+    end_idx = N - start_idx
+
+    sub_scores = scores[start_idx:end_idx]
+    mean_score = np.mean(sub_scores)
+
     return mean_score
 
 class predictor():
@@ -79,9 +68,14 @@ class joint_damage_predictor(predictor):
     
     def _create_regression_prediction_transformer(self):
         def _regression_prediction_transformer(prediction):
-            # Make sure the regressed scores are actual possible values
-            prediction = np.max([prediction, 0])
-            prediction = np.min([prediction, self.no_classes - 1])
+            if np.isnan(prediction):
+                prediction = 0
+            elif np.isinf(prediction):
+                prediction = self.no_classes - 1
+            else:
+                # Make sure the regressed scores are actual possible values
+                prediction = np.max([prediction, 0])
+                prediction = np.min([prediction, self.no_classes - 1])
 
             return prediction
 
@@ -101,6 +95,18 @@ class joint_damage_type_predictor(predictor):
         super().__init__(model_parameters['damage_type_model'])
 
         self.model_parameters = model_parameters
+        self.prediction_transformer = self._create_sig_prediction_transformer()
+
+    def _create_sig_prediction_transformer(self):
+        def _sig_prediction_transformer(prediction):
+            if np.isnan(prediction):
+                prediction = 0.0
+            elif np.isinf(prediction):
+                prediction = 1.0
+
+            return prediction
+
+        return _sig_prediction_transformer
 
 class augmented_predictor():
     def __init__(self, base_predictor, no_augments = 50, aggregator = _robust_mean):
