@@ -1,8 +1,11 @@
-import tensorflow as tf
-import tensorflow_addons as tfa
-import numpy as np
 import logging
 import math
+
+import cv2 as cv
+import numpy as np
+import tensorflow as tf
+import tensorflow_addons as tfa
+
 import dataset.ops.landmark_ops as lm_ops
 
 PNG_EXTENSION_REGEX = '(?i).*png'
@@ -39,6 +42,25 @@ def load_image(file_info, y, directory, update_labels = False, imagenet = False)
             y = lm_ops.flip_landmarks(y, img_shape)
 
     return img, y
+
+def clahe_img(img, clip_limit = 2., grid_size = 2):
+    # Open CV requires uint8
+    img_array = tf.image.convert_image_dtype(img, dtype = 'uint8')
+        
+    clahe_img = tf.py_function(_clahe_img, [img_array, clip_limit, grid_size], tf.uint8)
+    
+    # OpenCV removes the last channel, so add it back and then convert back to float
+    clahe_img = tf.expand_dims(clahe_img, -1)
+    clahe_img = tf.image.convert_image_dtype(clahe_img, dtype = tf.float32)
+        
+    return clahe_img
+
+
+def _clahe_img(img_array, clip_limit, grid_size):
+    clahe = cv.createCLAHE(clipLimit = clip_limit, tileGridSize = (grid_size, grid_size))
+    clahe_img = clahe.apply(img_array.numpy())
+    
+    return clahe_img
 
 def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels = False):
     old_shape = tf.shape(img)
