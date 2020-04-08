@@ -3,13 +3,29 @@ from tensorflow import keras
 def get_joint_model_input(config):
     return keras.layers.Input(shape = [config.joint_img_height, config.joint_img_width, 1])
 
+def complex_rewritten(input):
+    model = _vvg_conv_block(input, 32, 'conv_1')
+    model = _vvg_conv_block(model, 32, 'conv_2')
+    model = _vvg_conv_block(model, 64, 'conv_3')
+    model = _vvg_conv_block(model, 64, 'conv_4')
+    model = _vvg_conv_block(model, 128, 'conv_5')
+    model = _vvg_conv_block(model, 128, 'conv_6')
+
+    model = keras.layers.Flatten()(model)
+
+    model = _vvg_fc_block(model, 1024, 'fc_1')
+    model = _vvg_fc_block(model, 512, 'fc_2')
+    model = _vvg_fc_block(model, 256, 'fc_3')
+
+    return model
+    
 def vvg_joint_model(input):
-    model = _vvg_conv_block(input, 40, 'conv_1')
-    model = _vvg_conv_block(model, 40, 'conv_1')
-    model = _vvg_conv_block(model, 80, 'conv_1')
-    model = _vvg_conv_block(model, 80, 'conv_1')
-    model = _vvg_conv_block(model, 160, 'conv_1')
-    model = _vvg_conv_block(model, 160, 'conv_1')
+    model = _vvg_conv_block(input, 16, 'conv_1')
+    model = _vvg_conv_block(model, 16, 'conv_2')
+    model = _vvg_conv_block(model, 32, 'conv_3')
+    model = _vvg_conv_block(model, 32, 'conv_4')
+    model = _vvg_conv_block(model, 64, 'conv_5')
+    model = _vvg_conv_block(model, 64, 'conv_6')
 
     model = keras.layers.Flatten()(model)
 

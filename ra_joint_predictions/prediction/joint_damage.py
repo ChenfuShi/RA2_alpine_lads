@@ -87,7 +87,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     df_joint_extractor = default_joint_extractor(joint_scale = 5)
     df_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
     
-    feet_erosion_extractor = get_joint_extractor('F', 'E')
+    feet_erosion_extractor = get_joint_extractor('F', True)
     feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_erosion_extractor)
     
     return {
