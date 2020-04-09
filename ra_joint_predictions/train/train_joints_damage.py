@@ -33,7 +33,7 @@ def train_joints_damage_model(config, model_name, pretrained_model, joint_type, 
 
     params = train_params.copy()
     if joint_type == 'W':
-        params['steps_per_epoch'] = 150
+        params['steps_per_epoch'] = 75
     elif joint_type == 'HF':
         params['steps_per_epoch'] = 175
 
@@ -65,7 +65,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
         else:
             tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
     elif joint_type == 'W':
-        joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = True)
+        joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = False)
 
         if do_validation:
             tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_wrists_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
@@ -86,16 +86,6 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     adamW_warm_restart_callback = AdamWWarmRestartCallback()
     saver = CustomSaver(model.name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model.name)
-    
-    def scheduler(epoch):
-        if epoch < 50:
-            return 1e-3
-        elif epoch < 150:
-            return 5e-4
-        else:
-            return 3e-4
-    
-    lr_schedule = keras.callbacks.LearningRateScheduler(scheduler)
     
     epochs = train_params['epochs']
     steps_per_epoch = train_params['steps_per_epoch']

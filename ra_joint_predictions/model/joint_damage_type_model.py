@@ -10,7 +10,7 @@ from keras_adamw import AdamW
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_type_model(config, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .6):
+def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .9):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
     output, metrics_dir = _add_output(base_ouptut)
@@ -20,7 +20,7 @@ def get_joint_damage_type_model(config, pretrained_model_file = None, model_name
         outputs = output,
         name = model_name)
     
-    optimizer = _get_optimizier(joint_damage_type_model)
+    optimizer = _get_optimizier(joint_damage_type_model, optimizer_params)
         
     joint_damage_type_model.compile(loss = focal_loss(alpha = alpha), metrics = metrics_dir, optimizer = optimizer)
 
@@ -44,13 +44,18 @@ def _add_output(base_output):
     
     return output, metrics
 
-def _get_optimizier(model):
+def _get_optimizier(model, optimizer_params):
+    lr = optimizer_params['lr']
+    wd = optimizer_params['wd']
+    use_wr = optimizer_params['use_wr']
+    total_iterations = optimizer_params['restart_epochs'] * optimizer_params['steps_per_epoch']
+    
     weight_decays = {}
 
     for layer in model.layers:
         layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: 1e-4})
+        weight_decays.update({layer.name: wd})
 
-    optimizer = AdamW(lr = 1e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 60 * 10, init_verbose = False, batch_size = 64)
+    optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 64)
     
     return optimizer
