@@ -137,6 +137,53 @@ def rewritten_complex(config):
 
     return model
 
+def rewritten_elu(config):
+    elu_activation = lambda x: keras.activations.elu(x, alpha = 0.1)
+    model = keras.models.Sequential([
+        keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation=elu_activation,padding='same',input_shape=[config.img_height,config.img_width,1]),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 32, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 64, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(filters = 128, kernel_size=(3,3),activation=elu_activation,padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPooling2D((2,2)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024,activation=elu_activation),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(512,activation=elu_activation),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(256,activation=elu_activation),
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.5),
+
+    ])
+
+    return model
 
 def bigger_kernel_base(config):
 
