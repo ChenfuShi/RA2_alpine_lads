@@ -29,7 +29,7 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = softmax_focal_loss(list(class_weights[0].values())), metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
-        joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
+        joint_damage_model.compile(loss = 'logcosh', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:
         losses = {}
         lossWeights = {}
@@ -85,9 +85,11 @@ def _get_optimizier(model):
     weight_decays = {}
 
     for layer in model.layers:
-        layer.kernel_regularizer = keras.regularizers.l2(0)
+        # layer.kernel_regularizer = keras.regularizers.l2(0)
         weight_decays.update({layer.name: 1e-6})
 
     optimizer = AdamW(lr = 1e-3, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 75 * 300, init_verbose = False, batch_size = 64)
+    
+    optimizer = keras.optimizers.SGD(lr = 1e-3, momentum = 0.9)
     
     return optimizer

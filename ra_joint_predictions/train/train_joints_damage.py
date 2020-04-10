@@ -87,6 +87,18 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
     saver = CustomSaver(model.name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model.name)
     
+    def scheduler(epoch):
+        if epoch < 60:
+            return 1e-3
+        elif epoch < 130:
+            return 5e-4
+        elif epoch < 200:
+            return 3e-4
+        else:
+            return 1e-4
+        
+    lr_schedule = tf.keras.callbacks.LearningRateScheduler(scheduler)
+    
     epochs = train_params['epochs']
     steps_per_epoch = train_params['steps_per_epoch']
     batch_size = train_params['batch_size']
@@ -98,7 +110,7 @@ def _fit_joint_damage_model(model, tf_joint_dataset, class_weights, train_params
         val_steps = np.ceil(no_val_samples / batch_size)
             
         history = model.fit(tf_joint_dataset, 
-            epochs = 300, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
+            epochs = 300, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback, lr_schedule])
 
     hist_df = pd.DataFrame(history.history)
 
