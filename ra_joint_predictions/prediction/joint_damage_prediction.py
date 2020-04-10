@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 import model.joint_damage_model as joint_damage_model
+import dataset.ops.dataset_ops as ds_ops
 
 from dataset.ops.dataset_ops import _augment_and_clip_image
 
@@ -118,7 +119,7 @@ class augmented_predictor():
         preds = np.zeros((self.no_augments + 1, self.base_predictor.no_outcomes))
         
         for n in range(self.no_augments):
-            aug_img, _ = _augment_and_clip_image(img, [])
+            aug_img, _ = _augment_and_clip_image(img, [], augments = ds_ops.default_augments)
             preds[n] = self.base_predictor.predict_joint_damage(aug_img)
 
         preds[self.no_augments, :] = self.base_predictor.predict_joint_damage(img)
@@ -139,7 +140,7 @@ class augmented_joint_damage_predictor(joint_damage_predictor):
         preds = np.zeros((self.no_augments + 1, self.no_outcomes))
         
         for n in range(self.no_augments):
-            aug_img, _ = _augment_and_clip_image(img, [])
+            aug_img, _ = _augment_and_clip_image(img, [], augments = ds_ops.default_augments)
 
             aug_img_pred = super().predict_joint_damage(aug_img)
             

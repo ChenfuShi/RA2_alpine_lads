@@ -77,8 +77,8 @@ def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels
 
     return img, y
 
-def apply_augment(img, y, aug, update_labels = False, cutoff = 0.1):
-    img, y = tf.cond(tf.random.uniform([], 0, 1) > cutoff, lambda: aug(img, y, update_labels), lambda: (img, y))
+def apply_augment(img, y, aug, p, update_labels = False):
+    img, y = tf.cond(tf.random.uniform([], 0, 1) < p, lambda: aug(img, y, update_labels), lambda: (img, y))
 
     return img, y
 
@@ -86,6 +86,15 @@ def clip_image(img):
     img = tf.clip_by_value(img, 0, 1)
 
     return img
+
+def random_flip(img, y, update_labels):
+    img = tf.image.random_flip_left_right(img)
+    img = tf.image.random_flip_up_down(img)
+    
+    if update_labels is True:
+        logging.error('Update labels not available for random_flip!')
+    
+    return img, y
 
 def random_brightness_and_contrast(img, y, update_labels, max_delta = 0.2, max_contrast = 0.2):
     img = tf.image.random_brightness(img, max_delta = max_delta)
@@ -124,16 +133,11 @@ def random_crop(img, y, update_labels, boxes = _create_boxes()):
     return img, y
 
 def random_gaussian_noise(img, y, update_labels, max_noise_strength = 3):
-    def _apply_noise(image):
-        noise_factor = tf.random.uniform([], minval = 1e-6, maxval = max_noise_strength)
-        noise = tf.random.normal(shape = tf.shape(image), stddev = (noise_factor / 255), dtype = tf.float32)
-        noise_img = image + noise
-        noise_img = clip_image(noise_img)
-        
-        return noise_img
+    noise_factor = tf.random.uniform([], minval = 1e-6, maxval = max_noise_strength)
+    noise = tf.random.normal(shape = tf.shape(img), stddev = (noise_factor / 255), dtype = tf.float32)
+    noise_img = img + noise
+    noise_img = clip_image(noise_img)
     
-    noise_img = tf.cond(tf.random.uniform([], 0, 1) > 0.8, lambda: _apply_noise(img), lambda: (img))
-        
     return noise_img, y
 
 def _calc_radians_for_degrees(degree_angle):

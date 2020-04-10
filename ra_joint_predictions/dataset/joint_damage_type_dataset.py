@@ -20,8 +20,11 @@ class joint_damage_type_dataset(dream_dataset):
     def get_hands_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_hands_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
 
-        val_dataset, val_no_samples = self._create_test_dataset().get_hands_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        test_dataset = self._create_test_dataset()
+        val_dataset, val_no_samples = test_dataset.get_hands_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
+        self.val_outcomes = test_dataset.outcomes
+        
         return dataset, val_dataset, val_no_samples
 
     def get_feet_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
@@ -32,7 +35,10 @@ class joint_damage_type_dataset(dream_dataset):
     def get_feet_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_train_v2.csv', joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_feet_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
 
-        val_dataset, val_no_samples = self._create_test_dataset().get_feet_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        test_dataset = self._create_test_dataset()
+        val_dataset, val_no_samples = test_dataset.get_feet_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        
+        self.val_outcomes = test_dataset.outcomes
 
         return dataset, val_dataset, val_no_samples
 
@@ -68,6 +74,8 @@ class joint_damage_type_dataset(dream_dataset):
         outcomes = outcome_joint_df[outcome_column]
         maj_idx = outcomes == 0
         
+        self.outcomes = outcomes
+        
         self.alpha = np.count_nonzero(maj_idx) / maj_idx.shape[0]
         
         # Set majority samples to 0
@@ -79,22 +87,28 @@ class joint_damage_type_dataset(dream_dataset):
         return self._create_dataset(file_info, coords, joint_damage_type_outcome, maj_idx)
 
     def _create_dataset(self, file_info, joint_coords, outcomes, maj_idx):
-        min_idx = np.logical_not(maj_idx)
+        #min_idx = np.logical_not(maj_idx)
 
         # Tranform boolean mask into indices
-        maj_idx = np.where(maj_idx)[0]
-        min_idx = np.where(min_idx)[0]
+        #maj_idx = np.where(maj_idx)[0]
+        #min_idx = np.where(min_idx)[0]
 
         # Create 2 datasets, one with the majority class, one with the other classes
-        maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx])
-        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx])
+        #maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx])
+        #min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx])
 
         # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
-        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
-        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
+        #maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
+        #min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
+        dataset = self._create_joint_dataset(file_info, joint_coords, outcomes)
+        dataset = self._cache_shuffle_repeat_dataset(dataset, self.cache, buffer_size = 4000)
+        
         # Interleave datasets
-        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.8, 0.2])
+        
+        #maj_ratio = np.round(self.alpha, decimals = 2)
+        
+        #dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [maj_ratio, 1 - maj_ratio])
 
         return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 

@@ -86,6 +86,8 @@ class joint_test_dataset(dream_dataset):
 
         outcomes = self._get_outcomes(df, params)
 
+        self.outcomes = outcomes
+        
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
 
         if load_wrists:

@@ -9,6 +9,9 @@ def focal_loss(gamma = 2., alpha = 0.25):
     return _focal_loss_fixed
 
 def softmax_focal_loss(alpha, gamma = 2.):
+    alpha = K.constant(alpha)
+    gamma = K.constant(gamma)
+    
     def _softmax_focal_loss_fixed(y_true, y_pred):
         epsilon = K.epsilon()
         y_pred = K.clip(y_pred, epsilon, 1. - epsilon)
