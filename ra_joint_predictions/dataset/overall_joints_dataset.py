@@ -90,6 +90,22 @@ foot_outcome_mapping = {
     'mtp_5': [['{part}_mtp_J__5'], ['{part}_mtp_E__5']]
 }
 
+overall_augments = [
+    {
+        'augment': img_ops.random_brightness_and_contrast
+    },
+    {
+        'augment': img_ops.random_crop
+    },
+    {
+        'augment': img_ops.random_gaussian_noise,
+        'p': 0.2
+    },
+    {
+        'augment': img_ops.random_rotation
+    }
+]
+
 class overall_joints_dataset(dream_dataset):
     def __init__(self, config, ds_type, cache_postfix = '', erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
@@ -208,7 +224,7 @@ class overall_joints_dataset(dream_dataset):
 
     def _augment_images(self, dataset):
         def __augment_images(file_info, img, coords, outcomes):
-            img, coords = ds_ops._augment_and_clip_image(img, coords, update_labels = True)
+            img, coords = ds_ops._augment_and_clip_image(img, coords, overall_augments, update_labels = True)
 
             return file_info, img, coords, outcomes
 
@@ -231,6 +247,7 @@ class overall_joints_dataset(dream_dataset):
             return file_info, img
 
         return dataset.map(__remove_outcome, num_parallel_calls = AUTOTUNE)
+        
 
 class hands_overall_joints_dataset(overall_joints_dataset):
     def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
