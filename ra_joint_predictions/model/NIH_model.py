@@ -13,7 +13,17 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from model.utils.keras_nasnet import NASNet
-from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex
+from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu
+
+def create_rewritten_elu(config):
+
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
+
+    # create new model with common part
+    base_net = rewritten_elu(config)
+    common_part = base_net(inputs)
+
+    return _add_common(common_part,"rewritten_elu_NIH",inputs)
 
 def create_complex_joint_multioutput(config):
 

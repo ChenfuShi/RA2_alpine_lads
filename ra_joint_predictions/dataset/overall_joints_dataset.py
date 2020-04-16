@@ -262,7 +262,7 @@ class hands_overall_joints_dataset(overall_joints_dataset):
                 
                 coord_idx = hand_coord_mapping[joint_key]
 
-                joint_img = self._load_joint(img, joint_key, coords[coord_idx[0]:coord_idx[1]])
+                joint_img = self._load_joint(img, tf.constant(joint_key), coords[coord_idx[0]:coord_idx[1]])
 
                 joints.append(joint_img)
 
@@ -311,7 +311,7 @@ class feet_overall_joints_dataset(overall_joints_dataset):
                 
                 coord_idx = foot_coord_mapping[joint_key]
 
-                joint_img = self._load_joint(img, joint_key, coords[coord_idx[0]:coord_idx[1]])
+                joint_img = self._load_joint(img, tf.constant(joint_key), coords[coord_idx[0]:coord_idx[1]])
 
                 joints.append(joint_img)
 

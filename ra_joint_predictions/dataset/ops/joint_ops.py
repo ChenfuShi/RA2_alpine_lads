@@ -10,7 +10,7 @@ round_to_int = lambda x: tf.cast(tf.round(x), tf.int32)
 
 feet_joints = ['mtp', 'mtp_1', 'mtp_2', 'mtp_3', 'mtp_4', 'mtp_5']
 
-def load_joints(dataset, directory, imagenet = False, joint_extractor = default_joint_extractor()):
+def load_joints(dataset, directory, imagenet = False, joint_extractor = default_joint_extractor(), apply_clahe = False):
     def __load_joints(file_info, y, z):
         joint_key = file_info[3]
 
@@ -20,6 +20,9 @@ def load_joints(dataset, directory, imagenet = False, joint_extractor = default_
         full_img, _ = img_ops.load_image(file_info, [], directory, imagenet = imagenet)
 
         joint_img = _extract_joint_from_image(full_img, joint_key, x_coord, y_coord, joint_extractor)
+
+        if apply_clahe:
+            joint_img = img_ops.clahe_img(joint_img)
 
         return joint_img, z
 

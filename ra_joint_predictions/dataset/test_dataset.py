@@ -146,7 +146,7 @@ class joint_test_dataset(dream_dataset):
 
         return outcomes
         
-    def _load_joints_without_outcomes(self, dataset):
+    def _load_joints_without_outcomes(self, dataset, apply_clahe = False):
         def __load_joints(file_info, coords, y):
             x_coord = coords[0]
             y_coord = coords[1]
@@ -154,6 +154,9 @@ class joint_test_dataset(dream_dataset):
             full_img, _ = img_ops.load_image(file_info, [], self.img_dir, imagenet = self.imagenet)
 
             joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_extractor = self.joint_extractor)
+
+            if apply_clahe:
+                joint_img = img_ops.clahe_img(joint_img)
 
             return file_info, joint_img, y
 
