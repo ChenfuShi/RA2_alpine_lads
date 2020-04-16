@@ -3,9 +3,12 @@ import model
 import dataset
 import logging
 import dataset.NIH_pretrain_dataset as dpd
-from model.NIH_model import create_NASnet_multioutupt, create_rewritten_complex_joint_multioutput,create_VGG_multioutput,create_resnet_multioutput,create_bigger_kernel_multioutput,create_densenet_multioutput,create_Xception_multioutput
+from model.NIH_model import create_NASnet_multioutupt, create_rewritten_complex_joint_multioutput,create_VGG_multioutput,create_resnet_multioutput,create_bigger_kernel_multioutput,create_densenet_multioutput,create_Xception_multioutput, create_rewritten_elu
 from train.pretrain_NIH import pretrain_NIH_chest
 from tensorflow.keras.models import load_model
+import tensorflow as tf
+tf.config.threading.set_intra_op_parallelism_threads(8)
+tf.config.threading.set_inter_op_parallelism_threads(8)
 
 if __name__ == '__main__':
 
@@ -22,13 +25,11 @@ if __name__ == '__main__':
 
     logging.info("datasets prepared")
 
-    for model_constr,name in zip([create_rewritten_complex_joint_multioutput,],["NIH_rewritten"]):
+    for model_constr,name in zip([create_rewritten_elu,],["NIH_rewritten_elu_a0.1"]):
         model = model_constr(configuration)
 
-        #create_bigger_kernel_multioutput 
-
         model.summary()
-        # check if there is weights to load
+
         logging.info("model prepared")
         # train
         logging.info("starting training")

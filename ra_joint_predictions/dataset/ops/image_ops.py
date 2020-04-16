@@ -1,11 +1,12 @@
-import tensorflow as tf
-import tensorflow.keras.backend as K
-import tensorflow_addons as tfa
-import numpy as np
 import logging
 import math
-import dataset.ops.landmark_ops as lm_ops
+
 import cv2 as cv
+import numpy as np
+import tensorflow as tf
+import tensorflow_addons as tfa
+
+import dataset.ops.landmark_ops as lm_ops
 
 PNG_EXTENSION_REGEX = '(?i).*png'
 JPG_EXTENSION_REGEX = '(?i).*jp[e]?g'
@@ -42,28 +43,24 @@ def load_image(file_info, y, directory, update_labels = False, imagenet = False)
 
     return img, y
 
-def equalize_histogram(img, y, update_labels = False):
-    int_img = tf.image.convert_image_dtype(img, tf.uint8)
+def clahe_img(img, clip_limit = 2., grid_size = 2):
+    # Open CV requires uint8
+    img_array = tf.image.convert_image_dtype(img, dtype = 'uint8')
+        
+    clahe_img = tf.py_function(_clahe_img, [img_array, clip_limit, grid_size], tf.uint8)
     
-    values_range = tf.constant([0., 255.], dtype = tf.float32)
-    histogram = tf.histogram_fixed_width(tf.cast(int_img, dtype = K.floatx()), values_range, 256)
-    cdf = tf.cumsum(histogram)
-    cdf_min = cdf[tf.reduce_min(tf.where(tf.greater(cdf, 0)))]
+    # OpenCV removes the last channel, so add it back and then convert back to float
+    clahe_img = tf.expand_dims(clahe_img, -1)
+    clahe_img = tf.image.convert_image_dtype(clahe_img, dtype = tf.float32)
+        
+    return clahe_img
 
-    img_shape = tf.shape(int_img)
-    pix_cnt = img_shape[-3] * img_shape[-2]
-    px_map = tf.round(tf.cast(cdf - cdf_min, dtype = K.floatx()) * 255. / tf.cast(pix_cnt - 1, dtype = K.floatx()))
-    px_map = tf.cast(px_map, tf.uint8)
 
-    eq_hist = tf.expand_dims(tf.gather_nd(px_map, tf.cast(int_img, dtype = tf.int32)), 2)
+def _clahe_img(img_array, clip_limit, grid_size):
+    clahe = cv.createCLAHE(clipLimit = clip_limit, tileGridSize = (grid_size, grid_size))
+    clahe_img = clahe.apply(img_array.numpy())
     
-    return tf.image.convert_image_dtype(eq_hist, tf.float64), y
-
-def clahe_img(img):
-    clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    clahe_img = clahe.apply(img.numpy())
-    
-    return img
+    return clahe_img
 
 def resize_image(img, y, img_height, img_width, pad_resize = True, update_labels = False):
     old_shape = tf.shape(img)
