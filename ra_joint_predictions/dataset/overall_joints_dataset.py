@@ -168,15 +168,30 @@ class overall_joints_dataset(dream_dataset):
         joint_coords = outcome_joint_df[coord_keys].to_numpy()
         outcomes = self._get_outcomes(outcome_joint_df)
         
-        dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
-        dataset = self._load_images(dataset)
-
         shuffle_and_augment = self.ds_type == 'train'
 
-        dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = 300, do_shuffle = shuffle_and_augment)
         if shuffle_and_augment:
-            dataset = self._augment_images(dataset)
+            maj_idx = outcomes < 5
+            maj_idx = np.where(maj_idx)[0]
+            min_idx = np.where(np.logical_not(maj_idx))[0]
 
+            maj_ds = tf.data.Dataset.from_tensor_slices((file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx]))
+            maj_ds = self._load_images(maj_ds)
+            maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, cache = self.cache + '_maj', buffer_size = maj_idx.shape[0])
+
+            min_ds = tf.data.Dataset.from_tensor_slices((file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx]))
+            min_ds = self._load_images(min_ds)
+            min_ds = self._cache_shuffle_repeat_dataset(min_ds, cache = self.cache + '_min', buffer_size = min_idx.shape[0])
+
+            dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
+
+            dataset = self._augment_images(dataset)
+        else:
+            dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
+            dataset = self._load_images(dataset)
+
+            dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = self.no_samples, do_shuffle = shuffle_and_augment)
+                
         return dataset
 
     def _finalize_dataset(self, dataset):
