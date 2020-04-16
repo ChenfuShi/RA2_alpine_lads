@@ -6,15 +6,19 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 
 import dataset.ops.dataset_ops as ds_ops
+import dataset.ops.image_ops as img_ops
 import dataset.ops.joint_ops as joint_ops
 import model.joint_damage_model as joint_damage_model
 
-from utils.class_weight_utils import calc_adapted_class_weights
+from utils.class_weight_utils import calc_adapted_class_weights, calc_relative_class_weights, calc_ln_class_weights
+
+hand_wrist_keys = ['w1', 'w2', 'w3']
 
 # TODO: Don't use config in constructor, but individual fields passed on from config
 class base_dataset():
     def __init__(self, config):
         self.config = config
+        self.is_wrist = False
 
     def _create_dataset(self, x, y, file_location, update_labels = False, imagenet = False):
         dataset = tf.data.Dataset.from_tensor_slices((x, y))
@@ -38,7 +42,28 @@ class base_dataset():
         return dataset
 
     def _prepare_for_training(self, dataset, img_height, img_width, batch_size = 64, update_labels = False, augment = True, pad_resize = True):
-        dataset = ds_ops.augment_and_resize_images(dataset, img_height, img_width, update_labels = update_labels, pad_resize = pad_resize, do_augmentation = augment)
+        if augment:
+            if self.is_wrist:
+                augments = [
+                    {
+                        'augment': img_ops.random_brightness_and_contrast
+                    },
+                    {
+                        'augment': img_ops.random_crop
+                    },
+                    {
+                        'augment': img_ops.random_gaussian_noise,
+                        'p': 0.2
+                    },
+                    {
+                        'augment': img_ops.random_rotation
+                    }]
+            else:
+                augments = ds_ops.default_augments
+        else:
+            augments = []
+        
+        dataset = ds_ops.augment_and_resize_images(dataset, img_height, img_width, update_labels = update_labels, pad_resize = pad_resize, augments = augments)
         dataset = ds_ops.batch_and_prefetch_dataset(dataset, batch_size)
         
         return dataset
@@ -184,6 +209,7 @@ class dream_dataset(joint_dataset):
             tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
         elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
             tf_outcomes = outcomes.to_numpy()
+            self.outcomes = tf_outcomes
         elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
             tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
             tf_outcomes = outcomes.to_numpy()
@@ -225,8 +251,8 @@ class dream_dataset(joint_dataset):
         min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], min_outcomes, wrist = wrist)
 
         # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
-        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
-        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
+        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0] * 4)
+        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0] * 4)
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
         dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
@@ -237,7 +263,7 @@ class dream_dataset(joint_dataset):
         return dataset
 
     def _init_model_outcomes_bias(self, outcomes, no_classes):
-        self.class_weights = calc_adapted_class_weights(outcomes, no_classes)
+        self.class_weights = calc_relative_class_weights(outcomes, no_classes)
 
     def _dummy_encode_outcomes(self, outcomes, no_classes):
         D = outcomes.shape[1]

@@ -119,6 +119,7 @@ class hands_wrists_dataset(dream_dataset):
         super().__init__(config, 'wrists_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
+        self.is_wrist = True
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']

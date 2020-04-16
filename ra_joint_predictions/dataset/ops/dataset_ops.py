@@ -8,6 +8,26 @@ import dataset.ops.image_ops as img_ops
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
+default_augments = [
+    {
+        'augment': img_ops.random_flip,
+        'p': 1.
+    },
+    {
+        'augment': img_ops.random_brightness_and_contrast
+    },
+    {
+        'augment': img_ops.random_crop
+    },
+    {
+        'augment': img_ops.random_gaussian_noise,
+        'p': 0.2
+    },
+    {
+        'augment': img_ops.random_rotation
+    }
+]
+
 def load_images(dataset, directory, update_labels = False, imagenet = False):
     def __load(file_info, y):
         return img_ops.load_image(file_info, y, directory, update_labels = update_labels, imagenet = imagenet)
@@ -37,20 +57,23 @@ def cache_dataset(dataset, cache):
 def batch_and_prefetch_dataset(dataset, batch_size = 128):
     dataset = dataset.batch(batch_size)
     
-    return dataset.prefetch(buffer_size = AUTOTUNE)    
+    return dataset.prefetch(buffer_size = AUTOTUNE)
 
-def augment_and_resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True, do_augmentation = True):
+def augment_and_resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True, augments = default_augments):
     def __augment_and_resize(img, y):
-        if do_augmentation:
-            img, y, = _augment_and_clip_image(img, y, update_labels = update_labels)
+        if len(augments) > 0:
+            img, y, = _augment_and_clip_image(img, y, augments = augments, update_labels = update_labels)
 
         return img_ops.resize_image(img, y, img_height, img_width, pad_resize = pad_resize, update_labels = update_labels)
 
     return dataset.map(__augment_and_resize, num_parallel_calls=AUTOTUNE)
 
-def _augment_and_clip_image(img, y, augments = [img_ops.random_rotation, img_ops.random_brightness_and_contrast, img_ops.random_crop, img_ops.random_gaussian_noise], update_labels = False):
+def _augment_and_clip_image(img, y, augments, update_labels = False):
     for aug in augments:
-        img, y = img_ops.apply_augment(img, y, aug, update_labels = update_labels)
+        augment = aug['augment']
+        p = aug.get('p', 0.9)
+        
+        img, y = img_ops.apply_augment(img, y, augment, p, update_labels = update_labels)
 
     img = img_ops.clip_image(img)
 

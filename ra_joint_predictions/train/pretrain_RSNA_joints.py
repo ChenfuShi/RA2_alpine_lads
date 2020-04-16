@@ -1,9 +1,12 @@
 import datetime
 
 import tensorflow as tf
+import tensorflow.keras.backend as K
 
 from utils.saver import CustomSaver, _get_tensorboard_callback
 from dataset.rsna_joint_dataset import rsna_joint_dataset
+from keras_adamw import AdamW
+from train.utils.callbacks import AdamWWarmRestartCallback
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
@@ -56,11 +59,40 @@ def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_bef
     }
 
     lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
-
-    model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
+    
+    optimizer = _get_optimizier(model)
+    
+    model.compile(optimizer = optimizer, loss = losses, loss_weights = lossWeights, 
         metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
 
+    
+    def scheduler(epoch):
+        if epoch < 20:
+            return 1e-2
+        elif epoch < 50:
+            return 5e-3
+        elif epoch < 80:
+            return 5e-4
+        else:
+            return 5e-5
+        
+    lr_schedule = tf.keras.callbacks.LearningRateScheduler(scheduler)
+    
+    # adamW_warm_restart_callback = AdamWWarmRestartCallback(restart_epochs = 25)
 
     saver = CustomSaver(model_name + "after", n = 10)
     model.fit(joint_dataset,
-        epochs = epochs_after, steps_per_epoch = 1750, validation_data = joint_val_dataset, validation_steps = 175, verbose = 2, callbacks = [saver, tensorboard_callback])
+        epochs = epochs_after, steps_per_epoch = 1750, validation_data = joint_val_dataset, validation_steps = 175, verbose = 2, callbacks = [saver, lr_schedule, tensorboard_callback])
+    
+def _get_optimizier(model):
+    weight_decays = {}
+
+    # for layer in model.layers:
+        # layer.kernel_regularizer = tf.keras.regularizers.l2(5e-4)
+        # weight_decays.update({layer.name: 1e-6})
+
+    #ptimizer = AdamW(lr=3e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 1750 * 25, init_verbose = False)
+    
+    optimizer = tf.keras.optimizers.SGD(lr = 1e-2, momentum = 0.9)
+    
+    return optimizer

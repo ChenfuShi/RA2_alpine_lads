@@ -22,6 +22,8 @@ def softmax_mae_metric(classes):
         
         return _mae(true, pred)
     
+    softmax_mae.__name__ = 'mae'
+    
     return softmax_mae
 
 def softmax_rmse_metric(classes):
@@ -30,6 +32,8 @@ def softmax_rmse_metric(classes):
         pred = K.sum(y_pred * classes, axis = 1)
         
         return _rmse(true, pred)
+    
+    softmax_rmse.__name__ = 'rmse'
     
     return softmax_rmse
 
@@ -51,7 +55,7 @@ def class_filter_softmax_rmse_metric(classes, class_filter):
 
         return rmse_val
     
-    class_filter_softmax_rmse.__name__ = 'filter_{}_softmax_rmse'.format(class_filter)
+    class_filter_softmax_rmse.__name__ = 'filter_{}_rmse'.format(class_filter)
     
     return class_filter_softmax_rmse
     

@@ -17,7 +17,7 @@ nvidia-smi
 # this also includes cuda and cuda toolkits
 source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 
-rm ~/localscratch/* -r
+rm -r ../tmp_cache
 
 # run python training script
-python ../ra_joint_predictions/full_holdout_predictions.py
+python ../ra_joint_predictions/full_holdout_predictions.py ${output_file}

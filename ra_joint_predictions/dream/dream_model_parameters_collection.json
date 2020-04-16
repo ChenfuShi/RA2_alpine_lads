@@ -4,7 +4,9 @@
             "model": "../resources/hands_narrowing_reg_old_pretrain_adam_shuffle.h5", 
             "no_outcomes": 1, 
             "no_classes": 5, 
-            "model_type": "R" 
+            "model_type": "R",
+            "damage_type_model": "../resources/hands_narrowing_joint_damage_type_model_alpha.h5", 
+            "damage_type_cutoff": 0.1
         },
     "wrists_narrowing_model": { 
             "model": "../resources/wrists_narrowing_reg_old_pretrain_adam_shuffle.h5", 
@@ -18,14 +20,18 @@
             "model": "../resources/feet_narrowing_reg_old_pretrain_adam_shuffle.h5", 
             "no_outcomes": 1, 
             "no_classes": 5, 
-            "model_type": "R" 
+            "model_type": "R",
+            "damage_type_model": "../resources/feet_narrowing_joint_damage_type_model_alpha.h5", 
+            "damage_type_cutoff": 0.1
         },
     "hands_erosion_model": 
         { 
             "model": "../resources/hands_erosion_reg_old_pretrain_adam_shuffle.h5", 
             "no_outcomes": 1, 
             "no_classes": 6, 
-            "model_type": "R" 
+            "model_type": "R",
+            "damage_type_model": "../resources/hands_erosion_joint_damage_type_model_alpha.h5", 
+            "damage_type_cutoff": 0.1
         },
     "wrists_erosion_model": 
         { 
@@ -37,9 +43,11 @@
         },
     "feet_erosion_model": 
         { 
-            "model": "../resources/feet_erosion_reg_old_pretrain_adam_shuffle_js3and6.h5", 
+            "model": "../resources/feet_erosion_complex_rewritten_adamW_1e3_1e6_125steps_nowr.h5", 
             "no_outcomes": 1, 
             "no_classes": 11, 
-            "model_type": "R" 
+            "model_type": "R",
+            "damage_type_model": "../resources/feet_erosion_joint_damage_type_model_adamW_1e4_1e4_60steps_wr10.h5", 
+            "damage_type_cutoff": 0.2
         }
 }

@@ -39,7 +39,7 @@ class CustomSaver(keras.callbacks.Callback):
                 self.model.save_weights(os.path.join('weights', self.model_name + '_model_{}'.format(epoch)))
 
 
-def _get_tensorboard_callback(model_name,log_dir = 'logs/tensorboard/'):
+def _get_tensorboard_callback(model_name,log_dir = '../logs/tensorboard/'):
     log_dir = log_dir + model_name + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=5)

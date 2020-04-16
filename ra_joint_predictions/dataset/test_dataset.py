@@ -86,6 +86,8 @@ class joint_test_dataset(dream_dataset):
 
         outcomes = self._get_outcomes(df, params)
 
+        self.outcomes = outcomes
+        
         dataset = tf.data.Dataset.from_tensor_slices((file_info, joint_coords, outcomes))
 
         if load_wrists:
@@ -94,7 +96,6 @@ class joint_test_dataset(dream_dataset):
             dataset = self._load_joints_without_outcomes(dataset)
 
         dataset = self._resize_images_without_outcomes(dataset)
-        dataset = dataset.cache()
         
         if params:
             dataset = self._remove_file_info(dataset)
@@ -144,7 +145,7 @@ class joint_test_dataset(dream_dataset):
 
         return outcomes
         
-    def _load_joints_without_outcomes(self, dataset):
+    def _load_joints_without_outcomes(self, dataset, apply_clahe = False):
         def __load_joints(file_info, coords, y):
             x_coord = coords[0]
             y_coord = coords[1]
@@ -152,6 +153,9 @@ class joint_test_dataset(dream_dataset):
             full_img, _ = img_ops.load_image(file_info, [], self.img_dir, imagenet = self.imagenet)
 
             joint_img = joint_ops._extract_joint_from_image(full_img, file_info[3], x_coord, y_coord, joint_extractor = self.joint_extractor)
+
+            if apply_clahe:
+                joint_img = img_ops.clahe_img(joint_img)
 
             return file_info, joint_img, y
 

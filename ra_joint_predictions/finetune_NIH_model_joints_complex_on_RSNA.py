@@ -16,18 +16,21 @@ from train.pretrain_RSNA_joints import finetune_model
 from tensorflow.keras.models import load_model
 from dataset.rsna_joint_dataset import rsna_joint_dataset, rsna_wrist_dataset
 from dataset.joints.joint_extractor import width_based_joint_extractor
+from dataset.joints.joint_extractor_factory import get_joint_extractor
+
+from model.utils.building_blocks_joints import get_joint_model_input, vvg_joint_model
 
 os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/ra_joint_predictions')
 
 configuration = Config()
 
-joint_extractor = width_based_joint_extractor(joint_scale = 6.)
+joint_extractor = get_joint_extractor('H', True)
 
 ## joints
 joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, pad_resize = False, joint_extractor = joint_extractor).create_rsna_joints_dataset(val_split = True, include_wrist_joints = True)
 
-model = RSNA_model.complex_joint_finetune_model(configuration, weights = "../../../RA2_alpine_lads/ra_joint_predictions/weights/NIH_rewritten_model_50.h5", no_joint_types = 13)
+model = RSNA_model.create_rsna_extended_complex(configuration, 'extended_complex_erosion_joints_sgd', no_joint_types = 13)
 
 model.summary()
 
-finetune_model(model, "complex_rewritten_pretrain_full", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 25, epochs_after = 201)
+finetune_model(model, "extended_complex_erosion_joints_sgd", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 0, epochs_after = 201)

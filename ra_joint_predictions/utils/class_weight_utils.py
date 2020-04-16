@@ -25,6 +25,66 @@ def calc_default_class_weights(outcomes, no_classes):
 
     return outcomes_class_weights
 
+def calc_ln_class_weights(outcomes, no_classes):
+    outcomes = outcomes.to_numpy()
+    
+    outcomes_class_weights = []
+    
+    D = outcomes.shape[1]
+
+    for d in range(D):
+        class_weights = {}
+
+        classes, counts = np.unique(outcomes[:, d], return_counts = True)
+
+        # Get max of non0s as reference
+        ref = np.max(counts[1:])
+
+        weights = np.ones(no_classes)
+        weights[1:] = np.log(ref / counts[1:])
+        # Add 1 to weights < 1
+        weights[weights < 1] = weights[weights < 1] + 1
+        # weights = weights / np.sum(weights)
+
+        for idx, c in enumerate(classes.astype(np.int64)):
+            class_weights[c] = weights[idx]
+           
+        for class_val in np.arange(no_classes):
+            if class_val not in class_weights.keys():                
+                class_weights[class_val] = 1
+
+        outcomes_class_weights.append(class_weights)
+
+    return outcomes_class_weights
+
+def calc_relative_class_weights(outcomes, no_classes):
+    outcomes = outcomes.to_numpy()
+    
+    outcomes_class_weights = []
+    
+    D = outcomes.shape[1]
+
+    for d in range(D):
+        class_weights = {}
+
+        classes, counts = np.unique(outcomes[:, d], return_counts = True)
+
+        ref = np.max(counts)
+
+        weights = ref / counts
+        # weights = weights / np.sum(weights)
+
+        for idx, c in enumerate(classes.astype(np.int64)):
+            class_weights[c] = weights[idx]
+           
+        for class_val in np.arange(no_classes):
+            if class_val not in class_weights.keys():                
+                class_weights[class_val] = 1
+
+        outcomes_class_weights.append(class_weights)
+
+    return outcomes_class_weights
+
 def calc_adapted_class_weights(outcomes, no_classes):
     outcomes = outcomes.to_numpy()
     
