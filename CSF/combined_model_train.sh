@@ -2,7 +2,9 @@
 #$ -cwd
 #$ -j y
 #$ -o logs
-#$ -pe smp.pe 24
+#$ -l nvidia_v100
+#$ -pe smp.pe 8
+
 
 module load apps/anaconda3/5.2.0/bin
 
