@@ -106,6 +106,7 @@ class joint_test_dataset(dream_dataset):
             #if self.model_type == 'DT':
                 #dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = 2000)
         
+            dataset = dataset.repeat()
             dataset = dataset.batch(self.config.batch_size)
         else:
             dataset = self._remove_outcome(dataset)

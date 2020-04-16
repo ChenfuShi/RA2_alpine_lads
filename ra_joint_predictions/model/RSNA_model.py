@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Dense, Dropout
 import model.NIH_model as NIH
 from model.utils.building_blocks_joints import _fc_block
 from model.utils.building_blocks_joints import create_complex_joint_model, elu_res_net, extended_complex
-from model.utils.building_blocks_joints import get_joint_model_input, vvg_joint_model, complex_rewritten
+from model.utils.building_blocks_joints import get_joint_model_input, vvg_joint_model, complex_rewritten, avg_joint_vgg
 
 elu_activation = lambda x: keras.activations.elu(x, alpha = 0.3)
 
@@ -16,8 +16,6 @@ def complex_joint_finetune_model(*args, **kwargs):
     return model_finetune_RSNA(*args, **kwargs)
 
 def model_finetune_RSNA(config, model = None, no_joint_types = 10, weights = "weights/NIH_new_pretrain_model_100.h5", name = "rsna_complex_multiout"):
-    
-    
     NIH_model = keras.models.load_model(weights)
 
     NEW_model = keras.Model(NIH_model.input, NIH_model.layers[-4].output)
@@ -89,6 +87,16 @@ def create_vgg_rsna_model(config, name, no_joint_types = 13):
 
     return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
 
+def create_complex(config, name, no_joint_types = 13):
+    input_layer = get_joint_model_input(config)
+    model = complex_rewritten(input_layer)
+    
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
+
 def create_res_rsna_model(config, name, no_joint_types = 13):
     input_layer = get_joint_model_input(config)
     model = elu_res_net(input_layer)
@@ -108,6 +116,16 @@ def create_rsna_extended_complex(config, name, no_joint_types = 13):
     joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
     
     return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
+    
+def create_vgg_avg_rsna_model(config, name, no_joint_types = 13):
+    input_layer = get_joint_model_input(config)
+    model = avg_joint_vgg(input_layer)
+    
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name) 
     
 def _create_compile_rsna_multioutput(input, boneage, sex, joint_type, name):
     # get final model

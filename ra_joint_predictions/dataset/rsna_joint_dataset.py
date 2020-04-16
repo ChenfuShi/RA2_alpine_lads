@@ -17,6 +17,7 @@ class rsna_joint_dataset(joint_dataset):
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
+        self.cache = self.cache + 'rsna/'
 
     def create_rsna_joints_dataset(self, joints_source = './data/predictions/rsna_joint_data_v3.csv', val_split = False, include_wrist_joints = True):
         joint_keys = hand_joint_keys

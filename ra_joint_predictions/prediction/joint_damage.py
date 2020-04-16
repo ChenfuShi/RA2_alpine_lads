@@ -87,6 +87,9 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     df_joint_extractor = default_joint_extractor(joint_scale = 5)
     df_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
     
+    hands_narrowing_extractor = get_joint_extractor('H', False)
+    hands_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = hands_narrowing_extractor)
+    
     feet_narrowing_extractor = get_joint_extractor('F', False)
     feet_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_narrowing_extractor)
 
@@ -97,7 +100,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_erosion_extractor)
     
     return {
-        'hands_narrowing_dataset': df_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
+        'hands_narrowing_dataset': hands_narrowing_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
         'wrists_narrowing_dataset': df_test_dataset.get_wrists_joint_test_dataset(joints_source = hands_joint_source)[0],
         'feet_narrowing_dataset': feet_narrowing_test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_source)[0],
         'hands_erosion_dataset': hands_erosion_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],

@@ -74,6 +74,9 @@ class joint_damage_type_dataset(dream_dataset):
         outcomes = outcome_joint_df[outcome_column]
         maj_idx = outcomes == 0
         
+        self.n_negatives = np.count_nonzero(maj_idx)
+        self.n_positives = maj_idx.shape[0] - self.n_negatives
+        
         self.outcomes = outcomes
         
         self.alpha = np.count_nonzero(maj_idx) / maj_idx.shape[0]
@@ -87,28 +90,10 @@ class joint_damage_type_dataset(dream_dataset):
         return self._create_dataset(file_info, coords, joint_damage_type_outcome, maj_idx)
 
     def _create_dataset(self, file_info, joint_coords, outcomes, maj_idx):
-        #min_idx = np.logical_not(maj_idx)
-
-        # Tranform boolean mask into indices
-        #maj_idx = np.where(maj_idx)[0]
-        #min_idx = np.where(min_idx)[0]
-
-        # Create 2 datasets, one with the majority class, one with the other classes
-        #maj_ds = self._create_joint_dataset(file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx])
-        #min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], outcomes[min_idx])
-
-        # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
-        #maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0])
-        #min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
-
         dataset = self._create_joint_dataset(file_info, joint_coords, outcomes)
-        dataset = self._cache_shuffle_repeat_dataset(dataset, self.cache, buffer_size = 4000)
+        dataset = self._cache_shuffle_repeat_dataset(dataset, self.cache, buffer_size = outcomes.shape[0])
         
         # Interleave datasets
-        
-        #maj_ratio = np.round(self.alpha, decimals = 2)
-        
-        #dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [maj_ratio, 1 - maj_ratio])
 
         return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 

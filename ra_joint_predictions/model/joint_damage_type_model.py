@@ -10,10 +10,10 @@ from keras_adamw import AdamW
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .9):
+def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .9, init_bias = 0):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
-    output, metrics_dir = _add_output(base_ouptut)
+    output, metrics_dir = _add_output(base_ouptut, init_bias)
 
     joint_damage_type_model = keras.models.Model(
         inputs = base_input,
@@ -37,8 +37,10 @@ def _get_base_model(config, pretrained_model_file):
 
         return input, base_model
 
-def _add_output(base_output):
-    output = keras.layers.Dense(1, activation = 'sigmoid', name = 'joint_damage_type')(base_output)
+def _add_output(base_output, init_bias):
+    bias_initializers = keras.initializers.Constant(value = init_bias)
+    
+    output = keras.layers.Dense(1, activation = 'sigmoid', bias_initializer = bias_initializers, name = 'joint_damage_type')(base_output)
     
     metrics = ['binary_accuracy', brier_score]
     
@@ -53,9 +55,13 @@ def _get_optimizier(model, optimizer_params):
     weight_decays = {}
 
     for layer in model.layers:
-        layer.kernel_regularizer = keras.regularizers.l2(0)
+        # layer.kernel_regularizer = keras.regularizers.l2(0)
         weight_decays.update({layer.name: wd})
 
     optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 64)
+    
+    lr_decay = keras.experimental.CosineDecay(1e-3, total_iterations, alpha = 0.1)
+    
+    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
     
     return optimizer

@@ -5,19 +5,24 @@ elu_activation = lambda x: keras.activations.elu(x, alpha = 0.3)
 def get_joint_model_input(config):
     return keras.layers.Input(shape = [config.joint_img_height, config.joint_img_width, 1])
 
-def complex_rewritten(input):
-    model = _vvg_conv_block(input, 32, 'conv_1')
-    model = _vvg_conv_block(model, 32, 'conv_2')
-    model = _vvg_conv_block(model, 64, 'conv_3')
-    model = _vvg_conv_block(model, 64, 'conv_4')
-    model = _vvg_conv_block(model, 128, 'conv_5')
-    model = _vvg_conv_block(model, 128, 'conv_6')
+def complex_rewritten(input, initializer = 'he_uniform', decay = 1e-4):
+    if decay is not None:
+        kernel_regularizer = keras.regularizers.l2(decay)
+    else:
+        kernel_regularizer = None
+    
+    model = _vvg_conv_block(input, 32, 'conv_1', initializer, kernel_regularizer)
+    model = _vvg_conv_block(model, 32, 'conv_2', initializer, kernel_regularizer)
+    model = _vvg_conv_block(model, 64, 'conv_3', initializer, kernel_regularizer)
+    model = _vvg_conv_block(model, 64, 'conv_4', initializer, kernel_regularizer)
+    model = _vvg_conv_block(model, 128, 'conv_5', initializer, kernel_regularizer)
+    model = _vvg_conv_block(model, 128, 'conv_6', initializer, kernel_regularizer)
 
     model = keras.layers.Flatten()(model)
 
-    model = _vvg_fc_block(model, 1024, 'fc_1')
-    model = _vvg_fc_block(model, 512, 'fc_2')
-    model = _vvg_fc_block(model, 256, 'fc_3')
+    model = _vvg_fc_block(model, 1024, 'fc_1', initializer = initializer, kernel_regularizer = kernel_regularizer)
+    model = _vvg_fc_block(model, 512, 'fc_2', initializer = initializer, kernel_regularizer = kernel_regularizer)
+    model = _vvg_fc_block(model, 256, 'fc_3', initializer = initializer, kernel_regularizer = kernel_regularizer)
 
     return model
     
@@ -36,19 +41,19 @@ def vvg_joint_model(input):
 
     return model
 
-def _vvg_conv_block(input, n_filters, block_prefix):
-    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), padding = 'same',  name = block_prefix + '_conv_1')(input)
-    conv = keras.layers.ELU()(conv)
+def _vvg_conv_block(input, n_filters, block_prefix, initializer, kernel_regularizer):
+    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), padding = 'same', kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_conv_1')(input)
+    conv = keras.layers.ReLU()(conv)
     conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_1')(conv)
-    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), padding='same', name = block_prefix + '_conv_2')(conv)
-    conv = keras.layers.ELU()(conv)
+    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), padding='same', kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_conv_2')(conv)
+    conv = keras.layers.ReLU()(conv)
     conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_2')(conv)
     conv = keras.layers.MaxPooling2D((2, 2), name = block_prefix + '_max_pool')(conv)
 
     return conv
 
-def _vvg_fc_block(input, n_neurons, block_prefix, initializer = 'glorot_uniform'):
-    fc = keras.layers.Dense(n_neurons, kernel_initializer = initializer, name = block_prefix + '_fc')(input)
+def _vvg_fc_block(input, n_neurons, block_prefix, initializer = 'glorot_uniform', kernel_regularizer = None):
+    fc = keras.layers.Dense(n_neurons, kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_fc')(input)
     fc = keras.layers.ReLU()(fc)
     fc = keras.layers.BatchNormalization(name = block_prefix + '_batch')(fc)
     fc = keras.layers.Dropout(0.5, name = block_prefix + '_dropout')(fc)
@@ -272,6 +277,45 @@ def _extended_vgg_complex_conv_block(input, n_filters, block_prefix, initializer
     conv = keras.layers.ReLU()(conv)
     conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_2')(conv)
 
+    return conv
+
+def avg_joint_vgg(input, initializer = 'he_uniform', decay = 1e-5):
+    if decay is not None:
+        kernel_regularizer = keras.regularizers.l2(decay)
+    else:
+        kernel_regularizer = None
     
+    model = _avg_joint_vgg_head(input, initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 32, 'conv_block_1', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 64, 'conv_block_2', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 128, 'conv_block_3', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 256, 'conv_block_4', initializer, kernel_regularizer)
+    
+    model = keras.layers.GlobalAveragePooling2D()(model)
+    
+    return model
+
+def _avg_joint_vgg_head(input, initializer, kernel_regularizer):
+    head = keras.layers.ZeroPadding2D(padding = ((3, 3), (3, 3)))(input)
+    head = keras.layers.Conv2D(filters = 64, kernel_size = (7, 7), strides = 2, kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = 'head_conv')(head)
+    head = keras.layers.BatchNormalization(name = 'head_batch_norm')(head)
+    head = keras.layers.ReLU()(head)
+    head = keras.layers.ZeroPadding2D(padding = ((1, 1), (1, 1)))(head)
+    head = keras.layers.AveragePooling2D(3, strides = 2, name = 'head_avg_pool')(head)
+    
+    return head
+
+def _avg_joint_vgg_conv_block(input, n_filters, block_prefix, initializer, kernel_regularizer):
+    
+    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), padding=  'same', kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_conv_1')(input)
+    conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_1')(conv)
+    conv = keras.layers.ReLU()(conv)
+    
+    conv = keras.layers.Conv2D(filters = 2 * n_filters, kernel_size = (3, 3), padding=  'same', kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_conv_2')(input)
+    conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_1')(conv)
+    conv = keras.layers.ReLU()(conv)
+    
+    conv = keras.layers.AveragePooling2D()(conv)
     
     return conv
+    

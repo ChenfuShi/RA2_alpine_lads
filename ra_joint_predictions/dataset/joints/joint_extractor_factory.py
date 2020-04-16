@@ -10,8 +10,10 @@ def get_joint_extractor(joint_type, erosion_flag):
     elif joint_type == "H" and erosion_flag:
         extractor = joint_extractor.width_based_joint_extractor(joint_scale = 4.5, height_scale = 1.2, key_joint_scales = {}, key_height_scales = {})
     elif joint_type == "F" and erosion_flag:
-        joint_extractor.width_based_joint_extractor(joint_scale = 4.2, height_scale = 1.2, key_joint_scales = {"mtp":3.2,"mtp_1":3.2}, key_height_scales = {})
+        extractor = joint_extractor.width_based_joint_extractor(joint_scale = 4.2, height_scale = 1.2, key_joint_scales = {"mtp":3.2,"mtp_1":3.2}, key_height_scales = {})
+    elif joint_type == 'RSNA' and not erosion_flag:
+        extractor = joint_extractor.width_based_joint_extractor(joint_scale = 6.5)
     elif joint_type == "RSNA" and erosion_flag:
-        joint_extractor.width_based_joint_extractor(joint_scale = 5., height_scale = 1.2, key_joint_scales = {}, key_height_scales = {})
+        extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5., height_scale = 1.2, key_joint_scales = {}, key_height_scales = {})
     
     return extractor
