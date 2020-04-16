@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow.keras as keras
+import tensorflow_addons as tfa
 
 from keras_adamw import AdamW
 
@@ -14,7 +15,7 @@ MODEL_TYPE_COMBINED = "RC"
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_model(config, class_weights, pretrained_model_file = None, model_name = 'joint_damage_model', model_type = 'R'):
+def get_joint_damage_model(config, class_weights, epochs, steps, pretrained_model_file = None, model_name = 'joint_damage_model', model_type = 'R'):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
     outputs, metrics_dir = _add_outputs(class_weights, base_ouptut, model_type = model_type)
@@ -24,12 +25,12 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
         outputs = outputs,
         name = model_name)
     
-    optimizer = _get_optimizier(joint_damage_model)
+    optimizer = _get_optimizier(joint_damage_model, epochs, steps)
 
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = softmax_focal_loss(list(class_weights[0].values())), metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
-        joint_damage_model.compile(loss = 'logcosh', metrics = metrics_dir, optimizer = optimizer)
+        joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:
         losses = {}
         lossWeights = {}
@@ -43,6 +44,24 @@ def get_joint_damage_model(config, class_weights, pretrained_model_file = None, 
         
         joint_damage_model.compile(loss = losses, loss_weights = lossWeights, metrics = metrics_dir, optimizer = optimizer)
 
+    return joint_damage_model
+
+def load_minority_model(model_file, class_weights, epochs, steps, model_name = 'finetuned_joint_damage_model'):
+    joint_damage_model = keras.models.load_model(model_file, compile = False)
+    # joint_damage_model.name = model_name
+    
+    idx = 0
+    max_outcome = max(class_weights[0].keys())
+    metrics_dir = {}
+    metrics_dir[f'reg_output_{idx}'] = [mae_metric(max_outcome), rmse_metric(max_outcome), class_filter_rmse_metric(max_outcome, 0)]
+    
+    lr_decay = keras.experimental.CosineDecay(3e-4, epochs * steps, alpha = 1/3)
+    
+    # lr_decay = keras.experimental.CosineDecayRestarts(5e-4, 25 * 120, m_mul = 0.9, alpha = 0.1)
+    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
+    
+    joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
+    
     return joint_damage_model
 
 def _get_base_model(config, pretrained_model_file):
@@ -81,15 +100,9 @@ def _add_outputs(class_weights, base_output, model_type):
 
     return outputs, metrics_dir
 
-def _get_optimizier(model):
-    weight_decays = {}
-
-    for layer in model.layers:
-        # layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: 1e-6})
-
-    optimizer = AdamW(lr = 1e-3, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 75 * 300, init_verbose = False, batch_size = 64)
+def _get_optimizier(model, epochs, steps):
+    lr_decay = keras.experimental.CosineDecay(1e-3, epochs * steps, alpha = 0.09)
     
-    optimizer = keras.optimizers.SGD(lr = 1e-3, momentum = 0.9)
+    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
     
     return optimizer

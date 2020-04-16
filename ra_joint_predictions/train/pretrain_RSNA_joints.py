@@ -36,8 +36,7 @@ def _split_outcomes(dataset, no_joint_types = 13):
     return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
 
-def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_before=51,epochs_after=201, n_outputs = 10):
-    
+def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_before=51,epochs_after=201, n_outputs = 10, is_wrists = False):
     joint_dataset = _split_outcomes(joint_dataset,n_outputs)
     joint_val_dataset = _split_outcomes(joint_val_dataset,n_outputs)
 
@@ -81,8 +80,16 @@ def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_bef
     # adamW_warm_restart_callback = AdamWWarmRestartCallback(restart_epochs = 25)
 
     saver = CustomSaver(model_name + "after", n = 10)
+    
+    steps_per_epoch = 1750
+    val_steps = 175
+
+    if is_wrists:
+        steps_per_epoch = 135
+        val_steps = 14
+    
     model.fit(joint_dataset,
-        epochs = epochs_after, steps_per_epoch = 1750, validation_data = joint_val_dataset, validation_steps = 175, verbose = 2, callbacks = [saver, lr_schedule, tensorboard_callback])
+        epochs = epochs_after, steps_per_epoch = steps_per_epoch, validation_data = joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, lr_schedule, tensorboard_callback])
     
 def _get_optimizier(model):
     weight_decays = {}

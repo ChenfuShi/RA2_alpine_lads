@@ -72,7 +72,7 @@ class joint_dataset(base_dataset):
     def __init__(self, config, cache_postfix = '', imagenet = False, pad_resize = False, joint_extractor = None):
         super().__init__(config)
         self.imagenet = imagenet
-        self.cache = config.cache_loc + cache_postfix
+        self.cache = config.cache_loc + 'dream/' + cache_postfix
         self.joint_height = config.joint_img_height
         self.joint_width = config.joint_img_width
         self.pad_resize = pad_resize
@@ -138,13 +138,14 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
-        super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+        super().__init__(config, 'dream/' + cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
         self.batch_size = config.batch_size
         self.model_type = model_type
         self.cache = self.cache + '_' + model_type
+        self.split_type = split_type
 
     def _create_dream_datasets(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
@@ -230,6 +231,17 @@ class dream_dataset(joint_dataset):
         return outcomes == 0
 
     def _create_interleaved_joint_datasets(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
+        if self.split_type == 'balanced':
+            dataset = self._create_fully_balanced_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
+        else:
+            dataset = self._create_50_50_ds(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
+        
+        # Prepare for training
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+
+        return dataset
+    
+    def _create_50_50_ds(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
         min_idx = np.logical_not(maj_idx)
 
         # Tranform boolean mask into indices
@@ -251,17 +263,32 @@ class dream_dataset(joint_dataset):
         min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], min_outcomes, wrist = wrist)
 
         # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
-        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = min_idx.shape[0] * 4)
-        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0] * 4)
+        maj_ds = self._cache_shuffle_repeat_dataset(maj_ds, self.cache + '_maj', buffer_size = maj_idx.shape[0])
+        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
         dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
-
-        # Prepare for training
-        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
-
+        
         return dataset
-
+    
+    def _create_fully_balanced_dataset(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
+        idx_groups = self._get_idx_groups(outcomes)
+        
+        datasets = []
+        
+        for n, idx_group in enumerate(idx_groups):
+            idx = np.where(idx_group)[0]
+            
+            ds_outcomes = outcomes[idx]
+            ds = self._create_joint_dataset(file_info[idx, :], joint_coords[idx], ds_outcomes, wrist = wrist)
+            ds = self._cache_shuffle_repeat_dataset(ds, self.cache + str(n), buffer_size = idx.shape[0])
+            
+            datasets.append(ds)
+            
+        dataset = tf.data.experimental.sample_from_datasets(datasets) 
+        
+        return dataset
+    
     def _init_model_outcomes_bias(self, outcomes, no_classes):
         self.class_weights = calc_relative_class_weights(outcomes, no_classes)
 
