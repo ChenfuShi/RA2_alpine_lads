@@ -16,17 +16,17 @@ def get_feet_model(base_model_joints_loc):
         outs.append(base_model_joints_no_dense(inputs[i]))
 
     pred = keras.layers.Concatenate()(outs)
-    pred = keras.layers.Dense(512, activation = "relu")(pred)
+    pred = keras.layers.Dense(1024, activation = "relu")(pred)
     pred = keras.layers.BatchNormalization()(pred)
     pred = keras.layers.Dropout(0.5)(pred)
-    pred = keras.layers.Dense(256, activation = "relu")(pred)
+    pred = keras.layers.Dense(512, activation = "relu")(pred)
     pred = keras.layers.BatchNormalization()(pred)
     pred = keras.layers.Dropout(0.5)(pred)
     pred = keras.layers.Dense(1)(pred)
 
     combined_model = keras.models.Model(inputs=inputs, outputs=[pred])
 
-    combined_model.compile(optimizer = "adam", loss = "mean_squared_error", metrics = ["mae"])
+    combined_model.compile(optimizer = _get_optimizer(), loss = "mean_absolute_error", metrics = ["mae"])
 
     return combined_model
 
@@ -54,16 +54,26 @@ def get_hand_model(base_model_joints_loc, base_model_wrist_loc, erosion_flag = F
     outs.append(individual_model_wrist_no_dense(inputs[-1]))
 
     pred = keras.layers.Concatenate()(outs)
-    pred = keras.layers.Dense(512, activation = "relu")(pred)
+    pred = keras.layers.Dense(1024, activation = "relu")(pred)
     pred = keras.layers.BatchNormalization()(pred)
     pred = keras.layers.Dropout(0.5)(pred)
-    pred = keras.layers.Dense(256, activation = "relu")(pred)
+    pred = keras.layers.Dense(512, activation = "relu")(pred)
     pred = keras.layers.BatchNormalization()(pred)
     pred = keras.layers.Dropout(0.5)(pred)
     pred = keras.layers.Dense(1)(pred)
 
     combined_model = keras.models.Model(inputs=inputs, outputs=[pred])
 
-    combined_model.compile(optimizer = "adam", loss = "mean_squared_error", metrics = ["mae"])
+    combined_model.compile(optimizer = _get_optimizer(), loss = "mean_absolute_error", metrics = ["mae"])
 
     return combined_model
+
+
+def _get_optimizer():
+
+    lr_decayed_fn = (
+      tf.keras.experimental.CosineDecay(initial_learning_rate = 3e-4,
+      first_decay_steps = 100*40,
+      alpha=1/3))
+
+    return keras.optimizers.SGD(learning_rate=lr_decayed_fn, momentum=0.9)

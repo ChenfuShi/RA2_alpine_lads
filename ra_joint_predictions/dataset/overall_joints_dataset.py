@@ -95,7 +95,7 @@ class overall_joints_dataset(dream_dataset):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
-        self.batch_size = 16
+        self.batch_size = 32
 
         self.ds_type = ds_type
         self.erosion_flag = erosion_flag
@@ -262,7 +262,7 @@ class hands_overall_joints_dataset(overall_joints_dataset):
                 
                 coord_idx = hand_coord_mapping[joint_key]
 
-                joint_img = self._load_joint(img, joint_key, coords[coord_idx[0]:coord_idx[1]])
+                joint_img = self._load_joint(img, tf.constant(joint_key), coords[coord_idx[0]:coord_idx[1]])
 
                 joints.append(joint_img)
 
@@ -311,7 +311,7 @@ class feet_overall_joints_dataset(overall_joints_dataset):
                 
                 coord_idx = foot_coord_mapping[joint_key]
 
-                joint_img = self._load_joint(img, joint_key, coords[coord_idx[0]:coord_idx[1]])
+                joint_img = self._load_joint(img, tf.constant(joint_key), coords[coord_idx[0]:coord_idx[1]])
 
                 joints.append(joint_img)
 
