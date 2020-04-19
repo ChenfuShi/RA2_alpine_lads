@@ -53,7 +53,11 @@ def predict_overall(configuration, model_files = test_models, hand_joints_source
     patient_scoring = _predict_single(model_files["feet_erosion"], test_dataset)
     patient_df["feet_erosion"] = patient_scoring.sum(axis=1)
 
-    return patient_df[["hands_narrowing","feet_narrowing"]].sum(axis=1), patient_df[["hands_erosion","feet_erosion"]].sum(axis=1), patient_df[["hands_narrowing","hands_erosion","feet_narrowing","feet_erosion"]].sum(axis=1)
+    patient_df['Overall_narrowing'] = patient_df[["hands_narrowing","feet_narrowing"]].sum(axis=1)
+    patient_df['Overall_erosion'] = patient_df[["hands_erosion","feet_erosion"]].sum(axis=1)
+    patient_df['Overall_Tol'] = patient_df[["hands_narrowing","hands_erosion","feet_narrowing","feet_erosion"]].sum(axis=1)
+
+    return patient_df
 
 
 def _predict_single(model_file, test_dataset ):
