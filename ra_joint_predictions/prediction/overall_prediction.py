@@ -32,32 +32,31 @@ def predict_overall(configuration, model_files = test_models, hand_joints_source
     hand_extractor = get_joint_extractor("H", False) 
     data_class = overall_joints_dataset.hands_overall_joints_dataset(configuration, 'test', joint_extractor = hand_extractor, force_augment = True)
     test_dataset = data_class.create_hands_overall_joints_dataset(patient_info,joints_source = hand_joints_source)
-    patient_scoring = _predict_single(model_files["hands_narrowing"], test_dataset, patient_df)
+    patient_scoring = _predict_single(model_files["hands_narrowing"], test_dataset)
     patient_df["hands_narrowing"] = patient_scoring.sum(axis=1)
     # hand erosion
     hand_extractor = get_joint_extractor("H", True) 
     data_class = overall_joints_dataset.hands_overall_joints_dataset(configuration, 'test', joint_extractor = hand_extractor, force_augment = True)
     test_dataset = data_class.create_hands_overall_joints_dataset(patient_info,joints_source = hand_joints_source)
-    patient_scoring = _predict_single(model_files["hands_erosion"], test_dataset, patient_df)
+    patient_scoring = _predict_single(model_files["hands_erosion"], test_dataset)
     patient_df["hands_erosion"] = patient_scoring.sum(axis=1)
     # feet narrowing
     foot_extractor = get_joint_extractor("F", False) 
     data_class = overall_joints_dataset.feet_overall_joints_dataset(configuration, 'test', joint_extractor = foot_extractor, force_augment = True)
     test_dataset = data_class.create_feet_overall_joints_dataset(patient_info,joints_source = feet_joints_source)
-    patient_scoring = _predict_single(model_files["feet_narrowing"], test_dataset, patient_df)
+    patient_scoring = _predict_single(model_files["feet_narrowing"], test_dataset)
     patient_df["feet_narrowing"] = patient_scoring.sum(axis=1)
     # feet erosion
     foot_extractor = get_joint_extractor("F", True) 
     data_class = overall_joints_dataset.feet_overall_joints_dataset(configuration, 'test', joint_extractor = foot_extractor, force_augment = True)
     test_dataset = data_class.create_feet_overall_joints_dataset(patient_info,joints_source = feet_joints_source)
-    patient_scoring = _predict_single(model_files["feet_erosion"], test_dataset, patient_df)
+    patient_scoring = _predict_single(model_files["feet_erosion"], test_dataset)
     patient_df["feet_erosion"] = patient_scoring.sum(axis=1)
 
-    return patient_df[["hands_narrowing","hands_erosion","feet_narrowing","feet_erosion"]].sum(axis=1)
+    return patient_df[["hands_narrowing","feet_narrowing"]].sum(axis=1), patient_df[["hands_erosion","feet_erosion"]].sum(axis=1), patient_df[["hands_narrowing","hands_erosion","feet_narrowing","feet_erosion"]].sum(axis=1)
 
 
-
-def _predict_single(model_file, test_dataset, patient_df):
+def _predict_single(model_file, test_dataset ):
     model = keras.models.load_model(model_file)
     results = {}
 
