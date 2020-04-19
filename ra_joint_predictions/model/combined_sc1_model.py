@@ -73,7 +73,9 @@ def _get_optimizer():
 
     lr_decayed_fn = (
       tf.keras.experimental.CosineDecay(initial_learning_rate = 3e-4,
-      first_decay_steps = 100*40,
+      decay_steps = 100*40,
       alpha=1/3))
 
     return keras.optimizers.SGD(learning_rate=lr_decayed_fn, momentum=0.9)
+
+    #return keras.optimizers.Adam()

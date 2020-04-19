@@ -107,7 +107,7 @@ overall_augments = [
 ]
 
 class overall_joints_dataset(dream_dataset):
-    def __init__(self, config, ds_type, cache_postfix = '', erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
+    def __init__(self, config, ds_type, cache_postfix = '', erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False, force_augment = False):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
@@ -127,6 +127,7 @@ class overall_joints_dataset(dream_dataset):
         else:
             self.cache = True
             self.outcome = None
+        self.force_augment = force_augment
 
     def _create_overall_joints_dataset(self, outcomes_source, outcome_mapping, parts, joints_source, coord_keys):
         joints_df = pd.read_csv(joints_source)
@@ -188,8 +189,8 @@ class overall_joints_dataset(dream_dataset):
 
         if shuffle_and_augment:
             maj_idx = outcomes < 5
-            maj_idx = np.where(maj_idx)[0]
             min_idx = np.where(np.logical_not(maj_idx))[0]
+            maj_idx = np.where(maj_idx)[0]
 
             maj_ds = tf.data.Dataset.from_tensor_slices((file_info[maj_idx, :], joint_coords[maj_idx], outcomes[maj_idx]))
             maj_ds = self._load_images(maj_ds)
@@ -207,7 +208,8 @@ class overall_joints_dataset(dream_dataset):
             dataset = self._load_images(dataset)
 
             dataset = self._cache_shuffle_repeat_dataset(dataset, cache = self.cache, buffer_size = self.no_samples, do_shuffle = shuffle_and_augment)
-                
+            if self.force_augment:
+                dataset = self._augment_images(dataset)
         return dataset
 
     def _finalize_dataset(self, dataset):
@@ -265,8 +267,8 @@ class overall_joints_dataset(dream_dataset):
         
 
 class hands_overall_joints_dataset(overall_joints_dataset):
-    def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
-        super().__init__(config, ds_type, cache_postfix = 'hands_overall_joints', erosion_flag = erosion_flag, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+    def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False, force_augment = False):
+        super().__init__(config, ds_type, cache_postfix = 'hands_overall_joints', erosion_flag = erosion_flag, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, force_augment = force_augment)
 
     def create_hands_overall_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv'):
         dataset = self._create_overall_joints_dataset(outcomes_source, hand_outcome_mapping, dream_hand_parts, joints_source, hand_coord_keys)
