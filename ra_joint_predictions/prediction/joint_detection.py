@@ -8,6 +8,7 @@ import tensorflow as tf
 import dataset.ops.image_ops as img_ops
 import dataset.ops.landmark_ops as lm_ops
 
+from dataset.landmarks_dataset import _create_landmarks_dataframe
 from utils.file_utils import is_supported_image_file
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
@@ -176,3 +177,51 @@ class rsna_joint_detector(joint_detector):
         rsna_dataframe = self._create_detection_dataframe(img_dir)
 
         return self._detect_joints_in_image_data(rsna_dataframe, img_dir, self.hand_joint_detectors, hand_coord_mapping)
+
+def create_train_joint_dataframe(config, type, save_location):
+    landmarks_location = os.path.join(config.landmarks_location, type)
+
+    if type == 'hands':
+        coord_mapping = hand_coord_mapping
+        lm_columns = ['mcp_x', 'mcp_x', 'pip_2_x', 'pip_2_y', 'pip_3_x', 'pip_3_y', 'pip_4_x', 'pip_4_y', 'pip_5_x', 'pip_5_y', 'mcp_1_x', 'mcp_1_y', 'mcp_2_x', 'mcp_2_y', 'mcp_3_x', 'mcp_3_y', 'mcp_4_x', 'mcp_4_y', 'mcp_5_x', 'mcp_5_y', 'w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']
+    else:
+        coord_mapping = foot_coord_mapping
+        lm_columns = ['mtp_x', 'mtp_y', 'mtp_1_x', 'mtp_1_y', 'mtp_2_x', 'mtp_2_y', 'mtp_3_x', 'mtp_3_y', 'mtp_4_x', 'mtp_4_y', 'mtp_5_x', 'mtp_5_y']
+
+    df = _create_landmarks_dataframe(landmarks_location)
+
+    joint_predictions_list = []
+
+    for _, row in df.iterrows():
+        flip = row['flip']
+        y = row[lm_columns].to_numpy()
+
+        if flip:
+            file_info = row[['sample_id', 'file_type', 'flip']]
+
+            img, _ = img_ops.load_image(file_info, [], config.train_fixed_location)
+
+            y = tf.Variable(y, dtype = tf.float64)
+
+            y = lm_ops.flip_landmarks(y, img.shape)
+
+        joint_prediction = {
+            "image_name": file_info[0],
+            "file_type": file_info[1],
+            "flip": file_info[2]
+        }
+
+        for key in coord_mapping:
+            coords = coord_mapping[key]
+            joint_coordinates = y[coords[0]:coords[1]].numpy()
+
+            coord_x = joint_coordinates[0]
+            coord_y = joint_coordinates[1]
+
+            joint_prediction[key + '_x'] = coord_x
+            joint_prediction[key + '_y'] = coord_y
+
+        joint_predictions_list.append(joint_prediction)
+
+    joint_predictions_df = pd.DataFrame(joint_predictions_list, index = np.arange(len(joint_predictions_list)))
+    joint_predictions_df.to_csv(save_location, index = False)

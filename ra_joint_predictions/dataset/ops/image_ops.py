@@ -119,7 +119,7 @@ def random_flip(flip_right_left = True, flip_up_down = True):
 
     return _random_flip
 
-def random_brightness_and_contrast(max_delta = 0.2, max_contrast = 0.2):
+def random_brightness_and_contrast(max_delta = 0.1, max_contrast = 0.1):
     def _random_brightness_and_contrast(img, y, update_labels):
         img = tf.image.random_brightness(img, max_delta = max_delta)
         img = tf.image.random_contrast(img, 1 - max_contrast, 1 + max_contrast)

@@ -17,7 +17,7 @@ nvidia-smi
 # this also includes cuda and cuda toolkits
 source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 
-rm -r ../tmp_cache
+rm -r ~/localscratch/dream/*
 
 # run python training script
 python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} "HF" "J" ${do_val:-"N"} ${model_type:-"R"}

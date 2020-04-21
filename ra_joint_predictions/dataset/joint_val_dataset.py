@@ -1,5 +1,5 @@
-from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset, joint_narrowing_dataset
-from dataset.test_dataset import joint_test_dataset, narrowing_test_dataset
+from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset, combined_joint_dataset
+from dataset.test_dataset import joint_test_dataset, combined_test_dataset
 
 class hands_joints_val_dataset(hands_joints_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
@@ -43,18 +43,18 @@ class feet_joint_val_dataset(feet_joint_dataset):
     def _create_test_dataset(self):
         return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
     
-class joint_narrowing_val_dataset(joint_narrowing_dataset):
+class combined_joint_val_dataset(combined_joint_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
         
-    def create_combined_narrowing_joint_dataset_with_validation(self, outcomes_source, 
+    def create_combined_joint_dataset_with_validation(self, outcomes_source, 
             hand_joints_source = './data/predictions/hand_joint_data_train_v2.csv', hand_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', 
-            feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'):
+            feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
 
-        dataset = self.create_combined_narrowing_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
+        dataset = self.create_combined_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
         
-        test_dataset = narrowing_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
-        val_dataset, val_no_samples = test_dataset.get_joint_narrowing_test_dataset(hand_joints_source = hand_joints_val_source,
-            feet_joints_source = feet_joints_val_source, outcomes_source = outcomes_source)
+        test_dataset = combined_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
+        val_dataset, val_no_samples = test_dataset.get_combined_joint_test_dataset(hand_joints_source = hand_joints_val_source,
+            feet_joints_source = feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
         return dataset, val_dataset, val_no_samples
