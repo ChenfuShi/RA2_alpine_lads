@@ -87,62 +87,96 @@ def clip_image(img):
 
     return img
 
-def random_flip(img, y, update_labels):
-    img = tf.image.random_flip_left_right(img)
-    img = tf.image.random_flip_up_down(img)
-    
-    if update_labels is True:
-        logging.error('Update labels not available for random_flip!')
-    
-    return img, y
+def create_augments(augments):
+    return list(map(create_augment, augments))
 
-def random_brightness_and_contrast(img, y, update_labels, max_delta = 0.2, max_contrast = 0.2):
-    img = tf.image.random_brightness(img, max_delta = max_delta)
-    img = tf.image.random_contrast(img, 1 - max_contrast, 1 + max_contrast)
+def create_augment(augment):
+    aug  = augment['augment']
+    p = augment.get('p', 0.9)
+    params = augment.get('params', {})
+
+    augment_function = aug(**params)
+
+    def _augment(img, y, update_labels):
+        img, y = tf.cond(tf.random.uniform([], 0, 1) < p, lambda: augment_function(img, y, update_labels), lambda: (img, y))
+
+        return img, y
+
+    return _augment
+
+def random_flip(flip_right_left = True, flip_up_down = True):
+    def _random_flip(img, y, update_labels):
+        if flip_right_left:
+            img = tf.image.random_flip_left_right(img)
+
+        if flip_up_down:
+            img = tf.image.random_flip_up_down(img)
     
-    return img, y
-
-def random_rotation(img, y, update_labels, min_rot = -20, max_rot = 20):
-    random_degree_angle = tf.random.uniform(shape=[], minval = min_rot, maxval = max_rot)
+        if update_labels is True:
+            logging.error('Update labels not available for random_flip!')
     
-    radian_angle = _calc_radians_for_degrees(random_degree_angle)
+        return img, y
 
-    img = tfa.image.rotate(img, radian_angle)
+    return _random_flip
 
-    if(update_labels):
-        y = lm_ops.rotate_landmarks(y, tf.shape(img), radian_angle)
-    
-    return img, y
+def random_brightness_and_contrast(max_delta = 0.2, max_contrast = 0.2):
+    def _random_brightness_and_contrast(img, y, update_labels):
+        img = tf.image.random_brightness(img, max_delta = max_delta)
+        img = tf.image.random_contrast(img, 1 - max_contrast, 1 + max_contrast)
+        
+        return img, y
 
-def random_crop(img, y, update_labels, boxes = _create_boxes()):
-    no_boxes = boxes.shape[0]
-    
-    original_img_shape = tf.shape(img)
+    return _random_brightness_and_contrast
 
-    # Create different crops for an image
-    crops = tf.image.crop_and_resize([img], boxes = boxes, box_indices = np.zeros(no_boxes), crop_size = tf.shape(img[:, :, 0]))
-    
-    random_box_idx = tf.random.uniform([], minval = 0, maxval = no_boxes, dtype = tf.int32)
+def random_rotation(min_rot = -20, max_rot = 20):
+    def _random_rotation(img, y, update_labels):
+        random_degree_angle = tf.random.uniform(shape=[], minval = min_rot, maxval = max_rot)
+        
+        radian_angle = _calc_radians_for_degrees(random_degree_angle)
 
-    # Return a random crop
-    img = crops[random_box_idx]
-    
-    if(update_labels):
-        y = lm_ops.crop_landmarks(y, tf.convert_to_tensor(boxes)[random_box_idx], original_img_shape)
+        img = tfa.image.rotate(img, radian_angle)
 
-    return img, y
+        if(update_labels):
+            y = lm_ops.rotate_landmarks(y, tf.shape(img), radian_angle)
+        
+        return img, y
 
-def random_gaussian_noise(img, y, update_labels, max_noise_strength = 3):
-    noise_factor = tf.random.uniform([], minval = 1e-6, maxval = max_noise_strength)
-    noise = tf.random.normal(shape = tf.shape(img), stddev = (noise_factor / 255), dtype = tf.float32)
-    noise_img = img + noise
-    noise_img = clip_image(noise_img)
-    
-    return noise_img, y
+    return _random_rotation
+
+def random_crop(boxes = _create_boxes()):
+    def _random_crop(img, y, update_labels):
+        no_boxes = boxes.shape[0]
+        
+        original_img_shape = tf.shape(img)
+
+        # Create different crops for an image
+        crops = tf.image.crop_and_resize([img], boxes = boxes, box_indices = np.zeros(no_boxes), crop_size = tf.shape(img[:, :, 0]))
+        
+        random_box_idx = tf.random.uniform([], minval = 0, maxval = no_boxes, dtype = tf.int32)
+
+        # Return a random crop
+        img = crops[random_box_idx]
+        
+        if(update_labels):
+            y = lm_ops.crop_landmarks(y, tf.convert_to_tensor(boxes)[random_box_idx], original_img_shape)
+
+        return img, y
+
+    return _random_crop
+
+def random_gaussian_noise(max_noise_strength = 3):
+    def _random_gaussian_noise(img, y, update_labels):
+        noise_factor = tf.random.uniform([], minval = 1e-6, maxval = max_noise_strength)
+        noise = tf.random.normal(shape = tf.shape(img), stddev = (noise_factor / 255), dtype = tf.float32)
+        noise_img = img + noise
+        noise_img = clip_image(noise_img)
+        
+        return noise_img, y
+
+    return _random_gaussian_noise
 
 def _calc_radians_for_degrees(degree_angle):
     return degree_angle * math.pi / 180
-
 
 def get_3_channels(img,y):
     return tf.image.grayscale_to_rgb(img), y
