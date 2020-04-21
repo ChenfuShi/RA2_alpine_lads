@@ -22,23 +22,39 @@ def train_feet():
     feet_extractor = get_joint_extractor("F", False)
     combined_model_feet = combined_sc1_model.get_feet_model("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/feet_narrowing_reg_old_pretrain_adam_shuffle.h5")
 
-    ds, val_ds, no_val_samples = overall_joints_dataset.feet_overall_joints_dataset(configuration, 'train', joint_extractor = feet_extractor).create_feet_overall_joints_dataset_with_validation("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/training.csv")
+    ds, val_ds, no_val_samples = overall_joints_dataset.feet_overall_joints_dataset(configuration, 'train', joint_extractor = feet_extractor, erosion_flag = False).create_feet_overall_joints_dataset_with_validation("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/training.csv")
 
-    combined_sc1_train.train_SC1_model(configuration,combined_model_feet,"SC1_v3A_feet_narrowing_mae_sgd_cosine",ds,val_ds,epochs_before = 11, epochs_after = 101)
+    combined_sc1_train.train_SC1_model(configuration,combined_model_feet,"SC1_v3A_feet_narrowing_mae_adamw3",ds,val_ds,epochs_before = 11, epochs_after = 101)
+    
+    feet_extractor = get_joint_extractor("F", True)
+    combined_model_feet = combined_sc1_model.get_feet_model("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/feet_erosion_reg_old_pretrain_adam_shuffle.h5")
+
+    ds, val_ds, no_val_samples = overall_joints_dataset.feet_overall_joints_dataset(configuration, 'train', joint_extractor = feet_extractor, erosion_flag = True).create_feet_overall_joints_dataset_with_validation("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/training.csv")
+
+    combined_sc1_train.train_SC1_model(configuration,combined_model_feet,"SC1_v3A_feet_erosion_mae_adamw3",ds,val_ds,epochs_before = 11, epochs_after = 101)
 
 
 def train_hands():
+    hand_extractor = get_joint_extractor("H", False)
+    combined_model_hands = combined_sc1_model.get_hand_model("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/hands_narrowing_reg_old_pretrain_adam_shuffle.h5",
+                                                            "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/wrists_narrowing_reg_old_pretrain_adam_shuffle.h5")
+
+    ds, val_ds, no_val_samples = overall_joints_dataset.hands_overall_joints_dataset(configuration, 'train', joint_extractor = hand_extractor, erosion_flag = False).create_hands_overall_joints_dataset_with_validation("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/training.csv")
+
+    combined_sc1_train.train_SC1_model(configuration,combined_model_hands,"SC1_v3A_hand_narrowing_mae_adamw3",ds,val_ds,epochs_before = 11, epochs_after = 101)
+    
     hand_extractor = get_joint_extractor("H", True)
-    combined_model_hands = combined_sc1_model.get_hand_model("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/hands_erosion/v5/hands_erosion_joint_damage_model_extended_complex_sgd_64bs_160steps_maj05_50epochs_sgd_cosinedecay_finetuned.h5",
-                                                            "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/wrists_erosion_reg_old_pretrain_adam_shuffle.h5")
+    combined_model_hands = combined_sc1_model.get_hand_model("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/hands_erosion_reg_old_pretrain_adam_shuffle.h5",
+                                                            "/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/michael_dev/RA2_alpine_lads/trained_models/v3/wrists_erosion_reg_old_pretrain_adam_shuffle.h5",
+                                                            erosion_flag = True)
 
     ds, val_ds, no_val_samples = overall_joints_dataset.hands_overall_joints_dataset(configuration, 'train', joint_extractor = hand_extractor, erosion_flag = True).create_hands_overall_joints_dataset_with_validation("/mnt/iusers01/jw01/mdefscs4/ra_challenge/RA_challenge/training_dataset/training.csv")
 
-    combined_sc1_train.train_SC1_model(configuration,combined_model_hands,"SC1_v3A_hand_erosion_mae_sgd_cosine_new_wrist",ds,val_ds,epochs_before = 11, epochs_after = 101)
+    combined_sc1_train.train_SC1_model(configuration,combined_model_hands,"SC1_v3A_hand_erosion_mae_adamw3",ds,val_ds,epochs_before = 11, epochs_after = 101)
 
 
 # lose the variables because it fucks memory or something
 
 
-# train_feet()
+train_feet()
 train_hands()
