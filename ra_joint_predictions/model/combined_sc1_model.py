@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-
+from keras_adamw import AdamW
 
 def get_feet_model(base_model_joints_loc):
 
@@ -71,11 +71,23 @@ def get_hand_model(base_model_joints_loc, base_model_wrist_loc, erosion_flag = F
 
 def _get_optimizer():
 
-    lr_decayed_fn = (
-      tf.keras.experimental.CosineDecay(initial_learning_rate = 3e-4,
-      decay_steps = 100*40,
-      alpha=1/3))
+    # lr_decayed_fn = (
+    #   tf.keras.experimental.CosineDecay(initial_learning_rate = 3e-4,
+    #   decay_steps = 100*40,
+    #   alpha=1/3))
 
-    return keras.optimizers.SGD(learning_rate=lr_decayed_fn, momentum=0.9)
+    # return keras.optimizers.SGD(learning_rate=lr_decayed_fn, momentum=0.9)
 
-    #return keras.optimizers.Adam()
+    return keras.optimizers.Adam()
+
+def _get_adamW(model, epochs, steps):
+    wd = 1e-6
+    weight_decays = {}
+    # Only layers with "kernel" need wd applied and don't apply WD to the output layer
+    for layer in model.layers:
+        if hasattr(layer, 'kernel'):
+            layer.kernel_regularizer = keras.regularizers.l2(0)
+            weight_decays.update({layer.kernel.name: wd})
+    lr_multipliers = {'conv':0.2} 
+    optimizer = AdamW(lr = 3e-4, lr_multipliers = lr_multipliers, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = epochs * steps, init_verbose = False, batch_size = 1)
+    return optimizer

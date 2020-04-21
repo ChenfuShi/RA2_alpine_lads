@@ -111,7 +111,7 @@ class overall_joints_dataset(dream_dataset):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
-        self.batch_size = 32
+        self.batch_size = 30
 
         self.ds_type = ds_type
         self.erosion_flag = erosion_flag
@@ -319,8 +319,8 @@ class hands_overall_joints_dataset(overall_joints_dataset):
 
 
 class feet_overall_joints_dataset(overall_joints_dataset):
-    def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False):
-        super().__init__(config, ds_type, cache_postfix = 'feet_overall_joints', erosion_flag = erosion_flag, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+    def __init__(self, config, ds_type, erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False, force_augment = False):
+        super().__init__(config, ds_type, cache_postfix = 'feet_overall_joints', erosion_flag = erosion_flag, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, force_augment = force_augment)
 
     def create_feet_overall_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv'):
         dataset = self._create_overall_joints_dataset(outcomes_source, foot_outcome_mapping, dream_foot_parts, joints_source, foot_coord_keys)
