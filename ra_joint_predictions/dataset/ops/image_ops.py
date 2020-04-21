@@ -52,7 +52,9 @@ def clahe_img(img, clip_limit = 2., grid_size = 2):
     # OpenCV removes the last channel, so add it back and then convert back to float
     clahe_img = tf.expand_dims(clahe_img, -1)
     clahe_img = tf.image.convert_image_dtype(clahe_img, dtype = tf.float32)
-        
+    
+    clahe_img.set_shape(img.get_shape())
+    
     return clahe_img
 
 

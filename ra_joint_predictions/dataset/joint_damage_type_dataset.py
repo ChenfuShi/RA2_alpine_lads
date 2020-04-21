@@ -7,10 +7,11 @@ from dataset.joint_dataset import dream_dataset
 from dataset.test_dataset import joint_test_dataset
 
 class joint_damage_type_dataset(dream_dataset):
-    def __init__(self, config, pad_resize = False, joint_extractor = None, alpha = 0.6):
+    def __init__(self, config, pad_resize = False, joint_extractor = None, alpha = 0.6, apply_clahe = False):
         super().__init__(config, 'joint_damage_type', pad_resize = pad_resize, joint_extractor = joint_extractor, model_type = "DT")
 
         self.image_dir = config.train_fixed_location
+        self.apply_clahe = apply_clahe
 
     def get_hands_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_column = self._get_outcome_column(erosion_flag)
@@ -98,4 +99,4 @@ class joint_damage_type_dataset(dream_dataset):
         return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = 'DT', pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
+        return joint_test_dataset(self.config, self.image_dir, model_type = 'DT', pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe)

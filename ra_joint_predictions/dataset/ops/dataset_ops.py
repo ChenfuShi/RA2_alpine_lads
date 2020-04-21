@@ -10,6 +10,9 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 default_augments = [
     {
+        'augment': img_ops.random_rotation
+    },
+    {
         'augment': img_ops.random_flip,
         'p': 1.
     },
@@ -22,9 +25,6 @@ default_augments = [
     {
         'augment': img_ops.random_gaussian_noise,
         'p': 0.2
-    },
-    {
-        'augment': img_ops.random_rotation
     }
 ]
 

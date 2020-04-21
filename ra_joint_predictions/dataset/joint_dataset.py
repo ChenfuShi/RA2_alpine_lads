@@ -101,18 +101,19 @@ class feet_joint_dataset(dream_dataset):
     
     def _get_idx_groups(self, outcomes):
         if self.erosion_flag:
-            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes >= 4]
+            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4, outcomes >= 5]
         else:
             idx_groups = [outcomes == 0, np.logical_or(outcomes == 1, outcomes == 2), outcomes == 3, outcomes == 4]
         
         return idx_groups
     
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
         super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
 
         self.image_dir = config.train_fixed_location
-
+        self.apply_clahe = apply_clahe
+        
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.erosion_flag = erosion_flag
         

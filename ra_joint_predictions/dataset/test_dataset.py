@@ -15,11 +15,13 @@ from dataset.joints.joint_extractor import default_joint_extractor
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_test_dataset(dream_dataset):
-    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor()):
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor(), apply_clahe = False, repeat = True):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.img_dir = img_dir
         self.pad_resize = pad_resize
+        self.apply_clahe = apply_clahe
+        self.repeat = repeat
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if erosion_flag is False:
@@ -77,6 +79,8 @@ class joint_test_dataset(dream_dataset):
         return joints_df
 
     def _create_dataset(self, df, params, load_wrists):
+        df = df.sample(frac = 1, random_state = 1337).reset_index(drop = True)
+        
         file_info = df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
 
         if load_wrists:
@@ -106,7 +110,10 @@ class joint_test_dataset(dream_dataset):
             #if self.model_type == 'DT':
                 #dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = 2000)
         
-            dataset = dataset.repeat()
+            if self.repeat:
+                dataset = dataset.cache()
+                dataset = dataset.repeat()
+                
             dataset = dataset.batch(self.config.batch_size)
         else:
             dataset = self._remove_outcome(dataset)
