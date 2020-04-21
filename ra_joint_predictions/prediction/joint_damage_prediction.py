@@ -131,11 +131,13 @@ class augmented_predictor():
         self.aggregator = aggregator
         self.rounding_cutoff = rounding_cutoff
 
+        self.augments = img_ops.create_augments(pred_augments)
+
     def predict_joint_damage(self, img):
         preds = np.zeros((self.no_augments + 1, self.base_predictor.no_outcomes))
         
         for n in range(self.no_augments):
-            aug_img, _ = _augment_and_clip_image(img, [], augments = pred_augments)
+            aug_img, _ = _augment_and_clip_image(img, [], augments = self.augments)
             preds[n] = self.base_predictor.predict_joint_damage(aug_img)
 
         preds[self.no_augments, :] = self.base_predictor.predict_joint_damage(img)
