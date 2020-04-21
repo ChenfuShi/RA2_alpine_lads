@@ -240,8 +240,10 @@ class overall_joints_dataset(dream_dataset):
         return dataset.map(__load_images, num_parallel_calls = AUTOTUNE)
 
     def _augment_images(self, dataset):
+        augments = img_ops.create_augments(overall_augments)
+
         def __augment_images(file_info, img, coords, outcomes):
-            img, coords = ds_ops._augment_and_clip_image(img, coords, overall_augments, update_labels = True)
+            img, coords = ds_ops._augment_and_clip_image(img, coords, augments, update_labels = True)
 
             return file_info, img, coords, outcomes
 
