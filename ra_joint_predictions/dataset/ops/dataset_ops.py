@@ -60,9 +60,11 @@ def batch_and_prefetch_dataset(dataset, batch_size = 128):
     return dataset.prefetch(buffer_size = AUTOTUNE)
 
 def augment_and_resize_images(dataset, img_height, img_width, update_labels = False, pad_resize = True, augments = default_augments):
+    augs = img_ops.create_augments(augments)
+    
     def __augment_and_resize(img, y):
-        if len(augments) > 0:
-            img, y, = _augment_and_clip_image(img, y, augments = augments, update_labels = update_labels)
+        if len(augs) > 0:
+            img, y, = _augment_and_clip_image(img, y, augments = augs, update_labels = update_labels)
 
         return img_ops.resize_image(img, y, img_height, img_width, pad_resize = pad_resize, update_labels = update_labels)
 
@@ -70,10 +72,7 @@ def augment_and_resize_images(dataset, img_height, img_width, update_labels = Fa
 
 def _augment_and_clip_image(img, y, augments, update_labels = False):
     for aug in augments:
-        augment = aug['augment']
-        p = aug.get('p', 0.9)
-        
-        img, y = img_ops.apply_augment(img, y, augment, p, update_labels = update_labels)
+        img, y = aug(img, y, update_labels)
 
     img = img_ops.clip_image(img)
 
