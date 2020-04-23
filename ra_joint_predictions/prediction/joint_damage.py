@@ -88,16 +88,16 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     df_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
     
     hands_narrowing_extractor = get_joint_extractor('H', False)
-    hands_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
+    hands_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = hands_narrowing_extractor)
     
     feet_narrowing_extractor = get_joint_extractor('F', False)
-    feet_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
+    feet_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_narrowing_extractor)
 
     hands_erosion_extractor = get_joint_extractor('H', True)
     hands_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = hands_erosion_extractor)
     
     feet_erosion_extractor = get_joint_extractor('F', True)
-    feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
+    feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_erosion_extractor)
     
     return {
         'hands_narrowing_dataset': hands_narrowing_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
