@@ -8,6 +8,16 @@ def focal_loss(gamma = 2., alpha = 0.25):
     
     return _focal_loss_fixed
 
+def pseudo_huber_loss(delta = 1.):
+    def _pseudo_huber_loss_fixed(y_true, y_pred):
+        y_true = K.cast(y_true, y_pred.dtype)
+        
+        error = y_true - y_pred
+        
+        return (delta ** 2) * (K.sqrt(1 + (error / delta) ** 2) - 1)
+    
+    return _pseudo_huber_loss_fixed
+
 def softmax_focal_loss(alpha, gamma = 2.):
     alpha = K.constant(alpha)
     gamma = K.constant(gamma)

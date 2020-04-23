@@ -129,7 +129,7 @@ class hands_joints_dataset(dream_dataset):
     
     def _get_idx_groups(self, outcomes):
         if self.erosion_flag:
-            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4, outcomes >= 5]
+            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes >= 4]
         else:
             idx_groups = [outcomes == 0, np.logical_or(outcomes == 1, outcomes == 2), outcomes == 3, outcomes == 4]
             
@@ -213,3 +213,8 @@ class combined_joint_dataset(dream_dataset):
         combined_outcomes_df = combined_outcomes_df.dropna(subset = self.outcome_columns)
 
         return combined_outcomes_df
+    
+    def _get_idx_groups(self, outcomes):
+        idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4]
+        
+        return idx_groups

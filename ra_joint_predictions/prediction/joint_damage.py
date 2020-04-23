@@ -34,7 +34,7 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                 for idx, narrowing_outcome_key in enumerate(narrowing_outcome_keys):
                     y_pred = y_preds[idx]
 
-                    logging.info(f"Predicted narrowing {y_pred} for {key} for patient {patient_id}")
+                    logging.info(f"Predicted narrowing {y_pred} for {key} for patient {patient_id}_{narrowing_outcome_key}")
 
                     preds[patient_id][narrowing_outcome_key] = y_pred
 
@@ -49,7 +49,7 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                 for idx, erosion_outcome_key in enumerate(erosion_outcome_keys):
                     y_pred = y_preds[idx]
 
-                    logging.info(f"Predicted erosion {y_pred} for {key} for patient {patient_id}")
+                    logging.info(f"Predicted erosion {y_pred} for {key} for patient {patient_id}_{erosion_outcome_key}")
 
                     preds[patient_id][erosion_outcome_key] = y_pred
 
@@ -110,7 +110,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
 
 def _get_joint_damage_predictors(model_parameters_collection):
     def _get_predictor(model_parameters, filter = True):
-        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 25)
+        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 25, rounding_cutoff = 0.3)
 
         if filter is True:
             filter_pred = augmented_predictor(joint_damage_type_predictor(model_parameters), no_augments = 25)

@@ -51,7 +51,7 @@ class combined_joint_val_dataset(combined_joint_dataset):
             hand_joints_source = './data/predictions/hand_joint_data_train_v2.csv', hand_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', 
             feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
 
-        dataset = self.create_combined_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source)
+        dataset = self.create_combined_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source, erosion_flag = erosion_flag)
         
         test_dataset = combined_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
         val_dataset, val_no_samples = test_dataset.get_combined_joint_test_dataset(hand_joints_source = hand_joints_val_source,

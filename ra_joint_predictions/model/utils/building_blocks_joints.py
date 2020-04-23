@@ -20,9 +20,9 @@ def complex_rewritten(input, initializer = 'he_uniform', decay = 1e-4):
 
     model = keras.layers.Flatten()(model)
 
-    model = _vvg_fc_block(model, 1024, 'fc_1', initializer = initializer, kernel_regularizer = kernel_regularizer)
-    model = _vvg_fc_block(model, 512, 'fc_2', initializer = initializer, kernel_regularizer = kernel_regularizer)
-    model = _vvg_fc_block(model, 256, 'fc_3', initializer = initializer, kernel_regularizer = kernel_regularizer)
+    model = _vvg_fc_block(model, 1024, 'fc_1', initializer = initializer, kernel_regularizer = None)
+    model = _vvg_fc_block(model, 512, 'fc_2', initializer = initializer, kernel_regularizer = None)
+    model = _vvg_fc_block(model, 256, 'fc_3', initializer = initializer, kernel_regularizer = None)
 
     return model
     
@@ -332,11 +332,14 @@ def avg_joint_vgg(input, initializer = 'he_uniform', decay = 1e-5):
     else:
         kernel_regularizer = None
     
-    model = _avg_joint_vgg_head(input, initializer, kernel_regularizer)
-    model = _avg_joint_vgg_conv_block(model, 32, 'conv_block_1', initializer, kernel_regularizer)
-    model = _avg_joint_vgg_conv_block(model, 64, 'conv_block_2', initializer, kernel_regularizer)
-    model = _avg_joint_vgg_conv_block(model, 128, 'conv_block_3', initializer, kernel_regularizer)
-    model = _avg_joint_vgg_conv_block(model, 256, 'conv_block_4', initializer, kernel_regularizer)
+    # model = _avg_joint_vgg_head(input, initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(input, 32, 'conv_block_1', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 32, 'conv_block_2', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 64, 'conv_block_3', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 64, 'conv_block_4', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 128, 'conv_block_5', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 128, 'conv_block_6', initializer, kernel_regularizer)
+    model = _avg_joint_vgg_conv_block(model, 256, 'conv_block_7', initializer, kernel_regularizer)
     
     model = keras.layers.GlobalAveragePooling2D()(model)
     
@@ -358,8 +361,8 @@ def _avg_joint_vgg_conv_block(input, n_filters, block_prefix, initializer, kerne
     conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_1')(conv)
     conv = keras.layers.ReLU()(conv)
     
-    conv = keras.layers.Conv2D(filters = 2 * n_filters, kernel_size = (3, 3), padding=  'same', kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_conv_2')(input)
-    conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_1')(conv)
+    conv = keras.layers.Conv2D(filters = n_filters, kernel_size = (3, 3), padding=  'same', kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_conv_2')(conv)
+    conv = keras.layers.BatchNormalization(name = block_prefix + '_batch_2')(conv)
     conv = keras.layers.ReLU()(conv)
     
     conv = keras.layers.AveragePooling2D()(conv)

@@ -38,7 +38,7 @@ def _get_base_model(config, pretrained_model_file):
         return input, base_model
 
 def _add_output(base_output, init_bias):
-    bias_initializers = keras.initializers.Constant(value = init_bias)
+    bias_initializers = keras.initializers.Constant(value = 0)
     
     output = keras.layers.Dense(1, activation = 'sigmoid', bias_initializer = bias_initializers, name = 'joint_damage_type')(base_output)
     
@@ -53,15 +53,14 @@ def _get_optimizier(model, optimizer_params):
     total_iterations = optimizer_params['restart_epochs'] * optimizer_params['steps_per_epoch']
     
     weight_decays = {}
-
+    
+    # Only layers with "kernel" need wd applied and don't apply WD to the output layer
     for layer in model.layers:
-        # layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: wd})
+        if hasattr(layer, 'kernel'):
+            layer.kernel_regularizer = keras.regularizers.l2(0)
+            weight_decays.update({layer.kernel.name: wd})
+        
 
-    optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 64)
-    
-    lr_decay = keras.experimental.CosineDecay(1e-3, total_iterations, alpha = 0.1)
-    
-    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
+    optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 1)
     
     return optimizer

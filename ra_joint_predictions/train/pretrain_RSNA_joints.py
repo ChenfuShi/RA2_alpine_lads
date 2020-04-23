@@ -89,7 +89,7 @@ def finetune_model(model,model_name,joint_dataset, joint_val_dataset ,epochs_bef
         val_steps = 14
     
     model.fit(joint_dataset,
-        epochs = epochs_after, steps_per_epoch = steps_per_epoch, validation_data = joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, lr_schedule, tensorboard_callback])
+        epochs = epochs_after, steps_per_epoch = steps_per_epoch, validation_data = joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
     
 def _get_optimizier(model):
     weight_decays = {}
@@ -100,6 +100,6 @@ def _get_optimizier(model):
 
     #ptimizer = AdamW(lr=3e-4, weight_decays = weight_decays, use_cosine_annealing = True, total_iterations = 1750 * 25, init_verbose = False)
     
-    optimizer = tf.keras.optimizers.SGD(lr = 1e-2, momentum = 0.9)
+    optimizer = tf.keras.optimizers.Adam(learning_rate = 3e-4)
     
     return optimizer

@@ -8,11 +8,12 @@ from dataset.joint_dataset import dream_dataset
 from dataset.test_dataset import joint_test_dataset, combined_test_dataset
 
 class joint_damage_type_dataset(dream_dataset):
-    def __init__(self, config, pad_resize = False, joint_extractor = None, apply_clahe = False):
+    def __init__(self, config, pad_resize = False, joint_extractor = None, apply_clahe = False, repeat_test = True):
         super().__init__(config, 'joint_damage_type', pad_resize = pad_resize, joint_extractor = joint_extractor, model_type = "DT")
 
         self.image_dir = config.train_fixed_location
         self.apply_clahe = apply_clahe
+        self.repeat_test = repeat_test
 
     def get_hands_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.cache = self.cache + '_hands'
@@ -120,7 +121,7 @@ class joint_damage_type_dataset(dream_dataset):
         dataset = self._create_joint_dataset(file_info, joint_coords, outcomes)
         dataset = self._cache_shuffle_repeat_dataset(dataset, self.cache, buffer_size = outcomes.shape[0])
 
-        return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize, augment = False)
+        return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
 
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = 'DT', pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe)
+        return joint_test_dataset(self.config, self.image_dir, model_type = 'DT', pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe, repeat = self.repeat_test)

@@ -2,11 +2,12 @@ import numpy as np
 import tensorflow.keras as keras
 import tensorflow_addons as tfa
 
-from keras_adamw import AdamW
+from keras_adamw import AdamW, get_weight_decays, fill_dict_in_order
 
 from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric, softmax_mae_metric, softmax_rmse_metric, class_filter_softmax_rmse_metric
-from model.utils.losses import softmax_focal_loss
+from model.utils.layers import ReLUOutput
+from model.utils.losses import softmax_focal_loss, pseudo_huber_loss
 
 MODEL_TYPE_CLASSIFICATION = "C"
 MODEL_TYPE_REGRESSION = "R"
@@ -30,6 +31,7 @@ def get_joint_damage_model(config, class_weights, epochs, steps, pretrained_mode
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = softmax_focal_loss(list(class_weights[0].values())), metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
+        # 
         joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:
         losses = {}
@@ -58,7 +60,7 @@ def load_minority_model(model_file, class_weights, epochs, steps, model_name = '
     lr_decay = keras.experimental.CosineDecay(3e-4, epochs * steps, alpha = 1/3)
     
     # lr_decay = keras.experimental.CosineDecayRestarts(5e-4, 25 * 120, m_mul = 0.9, alpha = 0.1)
-    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
+    optimizer = keras.optimizers.SGD(learning_rate = 1e-2, momentum = 0.9)
     
     joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
     
@@ -84,6 +86,7 @@ def _add_outputs(class_weights, base_output, model_type):
 
         if 'R' in model_type:
             req_output = keras.layers.Dense(1, activation = 'linear', name = f'reg_output_{idx}')(base_output)
+            # req_output = keras.layers.ReLU(threshold = 0.2, name = f'reg_output_{idx}')(req_output)
             outputs.append(req_output)
             
             max_outcome = max(class_weight.keys())
@@ -101,8 +104,19 @@ def _add_outputs(class_weights, base_output, model_type):
     return outputs, metrics_dir
 
 def _get_optimizier(model, epochs, steps):
-    lr_decay = keras.experimental.CosineDecay(1e-3, epochs * steps, alpha = 0.09)
+    wd = 1e-6
     
-    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
+    weight_decays = {}
+    
+    # Only layers with "kernel" need wd applied and don't apply WD layers with dropout
+    for layer in model.layers:
+        if hasattr(layer, 'kernel'):
+            layer.kernel_regularizer = keras.regularizers.l2(0)
+            weight_decays.update({layer.kernel.name: wd})
+
+    total_iterations = epochs * steps
+            
+    optimizer = AdamW(lr = 3e-4, use_cosine_annealing = True, weight_decays = weight_decays, total_iterations = total_iterations, init_verbose = False, batch_size = 1)
     
     return optimizer
+

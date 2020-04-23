@@ -19,6 +19,7 @@ class base_dataset():
     def __init__(self, config):
         self.config = config
         self.is_wrist = False
+        self.apply_clahe = False
 
     def _create_dataset(self, x, y, file_location, update_labels = False, imagenet = False):
         dataset = tf.data.Dataset.from_tensor_slices((x, y))
@@ -83,7 +84,7 @@ class joint_dataset(base_dataset):
         if wrist:
             dataset = joint_ops.load_wrists(dataset, self.image_dir, imagenet = self.imagenet)
         else:
-            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_extractor = self.joint_extractor)
+            dataset = joint_ops.load_joints(dataset, self.image_dir, imagenet = self.imagenet, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe)
         
         return dataset
 
@@ -233,6 +234,8 @@ class dream_dataset(joint_dataset):
     def _create_interleaved_joint_datasets(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
         if self.split_type == 'balanced':
             dataset = self._create_fully_balanced_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
+        elif self.split_type == 'minority':
+            dataset = self._create_minority_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
         else:
             dataset = self._create_50_50_ds(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
         
@@ -288,6 +291,22 @@ class dream_dataset(joint_dataset):
         dataset = tf.data.experimental.sample_from_datasets(datasets) 
         
         return dataset
+    
+    def _create_minority_dataset(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
+        min_idx = np.logical_not(maj_idx)
+        min_idx = np.where(min_idx)[0]
+        
+        if self.model_type == 'C':
+            min_outcomes = dummy_outcomes[min_idx, :]
+        elif self.model_type == 'R':
+            min_outcomes = outcomes[min_idx]
+        elif self.model_type == 'RC':
+            min_outcomes = (outcomes[min_idx], dummy_outcomes[min_idx, :])
+        
+        min_ds = self._create_joint_dataset(file_info[min_idx, :], joint_coords[min_idx], min_outcomes, wrist = wrist)
+        min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min_ds', buffer_size = min_idx.shape[0])
+
+        return min_ds
     
     def _init_model_outcomes_bias(self, outcomes, no_classes):
         self.class_weights = calc_relative_class_weights(outcomes, no_classes)
