@@ -22,7 +22,8 @@ from train.utils.callbacks import AdamWWarmRestartCallback
 train_params = {
     'epochs': 300,
     'batch_size': 64,
-    'steps_per_epoch': 130
+    'steps_per_epoch': 85,
+    'split_type': 'balanced'
 }
 
 finetune_params = {
@@ -34,20 +35,24 @@ finetune_params = {
 def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R'):
     logging.info(f'Training model with joint_type: {joint_type} - dmg_type: {dmg_type}')
     
-    joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = 'balanced')
-    
-    logging.info('Class Weights: %s', joint_dataset.class_weights)
-    
     params = train_params.copy()
     
     if joint_type == 'H' and dmg_type == 'J':
-        params['steps_per_epoch'] = 115
+        params['steps_per_epoch'] = 120
     elif joint_type == 'F' and dmg_type == 'E':
-        params['steps_per_epoch'] = 80
+        params['steps_per_epoch'] = 130
+        params['split_type'] = None
     elif joint_type == 'F' and dmg_type == 'J':
-        params['steps_per_epoch'] = 80
+        params['steps_per_epoch'] = 100
     elif joint_type == 'HF' and dmg_type == 'J':
         params['steps_per_epoch'] = 200
+    elif joint_type == 'W':
+        params['steps_per_epoch'] = 12
+        params['split_type'] = 'none'
+    
+    joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'])
+    
+    logging.info('Class Weights: %s', joint_dataset.class_weights)
     
     model = get_joint_damage_model(config, joint_dataset.class_weights, params['epochs'], params['steps_per_epoch'], pretrained_model_file = pretrained_model, model_name = model_name, model_type = model_type)
 

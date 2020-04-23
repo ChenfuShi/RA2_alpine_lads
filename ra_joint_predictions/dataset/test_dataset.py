@@ -147,6 +147,8 @@ class joint_test_dataset(dream_dataset):
                 tf_outcomes = np.ones(df.shape[0])
                 tf_outcomes[np.where(maj_idx)[0]] = 0
                 
+                # tf_outcomes = outcomes.to_numpy()
+                
                 outcomes = tf_outcomes
         else:
             outcomes = np.zeros(df.shape[0])

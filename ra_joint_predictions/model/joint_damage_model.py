@@ -31,7 +31,6 @@ def get_joint_damage_model(config, class_weights, epochs, steps, pretrained_mode
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = softmax_focal_loss(list(class_weights[0].values())), metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
-        # 
         joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:
         losses = {}

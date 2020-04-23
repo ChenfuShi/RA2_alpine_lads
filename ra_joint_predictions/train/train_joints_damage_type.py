@@ -15,7 +15,7 @@ from utils.saver import CustomSaver, _get_tensorboard_callback
 train_params = {
     'epochs': 75,
     'batch_size': 64,
-    'restart_epochs': 0,
+    'restart_epochs': 25,
     'lr': 3e-4,
     'wd': 1e-6
 }
