@@ -23,18 +23,27 @@ def _default_transformation(prediction):
     return prediction
 
 def _robust_mean(scores, rounding_cutoff = 0):
-    N = scores.shape[1]
-
-    start_idx = N // 10
-    end_idx = N - start_idx
-
-    sub_scores = scores[start_idx:end_idx]
-    mean_score = np.mean(sub_scores, axis = 0)
-
-    # Augments introduce noise so round down to 0 if it's at that cutoff
-    mean_score[mean_score <= rounding_cutoff] = 0
+    N, D = scores.shape
     
-    return mean_score
+    mean_scores = np.zeros(D)
+    
+    for d in range(D):
+        values = scores[:, d]
+        
+        values = np.sort(values)
+        
+        start_idx = N // 10
+        end_idx = N - start_idx
+        
+        sub_values = values[start_idx:end_idx]
+        mean_score = np.mean(sub_values)
+        
+        mean_scores[d] = mean_score
+        
+    # Augments introduce noise so round down to 0 if it's at that cutoff
+    mean_scores[mean_scores <= rounding_cutoff] = 0
+    
+    return mean_scores
 
 class predictor():
     def __init__(self, model_file, no_outcomes = 1, is_wrist = False, prediction_transformer = _default_transformation):
@@ -130,7 +139,7 @@ class augmented_predictor():
         self.no_augments = no_augments
         self.aggregator = aggregator
         self.rounding_cutoff = rounding_cutoff
-
+        
         self.augments = img_ops.create_augments(pred_augments)
 
     def predict_joint_damage(self, img):
@@ -141,6 +150,8 @@ class augmented_predictor():
             preds[n] = self.base_predictor.predict_joint_damage(aug_img)
 
         preds[self.no_augments, :] = self.base_predictor.predict_joint_damage(img)
+        
+        self.scores = preds
         
         return self.aggregator(preds, self.rounding_cutoff)
 

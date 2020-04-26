@@ -22,8 +22,10 @@ from train.utils.callbacks import AdamWWarmRestartCallback
 train_params = {
     'epochs': 300,
     'batch_size': 64,
-    'steps_per_epoch': 85,
-    'split_type': 'balanced'
+    'steps_per_epoch': 240,
+    'split_type': 'balanced',
+    'lr': 3e-4,
+    'wd': 1e-6
 }
 
 finetune_params = {
@@ -37,24 +39,28 @@ def train_joints_damage_model(config, model_name, pretrained_model, joint_type, 
     
     params = train_params.copy()
     
+    has_outputs = False
+    
     if joint_type == 'H' and dmg_type == 'J':
-        params['steps_per_epoch'] = 120
+        params['steps_per_epoch'] = 130
     elif joint_type == 'F' and dmg_type == 'E':
         params['steps_per_epoch'] = 130
-        params['split_type'] = None
     elif joint_type == 'F' and dmg_type == 'J':
-        params['steps_per_epoch'] = 100
+        params['steps_per_epoch'] = 120
+        # has_outputs = True
     elif joint_type == 'HF' and dmg_type == 'J':
-        params['steps_per_epoch'] = 200
+        params['steps_per_epoch'] = 175
     elif joint_type == 'W':
-        params['steps_per_epoch'] = 12
-        params['split_type'] = 'none'
-    
+        params['steps_per_epoch'] = 90
+        params['lr'] = 1e-3
+        params['split_type'] = None
+        params['is_wrist'] = True
+     
     joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'])
     
     logging.info('Class Weights: %s', joint_dataset.class_weights)
     
-    model = get_joint_damage_model(config, joint_dataset.class_weights, params['epochs'], params['steps_per_epoch'], pretrained_model_file = pretrained_model, model_name = model_name, model_type = model_type)
+    model = get_joint_damage_model(config, joint_dataset.class_weights, params, pretrained_model_file = pretrained_model, model_name = model_name, model_type = model_type, has_outputs = has_outputs)
 
     return _fit_joint_damage_model(model, model.name, non0_tf_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples)
 

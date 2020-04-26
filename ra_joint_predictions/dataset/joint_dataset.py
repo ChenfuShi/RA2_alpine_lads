@@ -8,6 +8,8 @@ import tensorflow as tf
 from dataset.base_dataset import dream_dataset
 import model.joint_damage_model as joint_damage_model
 
+from tensorflow.python.data.ops import dataset_ops
+
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
 
@@ -141,6 +143,7 @@ class hands_wrists_dataset(dream_dataset):
 
         self.image_dir = config.train_fixed_location
         self.is_wrist = True
+        self.maj_ratio = 0.5
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
@@ -171,11 +174,14 @@ class hands_wrists_dataset(dream_dataset):
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
 class combined_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
         super().__init__(config, 'combined_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
         self.no_classes = 5
+        
+        self.hands_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+        self.feet_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = None)
 
     def create_combined_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
         if erosion_flag:
@@ -187,10 +193,22 @@ class combined_joint_dataset(dream_dataset):
         else:
             self.outcome_columns = ['narrowing_0']
             self.cache = self.cache + '_narrowing'
+           
+        # combined_joint_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
+        # dataset = self._create_dream_dataset(combined_joint_df, self.outcome_columns, self.no_classes, cache = self.cache)
+    
+        hands_ds = self.hands_dataset.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
+        feet_ds = self.feet_dataset.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)    
         
-        combined_joint_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
-        dataset = self._create_dream_dataset(combined_joint_df, self.outcome_columns, self.no_classes, cache = self.cache)
-
+        hands_ds = hands_ds.unbatch()
+        feet_ds = feet_ds.unbatch()
+        
+        dataset = tf.data.experimental.sample_from_datasets((hands_ds, feet_ds)) 
+        
+        dataset = dataset.batch(64)
+        
+        self.class_weights = self.hands_dataset.class_weights
+        
         return dataset
 
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):

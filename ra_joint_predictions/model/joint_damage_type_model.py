@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow.keras as keras
 
-from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
+from model.utils.building_blocks_joints import get_joint_model_input, complex_rewritten
 from model.utils.losses import focal_loss
 from model.utils.metrics import brier_score
 
@@ -33,12 +33,12 @@ def _get_base_model(config, pretrained_model_file):
         return pretrained_model.input, pretrained_model.output
     else:
         input = get_joint_model_input(config)
-        base_model = create_complex_joint_model(input)
+        base_model = complex_rewritten(input, decay = None, use_dense = False)
 
         return input, base_model
 
 def _add_output(base_output, init_bias):
-    bias_initializers = keras.initializers.Constant(value = 0)
+    bias_initializers = keras.initializers.Constant(value = init_bias)
     
     output = keras.layers.Dense(1, activation = 'sigmoid', bias_initializer = bias_initializers, name = 'joint_damage_type')(base_output)
     

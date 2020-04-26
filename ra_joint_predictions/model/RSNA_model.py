@@ -7,7 +7,7 @@ from tensorflow import keras
 from tensorflow.keras.layers import Dense, Dropout
 import model.NIH_model as NIH
 from model.utils.building_blocks_joints import _fc_block
-from model.utils.building_blocks_joints import create_complex_joint_model, elu_res_net, extended_complex
+from model.utils.building_blocks_joints import create_complex_joint_model, relu_joint_res_net, extended_complex
 from model.utils.building_blocks_joints import get_joint_model_input, vvg_joint_model, complex_rewritten, avg_joint_vgg
 
 elu_activation = lambda x: keras.activations.elu(x, alpha = 0.3)
@@ -106,11 +106,11 @@ def create_complex(config, name, no_joint_types = 13):
 
 def create_res_rsna_model(config, name, no_joint_types = 13):
     input_layer = get_joint_model_input(config)
-    model = elu_res_net(input_layer)
+    model = relu_joint_res_net(input_layer, decay = None)
     
-    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform', kernel_regularizer = tf.keras.regularizers.l2(5e-4))(model)
-    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform', kernel_regularizer = tf.keras.regularizers.l2(5e-4))(model)
-    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform', kernel_regularizer = tf.keras.regularizers.l2(5e-4))(model)
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
     
     return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
 

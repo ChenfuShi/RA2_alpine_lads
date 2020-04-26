@@ -19,6 +19,7 @@ class base_dataset():
     def __init__(self, config):
         self.config = config
         self.is_wrist = False
+        self.is_chest = False
         self.apply_clahe = False
 
     def _create_dataset(self, x, y, file_location, update_labels = False, imagenet = False):
@@ -46,6 +47,26 @@ class base_dataset():
         if augment:
             if self.is_wrist:
                 augments = [
+                    {
+                        'augment': img_ops.random_brightness_and_contrast
+                    },
+                    {
+                        'augment': img_ops.random_crop
+                    },
+                    {
+                        'augment': img_ops.random_gaussian_noise,
+                        'p': 0.2
+                    },
+                    {
+                        'augment': img_ops.random_rotation
+                    }]
+            elif self.is_chest:
+                augments = [
+                    {
+                        'augment': img_ops.random_flip,
+                        'p': 1,
+                        'params': {'flip_up_down': False}
+                    },
                     {
                         'augment': img_ops.random_brightness_and_contrast
                     },
@@ -147,6 +168,7 @@ class dream_dataset(joint_dataset):
         self.model_type = model_type
         self.cache = self.cache + '_' + model_type
         self.split_type = split_type
+        self.maj_ratio = 0.25
 
     def _create_dream_datasets(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
@@ -210,7 +232,7 @@ class dream_dataset(joint_dataset):
         if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
             tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
         elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
-            tf_outcomes = outcomes.to_numpy()
+            tf_outcomes = outcomes.to_numpy(dtype = np.float64)
             self.outcomes = tf_outcomes
         elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
             tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
@@ -236,6 +258,12 @@ class dream_dataset(joint_dataset):
             dataset = self._create_fully_balanced_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
         elif self.split_type == 'minority':
             dataset = self._create_minority_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
+        elif self.split_type == 'none':
+            # Create 2 datasets, one with the majority class, one with the other classes
+            dataset = self._create_joint_dataset(file_info, joint_coords, outcomes, wrist = wrist)
+            
+            # Cache the partial datasets, shuffle the datasets with buffersize that ensures minority samples are all shuffled
+            dataset = self._cache_shuffle_repeat_dataset(dataset, self.cache, buffer_size = file_info.shape[0])
         else:
             dataset = self._create_50_50_ds(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
         
@@ -270,7 +298,7 @@ class dream_dataset(joint_dataset):
         min_ds = self._cache_shuffle_repeat_dataset(min_ds, self.cache + '_min', buffer_size = min_idx.shape[0])
 
         # Interleave datasets 50/50 - for each majority sample (class 0), it adds one none majority sample (not class 0)
-        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
+        dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [self.maj_ratio, 1 - self.maj_ratio])
         
         return dataset
     

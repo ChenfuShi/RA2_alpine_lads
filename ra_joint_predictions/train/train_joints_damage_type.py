@@ -15,8 +15,8 @@ from utils.saver import CustomSaver, _get_tensorboard_callback
 train_params = {
     'epochs': 75,
     'batch_size': 64,
-    'restart_epochs': 25,
-    'lr': 3e-4,
+    'restart_epochs': 0,
+    'lr': 1e-3,
     'wd': 1e-6
 }
 
@@ -40,8 +40,9 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
     
     # Normalize steps to always pass through the dataset exactly once per epoch
     steps_per_epoch = np.ceil(N / batch_size)
+    steps_per_epoch = 90
     params['steps_per_epoch'] = steps_per_epoch
-    
+
     model = get_joint_damage_type_model(config, params, pretrained_model, model_name = model_name, alpha = alpha, init_bias = init_bias)
 
     return _fit_joints_damage_type_model(model, tf_dataset, params, val_dataset = tf_val_dataset, no_val_samples = val_no_samples, wr_callback = adamW_warm_restart_callback)

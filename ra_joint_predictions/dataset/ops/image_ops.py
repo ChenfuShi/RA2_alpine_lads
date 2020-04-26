@@ -28,10 +28,13 @@ def load_image(file_info, y, directory, update_labels = False, imagenet = False)
     flip_img = file_info[2] == 'Y'
 
     img = tf.io.read_file(directory + '/' + file_name + '.' + file_type)
+    
+    channels = 1
+    
     if imagenet:
-        img = tf.io.decode_image(img, channels = 3, dtype = tf.float32)
-    else:
-        img = tf.io.decode_image(img, channels = 1, dtype = tf.float32)
+        channels = 3
+    
+    img = tf.io.decode_image(img, channels = channels, dtype = tf.float32)
 
     if flip_img:    
         img = tf.image.flip_left_right(img)

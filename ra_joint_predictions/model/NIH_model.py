@@ -13,7 +13,7 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from model.utils.keras_nasnet import NASNet
-from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu
+from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu, relu_joint_res_net
 
 def create_rewritten_elu(config):
 
@@ -232,8 +232,19 @@ def create_NASnet_7x1920_multioutupt(config):
 
     return _add_common(common_part,"NASnet_large_multiout_NIH",inputs)
 
+def create_relu_joint_res_net(config):
+    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
+    model = relu_joint_res_net(inputs)
+    
+    decay_steps = 100 * 1000
+    learning_rate_decay = keras.experimental.CosineDecay(1e-2, decay_steps, alpha = 0.1)
+    optimizer = keras.optimizers.SGD(learning_rate = learning_rate_decay, momentum = 0.9)
+    
+    model = _add_common(model, 'relu_joint_res_net_NIH_sgd', inputs, optimizer = optimizer)
+    
+    return model
 
-def _add_common(common_part,name,inputs):
+def _add_common(common_part,name,inputs, optimizer = 'adam'):
     disease = keras.layers.Dense(14, activation='sigmoid', name='disease_pred')(common_part)
     sex = keras.layers.Dense(1, activation='sigmoid', name='sex_pred')(common_part)
     age = keras.layers.Dense(1,activation="linear",name="age_pred")(common_part)
@@ -251,7 +262,6 @@ def _add_common(common_part,name,inputs):
     }
     lossWeights = {"disease_pred": 2.0,"sex_pred" :0.5,"age_pred": 0.005}
 
-    model.compile(optimizer='adam', loss=losses, loss_weights=lossWeights, metrics={"disease_pred":"binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"},)
-
+    model.compile(optimizer = optimizer, loss = losses, loss_weights = lossWeights, metrics = {"disease_pred":"binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"})
 
     return model
