@@ -95,9 +95,6 @@ overall_augments = [
         'augment': img_ops.random_brightness_and_contrast
     },
     {
-        'augment': img_ops.random_crop
-    },
-    {
         'augment': img_ops.random_gaussian_noise,
         'p': 0.2
     },
@@ -106,12 +103,23 @@ overall_augments = [
     }
 ]
 
+overall_augments_test = [
+    {
+        'augment': img_ops.random_brightness_and_contrast,
+        "params" : {"max_delta": 0.05 , "max_contrast": 0.05}
+    },
+    {
+        'augment': img_ops.random_rotation,
+        "params" : {"min_rot": -5, "max_rot": 5}
+    }
+]
+
 class overall_joints_dataset(dream_dataset):
     def __init__(self, config, ds_type, cache_postfix = '', erosion_flag = False, pad_resize = False, joint_extractor = None, imagenet = False, force_augment = False):
         super().__init__(config, cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
-        self.batch_size = 30
+        self.batch_size = 28
 
         self.ds_type = ds_type
         self.erosion_flag = erosion_flag
@@ -200,7 +208,7 @@ class overall_joints_dataset(dream_dataset):
             min_ds = self._load_images(min_ds)
             min_ds = self._cache_shuffle_repeat_dataset(min_ds, cache = self.cache + '_min', buffer_size = min_idx.shape[0])
 
-            dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.5, 0.5])
+            dataset = tf.data.experimental.sample_from_datasets((maj_ds, min_ds), [0.60, 0.40])
 
             dataset = self._augment_images(dataset)
         else:
@@ -240,7 +248,10 @@ class overall_joints_dataset(dream_dataset):
         return dataset.map(__load_images, num_parallel_calls = AUTOTUNE)
 
     def _augment_images(self, dataset):
-        augments = img_ops.create_augments(overall_augments)
+        if self.ds_type == "test":
+            augments = img_ops.create_augments(overall_augments_test)
+        else:
+            augments = img_ops.create_augments(overall_augments)
 
         def __augment_images(file_info, img, coords, outcomes):
             img, coords = ds_ops._augment_and_clip_image(img, coords, augments, update_labels = True)
