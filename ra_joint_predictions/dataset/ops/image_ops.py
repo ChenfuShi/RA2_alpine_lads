@@ -28,10 +28,13 @@ def load_image(file_info, y, directory, update_labels = False, imagenet = False)
     flip_img = file_info[2] == 'Y'
 
     img = tf.io.read_file(directory + '/' + file_name + '.' + file_type)
+    
+    channels = 1
+    
     if imagenet:
-        img = tf.io.decode_image(img, channels = 3, dtype = tf.float32)
-    else:
-        img = tf.io.decode_image(img, channels = 1, dtype = tf.float32)
+        channels = 3
+    
+    img = tf.io.decode_image(img, channels = channels, dtype = tf.float32)
 
     if flip_img:    
         img = tf.image.flip_left_right(img)
@@ -52,7 +55,9 @@ def clahe_img(img, clip_limit = 2., grid_size = 2):
     # OpenCV removes the last channel, so add it back and then convert back to float
     clahe_img = tf.expand_dims(clahe_img, -1)
     clahe_img = tf.image.convert_image_dtype(clahe_img, dtype = tf.float32)
-        
+    
+    clahe_img.set_shape(img.get_shape())
+    
     return clahe_img
 
 
@@ -119,7 +124,7 @@ def random_flip(flip_right_left = True, flip_up_down = True):
 
     return _random_flip
 
-def random_brightness_and_contrast(max_delta = 0.2, max_contrast = 0.2):
+def random_brightness_and_contrast(max_delta = 0.1, max_contrast = 0.1):
     def _random_brightness_and_contrast(img, y, update_labels):
         img = tf.image.random_brightness(img, max_delta = max_delta)
         img = tf.image.random_contrast(img, 1 - max_contrast, 1 + max_contrast)

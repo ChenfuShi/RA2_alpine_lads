@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow.keras as keras
 
-from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model
+from model.utils.building_blocks_joints import get_joint_model_input, complex_rewritten
 from model.utils.losses import focal_loss
 from model.utils.metrics import brier_score
 
@@ -33,7 +33,7 @@ def _get_base_model(config, pretrained_model_file):
         return pretrained_model.input, pretrained_model.output
     else:
         input = get_joint_model_input(config)
-        base_model = create_complex_joint_model(input)
+        base_model = complex_rewritten(input, decay = None, use_dense = False)
 
         return input, base_model
 
@@ -53,15 +53,14 @@ def _get_optimizier(model, optimizer_params):
     total_iterations = optimizer_params['restart_epochs'] * optimizer_params['steps_per_epoch']
     
     weight_decays = {}
-
+    
+    # Only layers with "kernel" need wd applied and don't apply WD to the output layer
     for layer in model.layers:
-        # layer.kernel_regularizer = keras.regularizers.l2(0)
-        weight_decays.update({layer.name: wd})
+        if hasattr(layer, 'kernel'):
+            layer.kernel_regularizer = keras.regularizers.l2(0)
+            weight_decays.update({layer.kernel.name: wd})
+        
 
-    optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 64)
-    
-    lr_decay = keras.experimental.CosineDecay(1e-3, total_iterations, alpha = 0.1)
-    
-    optimizer = keras.optimizers.SGD(learning_rate = lr_decay, momentum = 0.9)
+    optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 1)
     
     return optimizer

@@ -28,6 +28,9 @@ class pretrain_dataset_NIH_chest(base_dataset):
 
     def __init__(self, config):
         super().__init__(config)
+        
+        self.is_chest = True
+        self.cache = config.cache_loc + '/chest/'
 
     def initialize_pipeline(self, imagenet = False):    
         
@@ -41,24 +44,26 @@ class pretrain_dataset_NIH_chest(base_dataset):
 
         data = self.data_info.drop(['file_type', 'flip', 'Image Index'], axis=1).values
         data = data.astype(np.float64)
-
+        
+        self.data = data
+        
         # get dataset 
         chest_dataset = self._create_dataset(
             x, data, self.config.pretrain_NIH_chest_location, imagenet = imagenet)
         
         # resize the images because it was taking too long
-        chest_dataset = dataset_ops.augment_and_resize_images(chest_dataset, 350, 350, do_augmentation = False)
+        chest_dataset = dataset_ops.augment_and_resize_images(chest_dataset, 350, 350, pad_resize = True, augments = [])
 
         # here separate validation set
         chest_dataset, chest_dataset_val = self._create_validation_split(chest_dataset,1000)
 
         # data processing
         # augmentation happens here
-        chest_dataset = self._cache_shuffle_repeat_dataset(chest_dataset, cache = self.config.cache_loc + 'chest')
-        chest_dataset_val = self._cache_shuffle_repeat_dataset(chest_dataset_val, cache = self.config.cache_loc + 'chest_val')
+        chest_dataset = self._cache_shuffle_repeat_dataset(chest_dataset, cache = self.cache + 'chest', buffer_size = 5000)
+        chest_dataset_val = self._cache_shuffle_repeat_dataset(chest_dataset_val, cache = self.cache + 'chest_val', buffer_size = 1000)
         
-        chest_dataset = self._prepare_for_training(chest_dataset, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size)
-        chest_dataset_val = self._prepare_for_training(chest_dataset_val, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size)
+        chest_dataset = self._prepare_for_training(chest_dataset, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size, pad_resize = False)
+        chest_dataset_val = self._prepare_for_training(chest_dataset_val, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size, augment = False, pad_resize = False)
 
         return chest_dataset, chest_dataset_val
     

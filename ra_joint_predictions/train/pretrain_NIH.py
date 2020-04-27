@@ -22,7 +22,7 @@ def pretrain_NIH_chest(model, data_train, data_val, config, model_name, epochs =
     # tensorboard_callback = _get_tensorboard_callback(model_name)  ## tensorboard_callback
     # fit model indefinetly
     H = model.fit(data_train, validation_data=data_val,
-    epochs=epochs,steps_per_epoch=1000,validation_steps=10,verbose=2,callbacks=[saver])
+    epochs=epochs,steps_per_epoch=1000,validation_steps=15,verbose=2,callbacks=[saver])
 
 
 def _split_dataset_outputs(x,y):

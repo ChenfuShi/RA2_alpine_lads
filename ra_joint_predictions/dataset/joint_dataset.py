@@ -8,6 +8,8 @@ import tensorflow as tf
 from dataset.base_dataset import dream_dataset
 import model.joint_damage_model as joint_damage_model
 
+from tensorflow.python.data.ops import dataset_ops
+
 dream_hand_parts = ['LH', 'RH']
 dream_foot_parts = ['LF', 'RF']
 
@@ -103,16 +105,17 @@ class feet_joint_dataset(dream_dataset):
         if self.erosion_flag:
             idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes >= 4]
         else:
-            idx_groups = [outcomes == 0, np.logical_or(outcomes == 1, outcomes == 2), outcomes == 3, outcomes == 4]
+            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4]
         
         return idx_groups
     
 class hands_joints_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
         super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
 
         self.image_dir = config.train_fixed_location
-
+        self.apply_clahe = apply_clahe
+        
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.erosion_flag = erosion_flag
         
@@ -128,9 +131,9 @@ class hands_joints_dataset(dream_dataset):
     
     def _get_idx_groups(self, outcomes):
         if self.erosion_flag:
-            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4, outcomes >= 5]
+            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes >= 4]
         else:
-            idx_groups = [outcomes == 0, np.logical_or(outcomes == 1, outcomes == 2), outcomes == 3, outcomes == 4]
+            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4]
             
         return idx_groups
 
@@ -140,6 +143,7 @@ class hands_wrists_dataset(dream_dataset):
 
         self.image_dir = config.train_fixed_location
         self.is_wrist = True
+        self.maj_ratio = 0.5
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
@@ -169,37 +173,66 @@ class hands_wrists_dataset(dream_dataset):
 
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
-class joint_narrowing_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
-        super().__init__(config, 'narrowing_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
+class combined_joint_dataset(dream_dataset):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+        super().__init__(config, 'combined_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
-        self.outcome_columns = ['narrowing_0']
         self.no_classes = 5
+        
+        self.hands_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+        self.feet_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = None)
 
-    def create_combined_narrowing_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv'):
-        joint_narrowing_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
-        dataset = self._create_dream_dataset(joint_narrowing_df, self.outcome_columns, self.no_classes, cache = self.cache)
+    def create_combined_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
+        if erosion_flag:
+            self.outcome_columns = ['erosion_0']
+            self.cache = self.cache + '_erosion'
 
+            if self.model_type != 'DT':
+                logging.warn('Combined dataset for erosion only supports model_type DT!')
+        else:
+            self.outcome_columns = ['narrowing_0']
+            self.cache = self.cache + '_narrowing'
+           
+        # combined_joint_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
+        # dataset = self._create_dream_dataset(combined_joint_df, self.outcome_columns, self.no_classes, cache = self.cache)
+    
+        hands_ds = self.hands_dataset.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
+        feet_ds = self.feet_dataset.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)    
+        
+        hands_ds = hands_ds.unbatch()
+        feet_ds = feet_ds.unbatch()
+        
+        dataset = tf.data.experimental.sample_from_datasets((hands_ds, feet_ds)) 
+        
+        dataset = dataset.batch(64)
+        
+        self.class_weights = self.hands_dataset.class_weights
+        
         return dataset
 
     def _create_combined_df(self, outcomes_source, hand_joints_source, feet_joints_source):
-        combined_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
-        combined_outcome_df = self._create_combined_narrowing_outcomes_df(outcomes_source)
+        combined_df = self._create_combined_joints_df(hand_joints_source, feet_joints_source)
+        combined_outcome_df = self._create_combined_outcomes_df(outcomes_source)
         
         return combined_df.merge(combined_outcome_df, on = ['image_name', 'key'])
 
-    def _create_combined_narrowing_df(self, hand_joints_source, feet_joints_source):
+    def _create_combined_joints_df(self, hand_joints_source, feet_joints_source):
         hand_joints_df = self._create_intermediate_joints_df(hand_joints_source, hand_outcome_mapping.keys())
         feet_joints_df = self._create_intermediate_joints_df(feet_joints_source, foot_outcome_mapping.keys())
 
         return pd.concat([hand_joints_df, feet_joints_df], ignore_index = True, sort = False)
 
-    def _create_combined_narrowing_outcomes_df(self, outcomes_source):
+    def _create_combined_outcomes_df(self, outcomes_source):
         hand_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, hand_outcome_mapping, dream_hand_parts)
         feet_joints_outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, foot_outcome_mapping, dream_foot_parts)
 
-        combined_narrowing_outcomes_df =  pd.concat([hand_joints_outcomes_df, feet_joints_outcomes_df], ignore_index=True, sort = False)
-        combined_narrowing_outcomes_df = combined_narrowing_outcomes_df.dropna(subset = self.outcome_columns)
+        combined_outcomes_df =  pd.concat([hand_joints_outcomes_df, feet_joints_outcomes_df], ignore_index = True, sort = False)
+        combined_outcomes_df = combined_outcomes_df.dropna(subset = self.outcome_columns)
 
-        return combined_narrowing_outcomes_df
+        return combined_outcomes_df
+    
+    def _get_idx_groups(self, outcomes):
+        idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4]
+        
+        return idx_groups

@@ -15,11 +15,13 @@ from dataset.joints.joint_extractor import default_joint_extractor
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class joint_test_dataset(dream_dataset):
-    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor()):
+    def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, imagenet = False, joint_extractor = default_joint_extractor(), apply_clahe = False, repeat = True):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.img_dir = img_dir
         self.pad_resize = pad_resize
+        self.apply_clahe = apply_clahe
+        self.repeat = repeat
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if erosion_flag is False:
@@ -77,6 +79,8 @@ class joint_test_dataset(dream_dataset):
         return joints_df
 
     def _create_dataset(self, df, params, load_wrists):
+        df = df.sample(frac = 1, random_state = 1337).reset_index(drop = True)
+        
         file_info = df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
 
         if load_wrists:
@@ -106,7 +110,10 @@ class joint_test_dataset(dream_dataset):
             #if self.model_type == 'DT':
                 #dataset = ds_ops.shuffle_and_repeat_dataset(dataset, buffer_size = 2000)
         
-            dataset = dataset.repeat()
+            if self.repeat:
+                dataset = dataset.cache()
+                dataset = dataset.repeat()
+                
             dataset = dataset.batch(self.config.batch_size)
         else:
             dataset = self._remove_outcome(dataset)
@@ -139,6 +146,8 @@ class joint_test_dataset(dream_dataset):
                 # Set majority samples to 0
                 tf_outcomes = np.ones(df.shape[0])
                 tf_outcomes[np.where(maj_idx)[0]] = 0
+                
+                # tf_outcomes = outcomes.to_numpy()
                 
                 outcomes = tf_outcomes
         else:
@@ -210,20 +219,18 @@ class joint_test_dataset(dream_dataset):
 
         return dataset.map(__remove_outcome, num_parallel_calls = AUTOTUNE)
 
-class narrowing_test_dataset(joint_test_dataset, joint_dataset.joint_narrowing_dataset):
+class combined_test_dataset(joint_test_dataset, joint_dataset.combined_joint_dataset):
     def __init__(self, config, img_dir, model_type = 'R', pad_resize = False, joint_extractor = None):
         super().__init__(config, img_dir, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor)
 
-    def get_joint_narrowing_test_dataset(self, hand_joints_source = './data/predictions/hand_joint_data_test.csv', feet_joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None):
-        combined_joints_df = self._create_combined_narrowing_df(hand_joints_source, feet_joints_source)
-
-        params = None
-        if outcomes_source is not None:
+    def get_combined_joint_test_dataset(self, hand_joints_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_test_v2.csv', outcomes_source = None, erosion_flag = False):
+        if not erosion_flag:
             params = joint_dataset.hands_narrowing_params
+        else:
+            params = joint_dataset.hands_erosion_params
 
-            combined_outcomes_df = self._create_combined_narrowing_outcomes_df(outcomes_source)
-            combined_outcomes_df = combined_outcomes_df.dropna(subset = params['outcomes'])
+        self.outcome_columns = params['outcomes']
 
-            combined_joints_df = combined_joints_df.merge(combined_outcomes_df, on = ['image_name', 'key'])
+        combined_joints_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
 
         return self._create_dataset(combined_joints_df, params, False)

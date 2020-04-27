@@ -22,16 +22,28 @@ pred_augments = [
 def _default_transformation(prediction):
     return prediction
 
-def _robust_mean(scores):
-    N = scores.shape[1]
-
-    start_idx = N // 10
-    end_idx = N - start_idx
-
-    sub_scores = scores[start_idx:end_idx]
-    mean_score = np.mean(sub_scores)
-
-    return mean_score
+def _robust_mean(scores, rounding_cutoff = 0):
+    N, D = scores.shape
+    
+    mean_scores = np.zeros(D)
+    
+    for d in range(D):
+        values = scores[:, d]
+        
+        values = np.sort(values)
+        
+        start_idx = N // 10
+        end_idx = N - start_idx
+        
+        sub_values = values[start_idx:end_idx]
+        mean_score = np.mean(sub_values)
+        
+        mean_scores[d] = mean_score
+        
+    # Augments introduce noise so round down to 0 if it's at that cutoff
+    mean_scores[mean_scores <= rounding_cutoff] = 0
+    
+    return mean_scores
 
 class predictor():
     def __init__(self, model_file, no_outcomes = 1, is_wrist = False, prediction_transformer = _default_transformation):
@@ -122,11 +134,12 @@ class joint_damage_type_predictor(predictor):
         return _sig_prediction_transformer
 
 class augmented_predictor():
-    def __init__(self, base_predictor, no_augments = 50, aggregator = _robust_mean):
+    def __init__(self, base_predictor, no_augments = 50, aggregator = _robust_mean, rounding_cutoff = 0):
         self.base_predictor = base_predictor
         self.no_augments = no_augments
         self.aggregator = aggregator
-
+        self.rounding_cutoff = rounding_cutoff
+        
         self.augments = img_ops.create_augments(pred_augments)
 
     def predict_joint_damage(self, img):
@@ -138,7 +151,9 @@ class augmented_predictor():
 
         preds[self.no_augments, :] = self.base_predictor.predict_joint_damage(img)
         
-        return self.aggregator(preds)
+        self.scores = preds
+        
+        return self.aggregator(preds, self.rounding_cutoff)
 
 class augmented_joint_damage_predictor(joint_damage_predictor):
     def __init__(self, model_parameters, no_augments = 50, aggregator = _robust_mean):

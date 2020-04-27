@@ -34,7 +34,7 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                 for idx, narrowing_outcome_key in enumerate(narrowing_outcome_keys):
                     y_pred = y_preds[idx]
 
-                    logging.info(f"Predicted narrowing {y_pred} for {key} for patient {patient_id}")
+                    logging.info(f"Predicted narrowing {y_pred} for {key} for patient {patient_id}_{narrowing_outcome_key}")
 
                     preds[patient_id][narrowing_outcome_key] = y_pred
 
@@ -49,7 +49,7 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                 for idx, erosion_outcome_key in enumerate(erosion_outcome_keys):
                     y_pred = y_preds[idx]
 
-                    logging.info(f"Predicted erosion {y_pred} for {key} for patient {patient_id}")
+                    logging.info(f"Predicted erosion {y_pred} for {key} for patient {patient_id}_{erosion_outcome_key}")
 
                     preds[patient_id][erosion_outcome_key] = y_pred
 
@@ -88,16 +88,16 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     df_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
     
     hands_narrowing_extractor = get_joint_extractor('H', False)
-    hands_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
+    hands_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = hands_narrowing_extractor)
     
     feet_narrowing_extractor = get_joint_extractor('F', False)
-    feet_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
+    feet_narrowing_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_narrowing_extractor)
 
     hands_erosion_extractor = get_joint_extractor('H', True)
     hands_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = hands_erosion_extractor)
     
     feet_erosion_extractor = get_joint_extractor('F', True)
-    feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = df_joint_extractor)
+    feet_erosion_test_dataset = joint_test_dataset(config, config.train_fixed_location, pad_resize = False, joint_extractor = feet_erosion_extractor)
     
     return {
         'hands_narrowing_dataset': hands_narrowing_test_dataset.get_hands_joint_test_dataset(joints_source = hands_joint_source)[0],
@@ -110,7 +110,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
 
 def _get_joint_damage_predictors(model_parameters_collection):
     def _get_predictor(model_parameters, filter = True):
-        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 25)
+        dmg_pred = augmented_predictor(joint_damage_predictor(model_parameters), no_augments = 25, rounding_cutoff = 0.3)
 
         if filter is True:
             filter_pred = augmented_predictor(joint_damage_type_predictor(model_parameters), no_augments = 25)

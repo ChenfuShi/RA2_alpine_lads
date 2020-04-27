@@ -9,6 +9,24 @@ def default_joint_extractor(joint_scale = 5):
 
     return _default_joint_extractor
 
+def balanced_joint_extractor(joint_scale = 5., key_joint_scales = {}):
+    joint_scale_table = _build_lookup_table_from_dict(key_joint_scales, joint_scale)
+    
+    def _balanced_joint_extractor(img_shape, joint_key):
+        joint_scale = tf.cast(joint_scale_table.lookup(joint_key), img_shape.dtype) 
+        
+        box_height = img_shape[0] / joint_scale
+        box_width = img_shape[1] / joint_scale
+
+        if box_height < box_width:
+            box_width = box_height
+        else:
+            box_height = box_width
+        
+        return box_height, box_width
+
+    return _balanced_joint_extractor
+
 def feet_joint_extractor(main_joint_scale = 6, mtp_joint_scale = 3):
     def _feet_joint_extractor(img_shape, joint_key):
         if joint_key == 'mtp' or joint_key == 'mtp_1':
