@@ -88,7 +88,7 @@ class feet_joint_dataset(dream_dataset):
 
         self.image_dir = config.train_fixed_location
         
-        self.maj_ratio = 0.15
+        self.maj_ratio = 0.25
         self.divide_erosion_by_2 = divide_erosion_by_2
 
     def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
@@ -106,7 +106,10 @@ class feet_joint_dataset(dream_dataset):
     
     def _get_idx_groups(self, outcomes):
         if self.erosion_flag:
-            idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes >= 4]
+            if not self.divide_erosion_by_2:
+                idx_groups = [outcomes == 0, np.logical_or(outcomes == 1, outcomes == 2), np.logical_or(outcomes == 3, outcomes == 4), np.logical_or(outcomes == 5, outcomes == 6), outcomes >= 7]
+            else:
+                idx_groups = [outcomes == 0, np.logical_or(outcomes == 0.5, outcomes == 1), np.logical_or(outcomes == 1.5, outcomes == 2), np.logical_or(outcomes == 2.5, outcomes == 3), outcomes >= 3.5]
         else:
             idx_groups = [outcomes == 0, outcomes == 1, outcomes == 2, outcomes == 3, outcomes == 4]
         
@@ -190,12 +193,12 @@ class mixed_joint_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, joint_type = 'HF'):
         super().__init__(config, 'mixed_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
         
-        self.joint_type = 'HF'
+        self.joint_type = joint_type
         self.is_main_hand = joint_type.startswith('H')
         
         if self.is_main_hand:
             self.main_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
-            self.sec_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = 'minority', divide_erosion_by_2 = True)
+            self.sec_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = 'balanced', divide_erosion_by_2 = True)
         else:
             self.main_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, divide_erosion_by_2 = True)
             self.sec_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = 'balanced')

@@ -107,7 +107,7 @@ def _add_outputs(class_weights, base_output, model_type, is_wrist):
     return outputs, metrics_dir
 
 def _get_optimizier(model, params):
-    epochs = params['epochs']
+    epochs = params['opt_epochs']
     steps_per_epoch = params['steps_per_epoch']
     lr = params['lr']
     wd = params['wd']

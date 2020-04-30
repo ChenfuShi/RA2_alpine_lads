@@ -64,8 +64,11 @@ class joint_damage_type_dataset(dream_dataset):
 
         outcome_joint_df = pd.concat([hand_outcome_joint_df, feet_outcome_joint_df], ignore_index = True, sort = False)
         outcome_joint_df = outcome_joint_df.dropna(subset = [outcome_column])
-
-        return self._create_joint_damage_type_dataset(outcome_joint_df, [outcome_column])
+        
+        dataset = self._create_joint_damage_type_dataset(outcome_joint_df, [outcome_column], self.cache)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+        
+        return dataset
 
     def get_combined_joint_damage_type_dataset_with_validation(self, outcomes_source, hands_joints_source = './data/predictions/hand_joint_data_train_v2.csv', hands_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_combined_joint_damage_type_dataset(outcomes_source, hands_joints_source = hands_joints_source, feet_joints_source = feet_joints_source, erosion_flag = erosion_flag)
@@ -88,17 +91,22 @@ class joint_damage_type_dataset(dream_dataset):
         return outcome_column
     
     def _get_joint_damage_type_dataset(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns):
-        dataset = self._create_joint_damage_type_dataset(outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, self.cache)
+        outcome_joint_df = self._create_joint_damage_type_outcome_df(outcomes_source, joints_source, outcome_mapping, parts, outcome_columns)
+        
+        dataset = self._create_joint_damage_type_dataset(outcome_joint_df, outcome_columns, self.cache)
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
         
         return dataset
-
-    def _create_joint_damage_type_dataset(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, cache):
+    
+    def _create_joint_damage_type_outcome_df(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts)
         outcome_joint_df = outcome_joint_df.dropna(subset = outcome_columns)
         
-        outcome_joint_df = outcome_joint_df.sample(frac = 1).reset_index(drop = True)
+        return outcome_joint_df
 
+    def _create_joint_damage_type_dataset(self, outcome_joint_df, outcome_columns, cache):
+        outcome_joint_df = outcome_joint_df.sample(frac = 1).reset_index(drop = True)
+        
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
 
         outcomes = outcome_joint_df[outcome_columns]

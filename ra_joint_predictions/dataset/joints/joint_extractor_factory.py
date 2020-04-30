@@ -18,24 +18,16 @@ combined_narrowing_height_scales = {
     'mtp_5': 0.9,
 }
 
-def get_joint_extractor(joint_type, erosion_flag):
+def get_joint_extractor(joint_type, erosion_flag):    
     extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5., key_joint_scales = combined_narrowing_key_joint_scales, key_height_scales = combined_narrowing_height_scales)
     
-    if joint_type == 'H' and not erosion_flag:
+    if joint_type == 'H':
         extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5.)
-    elif joint_type == 'F' and not erosion_flag:
-        extractor = joint_extractor.width_based_joint_extractor(joint_scale = 4., height_scale = 0.9, key_joint_scales = {'mtp': 3., 'mtp_1': 3.})
-    elif joint_type == "H" and erosion_flag:
-        # extractor = joint_extractor.width_based_joint_extractor(joint_scale = 4.5, height_scale = 1.2)
-        extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5.)
-    elif joint_type == "F" and erosion_flag:
-        # extractor = joint_extractor.width_based_joint_extractor(joint_scale = 4.2, height_scale = 1.2, key_joint_scales = {"mtp":3.2,"mtp_1":3.2}, key_height_scales = {})
+    elif joint_type == 'F':
         extractor = joint_extractor.width_based_joint_extractor(joint_scale = 4., height_scale = 0.9, key_joint_scales = {'mtp': 3., 'mtp_1': 3.})
     elif joint_type == 'RSNA' and not erosion_flag:
         extractor = joint_extractor.width_based_joint_extractor(joint_scale = 6.5)
     elif joint_type == "RSNA" and erosion_flag:
         extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5., height_scale = 1.2, key_joint_scales = {}, key_height_scales = {})
-    elif joint_type == 'HF' and not erosion_flag:
-        extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5., key_joint_scales = combined_narrowing_key_joint_scales, key_height_scales = combined_narrowing_height_scales)
     
     return extractor

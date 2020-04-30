@@ -3,7 +3,7 @@ import tensorflow.keras as keras
 import tensorflow.keras.backend as K
 
 class AdamWWarmRestartCallback(keras.callbacks.Callback):
-    def __init__(self, restart_epochs = 50):
+    def __init__(self, restart_epochs = 100):
         super().__init__()
         
         self.restart_epochs = restart_epochs
