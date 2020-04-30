@@ -14,13 +14,18 @@ class joint_damage_type_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.apply_clahe = apply_clahe
         self.repeat_test = repeat_test
+        
+        self.n_negatives = 0
+        self.n_positives = 0
+        self.N = 0
+        self.outcomes = np.array([])
 
     def get_hands_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.cache = self.cache + '_hands'
         
         outcome_column = self._get_outcome_column(erosion_flag)
 
-        return self._create_joint_damage_dataset(outcomes_source, joints_source, joint_dataset.hand_outcome_mapping, joint_dataset.dream_hand_parts, [outcome_column])
+        return self._get_joint_damage_type_dataset(outcomes_source, joints_source, joint_dataset.hand_outcome_mapping, joint_dataset.dream_hand_parts, [outcome_column])
 
     def get_hands_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_train_v2.csv', joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_hands_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
@@ -37,7 +42,7 @@ class joint_damage_type_dataset(dream_dataset):
         
         outcome_column = self._get_outcome_column(erosion_flag)
 
-        return self._create_joint_damage_dataset(outcomes_source, joints_source, joint_dataset.foot_outcome_mapping, joint_dataset.dream_foot_parts, [outcome_column])
+        return self._get_joint_damage_type_dataset(outcomes_source, joints_source, joint_dataset.foot_outcome_mapping, joint_dataset.dream_foot_parts, [outcome_column])
 
     def get_feet_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_train_v2.csv', joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
         dataset = self.get_feet_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
@@ -81,31 +86,29 @@ class joint_damage_type_dataset(dream_dataset):
             self.cache = self.cache + '_narrowing'
 
         return outcome_column
+    
+    def _get_joint_damage_type_dataset(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns):
+        dataset = self._create_joint_damage_type_dataset(outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, self.cache)
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+        
+        return dataset
 
-    def _create_joint_damage_dataset(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns):
+    def _create_joint_damage_type_dataset(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, cache):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts)
         outcome_joint_df = outcome_joint_df.dropna(subset = outcome_columns)
-
-        return self._create_joint_damage_type_dataset(outcome_joint_df, outcome_columns)
-
-    def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts):
-        outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)
-        joints_df = self._create_intermediate_joints_df(joints_source, outcome_mapping.keys())
-
-        return outcomes_df.merge(joints_df, on = ['image_name', 'key'])
-
-    def _create_joint_damage_type_dataset(self, outcome_joint_df, outcome_column):
+        
         outcome_joint_df = outcome_joint_df.sample(frac = 1).reset_index(drop = True)
 
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
 
-        outcomes = outcome_joint_df[outcome_column]
+        outcomes = outcome_joint_df[outcome_columns]
         maj_idx = outcomes == 0
         
-        self.n_negatives = np.count_nonzero(maj_idx)
-        self.n_positives = maj_idx.shape[0] - self.n_negatives
+        self.n_negatives += np.count_nonzero(maj_idx)
+        self.n_positives += maj_idx.shape[0] - np.count_nonzero(maj_idx)
+        self.N += maj_idx.shape[0]
         
-        self.outcomes = outcomes
+        self.outcomes = np.append(self.outcomes, outcomes)
         
         self.alpha = np.count_nonzero(maj_idx) / maj_idx.shape[0]
         
@@ -115,13 +118,19 @@ class joint_damage_type_dataset(dream_dataset):
         
         coords = outcome_joint_df[['coord_x', 'coord_y']].to_numpy()
 
-        return self._create_dataset(file_info, coords, joint_damage_type_outcome, maj_idx)
+        return self._create_dataset(file_info, coords, joint_damage_type_outcome, cache)
+    
+    def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts):
+        outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)
+        joints_df = self._create_intermediate_joints_df(joints_source, outcome_mapping.keys())
 
-    def _create_dataset(self, file_info, joint_coords, outcomes, maj_idx):
+        return outcomes_df.merge(joints_df, on = ['image_name', 'key'])
+
+    def _create_dataset(self, file_info, joint_coords, outcomes, cache):
         dataset = self._create_joint_dataset(file_info, joint_coords, outcomes)
-        dataset = self._cache_shuffle_repeat_dataset(dataset, self.cache, buffer_size = outcomes.shape[0])
+        dataset = self._cache_shuffle_repeat_dataset(dataset, cache, buffer_size = outcomes.shape[0])
 
-        return self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+        return dataset
 
     def _create_test_dataset(self):
         return joint_test_dataset(self.config, self.image_dir, model_type = 'DT', pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe, repeat = self.repeat_test)

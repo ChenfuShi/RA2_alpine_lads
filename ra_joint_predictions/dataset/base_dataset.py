@@ -226,17 +226,7 @@ class dream_dataset(joint_dataset):
         if is_train:
             self._init_model_outcomes_bias(outcomes, no_classes)
 
-        tf_dummy_outcomes = None
-        tf_outcomes = None
-
-        if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
-            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
-        elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
-            tf_outcomes = outcomes.to_numpy(dtype = np.float64)
-            self.outcomes = tf_outcomes
-        elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
-            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
-            tf_outcomes = outcomes.to_numpy()
+        tf_dummy_outcomes, tf_outcomes = self._get_outcomes(outcomes, no_classes)
         
         if wrist:
             coords = outcome_joint_df[['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']].values
@@ -252,6 +242,21 @@ class dream_dataset(joint_dataset):
 
     def _find_maj_indices(self, outcomes):
         return outcomes == 0
+    
+    def _get_outcomes(self, outcomes, no_classes):
+        tf_dummy_outcomes = None
+        tf_outcomes = None
+        
+        if self.model_type == joint_damage_model.MODEL_TYPE_CLASSIFICATION:
+            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+        elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
+            tf_outcomes = outcomes.to_numpy(dtype = np.float64)
+            self.outcomes = tf_outcomes
+        elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:
+            tf_dummy_outcomes = self._dummy_encode_outcomes(outcomes, no_classes)
+            tf_outcomes = outcomes.to_numpy()
+            
+        return tf_dummy_outcomes, tf_outcomes
 
     def _create_interleaved_joint_datasets(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
         if self.split_type == 'balanced':

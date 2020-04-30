@@ -13,7 +13,7 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from model.utils.keras_nasnet import NASNet
-from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu, relu_joint_res_net
+from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu, relu_joint_res_net, complex_rewritten
 
 def create_rewritten_elu(config):
 
@@ -26,7 +26,6 @@ def create_rewritten_elu(config):
     return _add_common(common_part,"rewritten_elu_NIH",inputs)
 
 def create_complex_joint_multioutput(config):
-
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
 
     # create new model with common part
@@ -36,14 +35,13 @@ def create_complex_joint_multioutput(config):
 
 
 def create_rewritten_complex_joint_multioutput(config):
-
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
 
     # create new model with common part
-    base_net = rewritten_complex(config)
+    base_net = rewritten_complex(config, decay = None, use_dense = False)
     common_part = base_net(inputs)
 
-    return _add_common(common_part,"complex_rewritten_multiout_NIH",inputs)
+    return _add_common(common_part,"complex_rewritten_gap_NIH",inputs)
 
 
 def create_bigger_kernel_multioutput(config):
@@ -234,13 +232,11 @@ def create_NASnet_7x1920_multioutupt(config):
 
 def create_relu_joint_res_net(config):
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
-    model = relu_joint_res_net(inputs)
+    model = complex_rewritten(inputs, decay = None, use_dense = False)
     
-    decay_steps = 100 * 1000
-    learning_rate_decay = keras.experimental.CosineDecay(1e-2, decay_steps, alpha = 0.1)
-    optimizer = keras.optimizers.SGD(learning_rate = learning_rate_decay, momentum = 0.9)
+    optimizer = keras.optimizers.Adam(learning_rate = 3e-4)
     
-    model = _add_common(model, 'relu_joint_res_net_NIH_sgd', inputs, optimizer = optimizer)
+    model = _add_common(model, 'complex_gap_nih', inputs, optimizer = optimizer)
     
     return model
 

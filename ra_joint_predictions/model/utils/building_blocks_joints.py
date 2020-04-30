@@ -57,7 +57,7 @@ def _vvg_conv_block(input, n_filters, block_prefix, initializer, kernel_regulari
 
 def _vvg_fc_block(input, n_neurons, block_prefix, initializer = 'glorot_uniform', kernel_regularizer = None):
     fc = keras.layers.Dense(n_neurons, kernel_initializer = initializer, kernel_regularizer = kernel_regularizer, name = block_prefix + '_fc')(input)
-    fc = keras.layers.ReLU()(fc)
+    fc = keras.layers.ReLU(name = block_prefix + '_relu')(fc)
     fc = keras.layers.BatchNormalization(name = block_prefix + '_batch')(fc)
     fc = keras.layers.Dropout(0.5, name = block_prefix + '_dropout')(fc)
 

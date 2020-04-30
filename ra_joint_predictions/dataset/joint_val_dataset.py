@@ -1,4 +1,4 @@
-from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset, combined_joint_dataset
+from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset, combined_joint_dataset, mixed_joint_dataset
 from dataset.test_dataset import joint_test_dataset, combined_test_dataset
 
 class hands_joints_val_dataset(hands_joints_dataset):
@@ -58,3 +58,23 @@ class combined_joint_val_dataset(combined_joint_dataset):
             feet_joints_source = feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
 
         return dataset, val_dataset, val_no_samples
+    
+class mixed_joint_val_dataset(mixed_joint_dataset):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, joint_type = 'HF', split_type = None):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, joint_type = joint_type, split_type = split_type)
+        
+    def create_mixed_joint_val_dataset_with_validation(self, outcomes_source, 
+            hand_joints_source = './data/predictions/hand_joint_data_train_v2.csv', hand_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv', 
+            feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv', feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv', erosion_flag = False):
+        
+        dataset = self.create_mixed_joint_dataset(outcomes_source, hand_joints_source = hand_joints_source, feet_joints_source = feet_joints_source, erosion_flag = erosion_flag)
+        
+        if self.is_main_hand:
+            val_dataset, val_no_samples = self._create_test_dataset().get_hands_joint_test_dataset(joints_source = hand_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        else:
+            val_dataset, val_no_samples = self._create_test_dataset().get_feet_joint_test_dataset(joints_source = feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag, divide_by_two = True)
+            
+        return dataset, val_dataset, val_no_samples
+            
+    def _create_test_dataset(self):
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor) 

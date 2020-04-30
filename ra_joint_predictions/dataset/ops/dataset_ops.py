@@ -11,7 +11,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 default_augments = [
     {
         'augment': img_ops.random_flip,
-        'p': 1.
+        'p': 1
     },
     {
         'augment': img_ops.random_brightness_and_contrast

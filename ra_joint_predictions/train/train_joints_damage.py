@@ -11,7 +11,7 @@ import tensorflow.keras.backend as K
 
 import dataset.joint_dataset as joint_dataset
 
-from dataset.joint_val_dataset import hands_joints_val_dataset, hands_wrists_val_dataset, feet_joint_val_dataset, combined_joint_val_dataset
+from dataset.joint_val_dataset import hands_joints_val_dataset, hands_wrists_val_dataset, feet_joint_val_dataset, combined_joint_val_dataset, mixed_joint_val_dataset
 from dataset.test_dataset import joint_test_dataset
 from dataset.joints.joint_extractor_factory import get_joint_extractor
 from model.joint_damage_model import get_joint_damage_model, load_minority_model
@@ -22,7 +22,7 @@ from train.utils.callbacks import AdamWWarmRestartCallback
 train_params = {
     'epochs': 300,
     'batch_size': 64,
-    'steps_per_epoch': 240,
+    'steps_per_epoch': 115,
     'split_type': 'balanced',
     'lr': 3e-4,
     'wd': 1e-6
@@ -34,29 +34,32 @@ finetune_params = {
     'steps_per_epoch': 160
 }
 
-def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R'):
-    logging.info(f'Training model with joint_type: {joint_type} - dmg_type: {dmg_type}')
+def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R', is_combined = False):
+    logging.info(f'Training model with joint_type: {joint_type} - dmg_type: {dmg_type} - model_type: {model_type}')
     
     params = train_params.copy()
     
     has_outputs = False
     
     if joint_type == 'H' and dmg_type == 'J':
-        params['steps_per_epoch'] = 130
+        params['steps_per_epoch'] = 105
     elif joint_type == 'F' and dmg_type == 'E':
-        params['steps_per_epoch'] = 130
+        params['steps_per_epoch'] = 70
+        params['lr'] = 1e-3
     elif joint_type == 'F' and dmg_type == 'J':
-        params['steps_per_epoch'] = 120
+        params['steps_per_epoch'] = 70
+    elif joint_type == 'HF':
+        params['steps_per_epoch'] = 75
         # has_outputs = True
-    elif joint_type == 'HF' and dmg_type == 'J':
-        params['steps_per_epoch'] = 175
+    elif joint_type == 'FH':
+        params['steps_per_epoch'] = 85
     elif joint_type == 'W':
         params['steps_per_epoch'] = 90
         params['lr'] = 1e-3
         params['split_type'] = None
         params['is_wrist'] = True
      
-    joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'])
+    joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'], is_combined = is_combined)
     
     logging.info('Class Weights: %s', joint_dataset.class_weights)
     
@@ -90,7 +93,7 @@ def finetune_minority_model(config, model_name, minority_model, joint_type, dmg_
     
     return _fit_joint_damage_model(model, model.name + '_finetune', tf_joint_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples)
 
-def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False, split_type = None):
+def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False, split_type = None, is_combined = False):
     outcomes_source = os.path.join(config.train_location, 'training.csv')
     
     apply_clahe = False
@@ -102,36 +105,41 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
     erosion_flag = dmg_type == 'E'
     
     df_joint_extractor = get_joint_extractor(joint_type, erosion_flag)
+    
+    if not is_combined:
+        if joint_type == 'F':
+            joint_dataset = feet_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, split_type = split_type)
 
-    if joint_type == 'F':
-        joint_dataset = feet_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, split_type = split_type)
+            if do_validation:
+                tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_feet_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            else:
+                tf_dataset = joint_val_dataset.create_feet_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        elif joint_type == 'H':
+            joint_dataset = hands_joints_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, imagenet = False, split_type = split_type)
 
-        if do_validation:
-            tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_feet_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-        else:
-            tf_dataset = joint_val_dataset.create_feet_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-    elif joint_type == 'H':
-        joint_dataset = hands_joints_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, imagenet = False, split_type = split_type)
+            if do_validation:
+                tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_hands_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            else:
+                tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        elif joint_type == 'W':
+            joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = False)
+
+            if do_validation:
+                tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_wrists_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            else:
+                tf_dataset = joint_dataset.create_wrists_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+
+        elif joint_type == 'HF' and not erosion_flag:
+            joint_dataset = combined_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor)
+
+            if do_validation:
+                tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_combined_joint_dataset_with_validation(outcomes_source)
+            else:
+                tf_dataset = joint_dataset.create_combined_joint_dataset(outcomes_source = outcomes_source)      
+    else:
+        joint_dataset = mixed_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, joint_type = joint_type, split_type = split_type)
         
-        if do_validation:
-            tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_hands_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-        else:
-            tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-    elif joint_type == 'W':
-        joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = False)
-
-        if do_validation:
-            tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_wrists_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-        else:
-            tf_dataset = joint_dataset.create_wrists_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
-
-    elif joint_type == 'HF' and not erosion_flag:
-        joint_dataset = combined_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor)
-
-        if do_validation:
-            tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_combined_joint_dataset_with_validation(outcomes_source)
-        else:
-            tf_dataset = joint_dataset.create_combined_joint_dataset(outcomes_source = outcomes_source)
+        tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_mixed_joint_val_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
             
     return joint_dataset, tf_dataset, tf_val_dataset, no_val_samples
 

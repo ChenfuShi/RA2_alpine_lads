@@ -96,7 +96,7 @@ def create_vgg_rsna_model(config, name, no_joint_types = 13):
 
 def create_complex(config, name, no_joint_types = 13):
     input_layer = get_joint_model_input(config)
-    model = complex_rewritten(input_layer, decay = None)
+    model = complex_rewritten(input_layer, decay = None, use_dense = False)
     
     boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
     sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)

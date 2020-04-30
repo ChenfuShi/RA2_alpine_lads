@@ -4,7 +4,7 @@ import tensorflow_addons as tfa
 
 from keras_adamw import AdamW, get_weight_decays, fill_dict_in_order
 
-from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model, complex_rewritten
+from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model, complex_rewritten, _vvg_fc_block
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric, softmax_mae_metric, softmax_rmse_metric, class_filter_softmax_rmse_metric
 from model.utils.layers import ReLUOutput
 from model.utils.losses import softmax_focal_loss, pseudo_huber_loss
@@ -75,7 +75,7 @@ def _get_base_model(config, pretrained_model_file):
         return pretrained_model.input, pretrained_model.output
     else:
         input = get_joint_model_input(config)
-        base_model = complex_rewritten(input, decay = None)
+        base_model = complex_rewritten(input, decay = None, use_dense = False)
 
         return input, base_model
 
@@ -83,19 +83,13 @@ def _add_outputs(class_weights, base_output, model_type, is_wrist):
     metrics_dir = {}
     outputs = []
     
+    # base_output = _vvg_fc_block(base_output, 256, 'output_fc_1', initializer = 'he_uniform')
+    
     for idx, class_weight in enumerate(class_weights):
         no_outcomes = len(class_weight.keys())
 
         if 'R' in model_type:
-            if is_wrist:
-                req_output = keras.layers.Dense(32, name = f'output_{idx}_fc')(base_output)
-                req_output = keras.layers.ReLU(name = f'output_{idx}_relu')(req_output)
-                req_output = keras.layers.BatchNormalization(name = f'output_{idx}_bn')(req_output)
-                req_output = keras.layers.Dropout(0.5, name = f'output_{idx}_dropout')(req_output)
-            else:
-                req_output = base_output
-            
-            req_output = keras.layers.Dense(1, activation = 'linear', name = f'reg_output_{idx}')(req_output)
+            req_output = keras.layers.Dense(1, activation = 'linear', name = f'reg_output_{idx}')(base_output)
             outputs.append(req_output)
             
             max_outcome = max(class_weight.keys())
@@ -117,6 +111,8 @@ def _get_optimizier(model, params):
     steps_per_epoch = params['steps_per_epoch']
     lr = params['lr']
     wd = params['wd']
+
+    lr_mul = {'_conv_': 1/3}
     
     weight_decays = {}
     

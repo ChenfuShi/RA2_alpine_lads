@@ -16,7 +16,7 @@ train_params = {
     'epochs': 75,
     'batch_size': 64,
     'restart_epochs': 0,
-    'lr': 1e-3,
+    'lr': 3e-4,
     'wd': 1e-6
 }
 
@@ -40,7 +40,6 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
     
     # Normalize steps to always pass through the dataset exactly once per epoch
     steps_per_epoch = np.ceil(N / batch_size)
-    steps_per_epoch = 90
     params['steps_per_epoch'] = steps_per_epoch
 
     model = get_joint_damage_type_model(config, params, pretrained_model, model_name = model_name, alpha = alpha, init_bias = init_bias)
@@ -76,7 +75,7 @@ def _get_dataset(config, joint_type, dmg_type, do_validation):
         else:
             tf_dataset = dataset.get_combined_joint_damage_type_dataset(outcomes_source, erosion_flag = erosion_flag)
 
-    N = dataset.outcomes.shape[0]
+    N = dataset.N
     alpha = dataset.alpha
     init_bias = np.log(dataset.n_positives/dataset.n_negatives)
             

@@ -60,8 +60,10 @@ def class_filter_softmax_rmse_metric(classes, class_filter):
     return class_filter_softmax_rmse
     
 # RMSE for Regression Task
-def rmse_metric(max_outcome):
+def rmse_metric(max_outcome, offset_factor = 1):
     def rmse(y_true, y_pred):
+        y_pred = y_pred * offset_factor
+        
         y_pred = K.maximum(y_pred, tf.constant(0, tf.float32))
         y_pred = K.minimum(y_pred, tf.constant(max_outcome, tf.float32))
     
@@ -69,8 +71,10 @@ def rmse_metric(max_outcome):
     
     return rmse
 
-def mae_metric(max_outcome):
+def mae_metric(max_outcome, offset_factor = 1):
     def mae(y_true, y_pred):
+        y_pred = y_pred * offset_factor
+        
         y_pred = K.maximum(y_pred, tf.constant(0, tf.float32))
         y_pred = K.minimum(y_pred, tf.constant(max_outcome, tf.float32))
     
@@ -78,10 +82,12 @@ def mae_metric(max_outcome):
     
     return mae
     
-def class_filter_rmse_metric(max_outcome, class_filter):
+def class_filter_rmse_metric(max_outcome, class_filter, offset_factor = 1):
     rmse_calc = rmse_metric(max_outcome)
     
     def class_filter_rmse(y_true, y_pred):
+        y_pred = y_pred * offset_factor
+        
         idx = tf.where(tf.math.not_equal(tf.cast(class_filter, K.floatx()), y_true))
  
         true = tf.gather(y_true, idx)

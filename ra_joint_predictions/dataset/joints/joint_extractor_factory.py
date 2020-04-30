@@ -19,7 +19,7 @@ combined_narrowing_height_scales = {
 }
 
 def get_joint_extractor(joint_type, erosion_flag):
-    extractor = joint_extractor.default_joint_extractor()
+    extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5., key_joint_scales = combined_narrowing_key_joint_scales, key_height_scales = combined_narrowing_height_scales)
     
     if joint_type == 'H' and not erosion_flag:
         extractor = joint_extractor.width_based_joint_extractor(joint_scale = 5.)

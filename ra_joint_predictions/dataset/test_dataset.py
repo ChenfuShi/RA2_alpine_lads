@@ -22,6 +22,7 @@ class joint_test_dataset(dream_dataset):
         self.pad_resize = pad_resize
         self.apply_clahe = apply_clahe
         self.repeat = repeat
+        self.divide_erosion_by_2 = False
         
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if erosion_flag is False:
@@ -43,11 +44,12 @@ class joint_test_dataset(dream_dataset):
         
         return self._create_joint_dataset(joints_source, joint_dataset.wrist_outcome_mapping, outcomes_source, params, load_wrists = True)
         
-    def get_feet_joint_test_dataset(self, joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
+    def get_feet_joint_test_dataset(self, joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = None, erosion_flag = None, divide_by_two = False):
         if erosion_flag is False:
             params = joint_dataset.feet_narrowing_params
         elif erosion_flag is True:
             params = joint_dataset.feet_erosion_params
+            self.divide_erosion_by_2 = divide_by_two
         else: 
             params = None
         
@@ -133,6 +135,9 @@ class joint_test_dataset(dream_dataset):
                 outcomes = tf_dummy_outcomes
             elif self.model_type == joint_damage_model.MODEL_TYPE_REGRESSION:
                 tf_outcomes = outcomes.to_numpy()
+                
+                if self.divide_erosion_by_2:
+                    tf_outcomes = tf_outcomes / 2
 
                 outcomes = tf_outcomes
             elif self.model_type == joint_damage_model.MODEL_TYPE_COMBINED:

@@ -83,10 +83,13 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, divide_erosion_by_2 = False):
         super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
 
         self.image_dir = config.train_fixed_location
+        
+        self.maj_ratio = 0.15
+        self.divide_erosion_by_2 = divide_erosion_by_2
 
     def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
         self.erosion_flag = erosion_flag
@@ -109,12 +112,22 @@ class feet_joint_dataset(dream_dataset):
         
         return idx_groups
     
+    def _get_outcomes(self, outcomes, no_classes):
+        tf_dummy_outcomes, tf_outcomes = super()._get_outcomes(outcomes, no_classes)
+        
+        if self.erosion_flag and self.divide_erosion_by_2:
+            tf_outcomes = tf_outcomes / 2
+            
+        return tf_dummy_outcomes, tf_outcomes
+    
 class hands_joints_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
         super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
 
         self.image_dir = config.train_fixed_location
         self.apply_clahe = apply_clahe
+        
+        self.maj_ratio = 0.15
         
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.erosion_flag = erosion_flag
@@ -172,6 +185,41 @@ class hands_wrists_dataset(dream_dataset):
             return x, (split_y[0], split_y[1], split_y[2], split_y[3], split_y[4], split_y[5])
 
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
+    
+class mixed_joint_dataset(dream_dataset):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, joint_type = 'HF'):
+        super().__init__(config, 'mixed_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+        
+        self.joint_type = 'HF'
+        self.is_main_hand = joint_type.startswith('H')
+        
+        if self.is_main_hand:
+            self.main_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+            self.sec_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = 'minority', divide_erosion_by_2 = True)
+        else:
+            self.main_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, divide_erosion_by_2 = True)
+            self.sec_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = 'balanced')
+            
+        self.maj_ratio = 0.8
+        
+    def create_mixed_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
+        if self.is_main_hand:
+            main_ds = self.main_ds.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
+            sec_ds = self.sec_ds.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag) 
+        else:
+            main_ds = self.main_ds.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)
+            sec_ds = self.sec_ds.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
+            
+        main_ds = main_ds.unbatch()
+        sec_ds = sec_ds.unbatch()
+        
+        dataset = tf.data.experimental.sample_from_datasets((main_ds, sec_ds), [self.maj_ratio, 1 - self.maj_ratio]) 
+        
+        dataset = dataset.batch(64)
+        
+        self.class_weights = self.main_ds.class_weights
+        
+        return dataset
 
 class combined_joint_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
@@ -180,8 +228,8 @@ class combined_joint_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.no_classes = 5
         
-        self.hands_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
-        self.feet_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = None)
+        self.hands_dataset = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = 'balanced')
+        self.feet_dataset = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
 
     def create_combined_joint_dataset(self, outcomes_source, hand_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
         if erosion_flag:
@@ -194,20 +242,8 @@ class combined_joint_dataset(dream_dataset):
             self.outcome_columns = ['narrowing_0']
             self.cache = self.cache + '_narrowing'
            
-        # combined_joint_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
-        # dataset = self._create_dream_dataset(combined_joint_df, self.outcome_columns, self.no_classes, cache = self.cache)
-    
-        hands_ds = self.hands_dataset.create_hands_joints_dataset(outcomes_source, joints_source = hand_joints_source, erosion_flag = erosion_flag)
-        feet_ds = self.feet_dataset.create_feet_joints_dataset(outcomes_source, joints_source = feet_joints_source, erosion_flag = erosion_flag)    
-        
-        hands_ds = hands_ds.unbatch()
-        feet_ds = feet_ds.unbatch()
-        
-        dataset = tf.data.experimental.sample_from_datasets((hands_ds, feet_ds)) 
-        
-        dataset = dataset.batch(64)
-        
-        self.class_weights = self.hands_dataset.class_weights
+        combined_joint_df = self._create_combined_df(outcomes_source, hand_joints_source, feet_joints_source)
+        dataset = self._create_dream_dataset(combined_joint_df, self.outcome_columns, self.no_classes, cache = self.cache)
         
         return dataset
 
