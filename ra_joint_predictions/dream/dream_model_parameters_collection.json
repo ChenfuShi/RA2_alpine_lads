@@ -1,15 +1,15 @@
 {
     "hands_narrowing_model": 
         { 
-            "model": "../resources/hands_narrowing_joint_damage_model_complex_rewritten_gap_64bs_140steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_02feet.h5", 
+            "model": "../resources/hands_narrowing_complex_rewritten_150steps_300epochs_adamW_3e4_1e6_fully_balanced_020feet_10holdout.h5", 
             "no_outcomes": 1, 
             "no_classes": 5, 
             "model_type": "R",
-            "damage_type_model": "../resources/narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps.h5", 
+            "damage_type_model": "../resources/hands_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_010holdout.h5", 
             "damage_type_cutoff": 0.1
         },
     "wrists_narrowing_model": { 
-            "model": "../resources/wrists_narrowing_joint_damage_model_complex_rewritten_64bs_90steps_300epochs_adamW_1e3_1e6_fullwd_05maj.h5", 
+            "model": "../resources/wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_010holdout.h5", 
             "no_outcomes": 6, 
             "no_classes": 5, 
             "is_wrist": true, 
@@ -17,25 +17,25 @@
         },
     "feet_narrowing_model": 
         { 
-            "model": "../resources/feet_narrowing_joint_damage_model_complex_rewritten_gap_64bs_90steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_02hands.h5", 
+            "model": "../resources/feet_narrowing_complex_rewritten_120steps_300epochs_adamW_3e4_1e6_fully_balanced_020feet_10holdout.h5", 
             "no_outcomes": 1, 
             "no_classes": 5, 
             "model_type": "R",
-            "damage_type_model": "../resources/narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps.h5", 
+            "damage_type_model": "../resources/feet_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_010holdout.h5", 
             "damage_type_cutoff": 0.1
         },
     "hands_erosion_model": 
         { 
-            "model": "../resources/hands_erosion_joint_damage_model_complex_rewritten_gap_64bs_130steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_02hands.h5", 
+            "model": "../resources/hands_erosion_complex_rewritten_150steps_300epochs_adamW_3e4_1e6_balanced_020feet_10holdout.h5", 
             "no_outcomes": 1, 
             "no_classes": 6, 
             "model_type": "R",
-            "damage_type_model": "../resources/erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps.h5", 
+            "damage_type_model": "../resources/hands_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_010holdout.h5", 
             "damage_type_cutoff": 0.1
         },
     "wrists_erosion_model": 
         { 
-            "model": "../resources/wrists_erosion_joint_damage_model_complex_rewritten_64bs_90steps_300epochs_adamW_1e3_1e6_fullwd_05maj.h5", 
+            "model": "../resources/wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_010holdout.h5", 
             "no_outcomes": 6, 
             "no_classes": 6, 
             "is_wrist": true, 
@@ -43,11 +43,11 @@
         },
     "feet_erosion_model": 
         { 
-            "model": "../resources/feet_erosion_joint_damage_model_complex_rewritten_gap_64bs_120steps_300epochs_adamW_3e4_1e6_fullwd_balanced.h5", 
+            "model": "../resources/feet_erosion_complex_rewritten_150steps_300epochs_adamW_3e4_1e6_balanced_010holdout_02hands_double.h5", 
             "no_outcomes": 1, 
             "no_classes": 11, 
             "model_type": "R",
-            "damage_type_model": "../resources/erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps.h5", 
+            "damage_type_model": "../resources/feet_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_010holdout.h5", 
             "damage_type_cutoff": 0.1
         }
 }

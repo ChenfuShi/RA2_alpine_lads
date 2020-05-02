@@ -17,16 +17,9 @@ from dataset.joints.joint_extractor_factory import get_joint_extractor
 from model.joint_damage_model import get_joint_damage_model, load_minority_model
 from utils.saver import CustomSaver, _get_tensorboard_callback
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric
-from train.utils.callbacks import AdamWWarmRestartCallback
 
-train_params = {
-    'epochs': 300,
-    'batch_size': 64,
-    'steps_per_epoch': 115,
-    'split_type': 'balanced',
-    'lr': 3e-4,
-    'wd': 1e-6
-}
+from train.train_config import joint_damage_train_params
+from train.utils.callbacks import AdamWWarmRestartCallback
 
 finetune_params = {
     'epochs': 50,
@@ -34,36 +27,16 @@ finetune_params = {
     'steps_per_epoch': 160
 }
 
-def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R', is_combined = False):
+def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R'):
     logging.info(f'Training model with joint_type: {joint_type} - dmg_type: {dmg_type} - model_type: {model_type}')
     
-    params = train_params.copy()
-    
-    has_outputs = False
-    
-    if joint_type == 'H' and dmg_type == 'J':
-        params['steps_per_epoch'] = 105
-    elif joint_type == 'F' and dmg_type == 'E':
-        params['steps_per_epoch'] = 70
-        params['lr'] = 1e-3
-    elif joint_type == 'F' and dmg_type == 'J':
-        params['steps_per_epoch'] = 70
-    elif joint_type == 'HF':
-        params['steps_per_epoch'] = 75
-        # has_outputs = True
-    elif joint_type == 'FH':
-        params['steps_per_epoch'] = 85
-    elif joint_type == 'W':
-        params['steps_per_epoch'] = 90
-        params['lr'] = 1e-3
-        params['split_type'] = None
-        params['is_wrist'] = True
+    params = _get_train_params(joint_type, dmg_type)
      
-    joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'], is_combined = is_combined)
+    joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'])
     
     logging.info('Class Weights: %s', joint_dataset.class_weights)
     
-    model = get_joint_damage_model(config, joint_dataset.class_weights, params, pretrained_model_file = pretrained_model, model_name = model_name, model_type = model_type, has_outputs = has_outputs)
+    model = get_joint_damage_model(config, joint_dataset.class_weights, params, pretrained_model_file = pretrained_model, model_name = model_name, model_type = model_type)
 
     return _fit_joint_damage_model(model, model.name, non0_tf_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples)
 
@@ -93,7 +66,12 @@ def finetune_minority_model(config, model_name, minority_model, joint_type, dmg_
     
     return _fit_joint_damage_model(model, model.name + '_finetune', tf_joint_dataset, joint_dataset.class_weights, params, tf_joint_val_dataset, no_val_samples)
 
-def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False, split_type = None, is_combined = False):
+def _get_train_params(joint_type, dmg_type):
+    key = f'{joint_type}-{dmg_type}'
+
+    return joint_damage_train_params[key]
+
+def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False, split_type = None):
     outcomes_source = os.path.join(config.train_location, 'training.csv')
     
     apply_clahe = False
@@ -106,7 +84,9 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
     
     df_joint_extractor = get_joint_extractor(joint_type, erosion_flag)
     
-    if not is_combined:
+    is_mixed = joint_type.startswith('M')
+    
+    if not is_mixed:
         if joint_type == 'F':
             joint_dataset = feet_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, split_type = split_type)
 
@@ -146,6 +126,8 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
 def _fit_joint_damage_model(model, model_name, tf_joint_dataset, class_weights, params, tf_joint_val_dataset = None, no_val_samples = 0):
     saver = CustomSaver(model_name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model_name)
+    
+    wr_callback = AdamWWarmRestartCallback()
     
     logging.info('_fit_joint_damage_model params %s', params)
     

@@ -308,6 +308,9 @@ class dream_dataset(joint_dataset):
         return dataset
     
     def _create_fully_balanced_dataset(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
+        if self.model_type == 'C':
+            outcomes = dummy_outcomes
+
         idx_groups = self._get_idx_groups(outcomes)
         
         datasets = []
@@ -315,7 +318,7 @@ class dream_dataset(joint_dataset):
         for n, idx_group in enumerate(idx_groups):
             idx = np.where(idx_group)[0]
             
-            ds_outcomes = outcomes[idx]
+            ds_outcomes = outcomes[idx, :]
             ds = self._create_joint_dataset(file_info[idx, :], joint_coords[idx], ds_outcomes, wrist = wrist)
             ds = self._cache_shuffle_repeat_dataset(ds, self.cache + str(n), buffer_size = idx.shape[0])
             

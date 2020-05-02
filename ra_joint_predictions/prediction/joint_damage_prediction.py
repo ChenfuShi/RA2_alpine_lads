@@ -9,6 +9,10 @@ from dataset.ops.dataset_ops import _augment_and_clip_image
 
 pred_augments = [
     {
+        'augment': img_ops.random_flip,
+        'p': 1
+    },
+    {
         'augment': img_ops.random_brightness_and_contrast
     },
     {
@@ -49,7 +53,7 @@ class predictor():
     def __init__(self, model_file, no_outcomes = 1, is_wrist = False, prediction_transformer = _default_transformation):
         self.model_file = model_file
         self.no_outcomes = no_outcomes
-        self.is_wrist = False
+        self.is_wrist = is_wrist
         self.prediction_transformer = prediction_transformer
 
         self._init_model()
@@ -59,7 +63,7 @@ class predictor():
 
         predicted_joint_damage = np.zeros(self.no_outcomes)
         y_preds = self.model.predict(img)
-
+        
         for n in range(self.no_outcomes):
             y_pred = y_preds[n][0]
 
@@ -140,7 +144,12 @@ class augmented_predictor():
         self.aggregator = aggregator
         self.rounding_cutoff = rounding_cutoff
         
-        self.augments = img_ops.create_augments(pred_augments)
+        augments = pred_augments
+        
+        if base_predictor.is_wrist:
+            augments = augments[1:]
+        
+        self.augments = img_ops.create_augments(augments)
 
     def predict_joint_damage(self, img):
         preds = np.zeros((self.no_augments + 1, self.base_predictor.no_outcomes))

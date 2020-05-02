@@ -16,7 +16,7 @@ MODEL_TYPE_COMBINED = "RC"
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_model(config, class_weights, params, pretrained_model_file = None, model_name = 'joint_damage_model', model_type = 'R', has_outputs = False,):
+def get_joint_damage_model(config, class_weights, params, pretrained_model_file = None, model_name = 'joint_damage_model', model_type = 'R', has_outputs = False):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
     outputs, metrics_dir = _add_outputs(class_weights, base_ouptut, model_type, params.get('is_wrist', False))
@@ -32,7 +32,7 @@ def get_joint_damage_model(config, class_weights, params, pretrained_model_file 
     optimizer = _get_optimizier(joint_damage_model, params)
 
     if model_type == MODEL_TYPE_CLASSIFICATION:
-        joint_damage_model.compile(loss = softmax_focal_loss(list(class_weights[0].values())), metrics = metrics_dir, optimizer = optimizer)
+        joint_damage_model.compile(loss = 'categorical_crossentropy', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
         joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:
@@ -52,7 +52,6 @@ def get_joint_damage_model(config, class_weights, params, pretrained_model_file 
 
 def load_minority_model(model_file, class_weights, epochs, steps, model_name = 'finetuned_joint_damage_model'):
     joint_damage_model = keras.models.load_model(model_file, compile = False)
-    # joint_damage_model.name = model_name
     
     idx = 0
     max_outcome = max(class_weights[0].keys())
@@ -83,8 +82,6 @@ def _add_outputs(class_weights, base_output, model_type, is_wrist):
     metrics_dir = {}
     outputs = []
     
-    # base_output = _vvg_fc_block(base_output, 256, 'output_fc_1', initializer = 'he_uniform')
-    
     for idx, class_weight in enumerate(class_weights):
         no_outcomes = len(class_weight.keys())
 
@@ -107,24 +104,20 @@ def _add_outputs(class_weights, base_output, model_type, is_wrist):
     return outputs, metrics_dir
 
 def _get_optimizier(model, params):
-    epochs = params['opt_epochs']
+    epochs = params['epochs']
     steps_per_epoch = params['steps_per_epoch']
     lr = params['lr']
     wd = params['wd']
-
-    lr_mul = {'_conv_': 1/3}
     
     weight_decays = {}
     
-    # Only layers with "kernel" need wd applied and don't apply WD layers with dropout
+    # Only layers with "kernel" need wd applied
     for layer in model.layers:
         if hasattr(layer, 'kernel'):
             layer.kernel_regularizer = keras.regularizers.l2(0)
             weight_decays.update({layer.kernel.name: wd})
-
-    total_iterations = epochs * steps_per_epoch
             
-    optimizer = AdamW(lr = lr, use_cosine_annealing = True, weight_decays = weight_decays, total_iterations = total_iterations, init_verbose = False, batch_size = 1)
+    optimizer = AdamW(lr = lr, use_cosine_annealing = True, weight_decays = weight_decays, total_iterations = epochs * steps_per_epoch, init_verbose = False, batch_size = 1)
     
     return optimizer
 

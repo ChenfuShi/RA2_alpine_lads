@@ -39,10 +39,8 @@ if __name__ == '__main__':
 
     model_type = sys.argv[6]
     
-    is_combined = sys.argv[7] == 'Y'
-    
     # load pretrained model
-    trained_model, hist_df = train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = do_validation, model_type = model_type, is_combined = is_combined)
+    trained_model, hist_df = train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = do_validation, model_type = model_type)
 
     save_pretrained_model(trained_model, 0, '../trained_models/' + model_name)
     hist_df.to_csv('../trained_models/' + model_name + '_hist.csv')
