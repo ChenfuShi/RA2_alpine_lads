@@ -69,12 +69,17 @@ def _get_dataset(config, joint_type, dmg_type, do_validation):
             tf_dataset, tf_val_dataset, val_no_samples = dataset.get_feet_joint_damage_type_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
         else:
             tf_dataset = dataset.get_feet_joint_damage_type_dataset(outcomes_source, erosion_flag = erosion_flag)
-    elif joint_type == 'HF':
+    elif joint_type == 'C':
         if do_validation:
             tf_dataset, tf_val_dataset, val_no_samples = dataset.get_combined_joint_damage_type_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
         else:
             tf_dataset = dataset.get_combined_joint_damage_type_dataset(outcomes_source, erosion_flag = erosion_flag)
-
+    elif joint_type.startswith('M'):
+        if do_validation:
+            tf_dataset, tf_val_dataset, val_no_samples = dataset.get_mixed_joint_damage_type_dataset_with_validation(outcomes_source, joint_type, erosion_flag = erosion_flag)
+        else:
+            tf_dataset = dataset.get_mixed_joint_damage_type_dataset(outcomes_source, joint_type, erosion_flag = erosion_flag)
+            
     N = dataset.N
     alpha = dataset.alpha
     init_bias = np.log(dataset.n_positives/dataset.n_negatives)

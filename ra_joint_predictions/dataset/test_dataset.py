@@ -81,7 +81,8 @@ class joint_test_dataset(dream_dataset):
         return joints_df
 
     def _create_dataset(self, df, params, load_wrists):
-        df = df.sample(frac = 1, random_state = 1337).reset_index(drop = True)
+        if params:
+            df = df.sample(frac = 1, random_state = 1337).reset_index(drop = True)
         
         file_info = df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
 

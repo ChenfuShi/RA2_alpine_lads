@@ -60,6 +60,52 @@ class joint_damage_type_dataset(dream_dataset):
 
         return dataset, val_dataset, val_no_samples
 
+    def get_mixed_joint_damage_type_dataset(self, outcomes_source, joint_type, hands_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = True):
+        self.cache = self.cache + '_mixed'
+        
+        outcome_column = self._get_outcome_column(erosion_flag)
+        
+        hand_outcome_joint_df = self._create_joint_damage_type_outcome_df(outcomes_source, hands_joints_source, joint_dataset.hand_outcome_mapping, joint_dataset.dream_hand_parts, [outcome_column])
+        feet_outcome_joint_df = self._create_joint_damage_type_outcome_df(outcomes_source, feet_joints_source, joint_dataset.foot_outcome_mapping, joint_dataset.dream_foot_parts, [outcome_column])
+        
+        self.is_main_hand = joint_type.endswith('H')
+        if self.is_main_hand:
+            main_dataset, N, n_negatives, outcomes = self._create_joint_damage_type_dataset(hand_outcome_joint_df, [outcome_column], self.cache + '_hands_main')
+            sec_dataset, N_sec, n_negatives_sec, _ = self._create_joint_damage_type_dataset(feet_outcome_joint_df, [outcome_column], self.cache + '_feet_sec')
+        else:
+            main_dataset, N, n_negatives, outcomes = self._create_joint_damage_type_dataset(feet_outcome_joint_df, [outcome_column], self.cache + '_feet_main')
+            sec_dataset, N_sec, n_negatives_sec, _ = self._create_joint_damage_type_dataset(hand_outcome_joint_df, [outcome_column], self.cache + '_hands_sec')
+            
+        # Calc N for step size calculation
+        self.N = np.ceil(N * 1.25)
+        
+        total_N = N + N_sec
+        total_n_negatives = n_negatives + n_negatives_sec
+        
+        self.n_negatives = total_n_negatives
+        self.n_positives = total_N - total_n_negatives
+        self.alpha = total_n_negatives / total_N
+        self.outcomes = np.append(self.outcomes, outcomes)
+            
+        dataset = tf.data.experimental.sample_from_datasets((main_dataset, sec_dataset), [0.8, 0.2])
+        dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+        
+        return dataset
+    
+    def get_mixed_joint_damage_type_dataset_with_validation(self, outcomes_source, joint_type, hands_joints_source = hands_joints_source, hands_joints_val_source = hands_joints_val_source, feet_joints_source = feet_joints_source, feet_joints_val_source = feet_joints_val_source, erosion_flag = False):
+        dataset = self.get_mixed_joint_damage_type_dataset(outcomes_source, joint_type, hands_joints_source = hands_joints_source, feet_joints_source = feet_joints_source, erosion_flag = erosion_flag)
+        
+        if self.is_main_hand:
+            test_dataset = self._create_test_dataset()
+            val_dataset, val_no_samples = test_dataset.get_hands_joint_test_dataset(joints_source = hands_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        else:
+            test_dataset = self._create_test_dataset()
+            val_dataset, val_no_samples = test_dataset.get_feet_joint_test_dataset(joints_source = feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+            
+        self.val_outcomes = test_dataset.outcomes
+            
+        return dataset, val_dataset, val_no_samples
+        
     def get_combined_joint_damage_type_dataset(self, outcomes_source, hands_joints_source = './data/predictions/hand_joint_data_v2.csv', feet_joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = True):
         self.cache = self.cache + '_combined'
         
@@ -71,8 +117,14 @@ class joint_damage_type_dataset(dream_dataset):
         outcome_joint_df = pd.concat([hand_outcome_joint_df, feet_outcome_joint_df], ignore_index = True, sort = False)
         outcome_joint_df = outcome_joint_df.dropna(subset = [outcome_column])
         
-        dataset = self._create_joint_damage_type_dataset(outcome_joint_df, [outcome_column], self.cache)
+        dataset, N, n_negatives, outcomes = self._create_joint_damage_type_dataset(outcome_joint_df, [outcome_column], self.cache)
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+        
+        self.N = N
+        self.n_negatives = n_negatives
+        self.n_positives = N - n_negatives
+        self.alpha = n_negatives / N
+        self.outcomes = np.append(self.outcomes, outcomes)
         
         return dataset
 
@@ -99,8 +151,14 @@ class joint_damage_type_dataset(dream_dataset):
     def _get_joint_damage_type_dataset(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns):
         outcome_joint_df = self._create_joint_damage_type_outcome_df(outcomes_source, joints_source, outcome_mapping, parts, outcome_columns)
         
-        dataset = self._create_joint_damage_type_dataset(outcome_joint_df, outcome_columns, self.cache)
+        dataset, N, n_negatives, outcomes = self._create_joint_damage_type_dataset(outcome_joint_df, outcome_columns, self.cache)
         dataset = self._prepare_for_training(dataset, self.joint_height, self.joint_width, batch_size = self.config.batch_size, pad_resize = self.pad_resize)
+        
+        self.N = N
+        self.n_negatives = n_negatives
+        self.n_positives = N - n_negatives
+        self.alpha = n_negatives / N
+        self.outcomes = np.append(self.outcomes, outcomes)
         
         return dataset
     
@@ -118,13 +176,8 @@ class joint_damage_type_dataset(dream_dataset):
         outcomes = outcome_joint_df[outcome_columns]
         maj_idx = outcomes == 0
         
-        self.n_negatives += np.count_nonzero(maj_idx)
-        self.n_positives += maj_idx.shape[0] - np.count_nonzero(maj_idx)
-        self.N += maj_idx.shape[0]
-        
-        self.outcomes = np.append(self.outcomes, outcomes)
-        
-        self.alpha = np.count_nonzero(maj_idx) / maj_idx.shape[0]
+        N = outcome_joint_df.shape[0]
+        n_negatives = np.count_nonzero(maj_idx)
         
         # Set majority samples to 0
         joint_damage_type_outcome = np.ones(file_info.shape[0])
@@ -132,7 +185,7 @@ class joint_damage_type_dataset(dream_dataset):
         
         coords = outcome_joint_df[['coord_x', 'coord_y']].to_numpy()
 
-        return self._create_dataset(file_info, coords, joint_damage_type_outcome, cache)
+        return self._create_dataset(file_info, coords, joint_damage_type_outcome, cache), N, n_negatives, outcomes
     
     def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts):
         outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)

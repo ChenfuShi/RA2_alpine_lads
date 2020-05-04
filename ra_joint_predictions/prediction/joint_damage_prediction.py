@@ -30,6 +30,7 @@ def _robust_mean(scores, rounding_cutoff = 0):
     N, D = scores.shape
     
     mean_scores = np.zeros(D)
+    labels = ['N'] * D
     
     for d in range(D):
         values = scores[:, d]
@@ -42,20 +43,23 @@ def _robust_mean(scores, rounding_cutoff = 0):
         sub_values = values[start_idx:end_idx]
         mean_score = np.mean(sub_values)
         
-        mean_scores[d] = mean_score
+        # Augments introduce noise so round down to 0 if it's at that cutoff
+        if mean_score <= rounding_cutoff:
+            mean_score = 0.0
+            labels[d] = 'R'
         
-    # Augments introduce noise so round down to 0 if it's at that cutoff
-    mean_scores[mean_scores <= rounding_cutoff] = 0
+        mean_scores[d] = mean_score
     
-    return mean_scores
+    return mean_scores, labels
 
 class predictor():
-    def __init__(self, model_file, no_outcomes = 1, is_wrist = False, prediction_transformer = _default_transformation):
+    def __init__(self, model_file, no_outcomes = 1, is_wrist = False, prediction_transformer = _default_transformation, model_index = 0):
         self.model_file = model_file
         self.no_outcomes = no_outcomes
         self.is_wrist = is_wrist
         self.prediction_transformer = prediction_transformer
-
+        self.model_index = model_index
+        
         self._init_model()
 
     def predict_joint_damage(self, img):
@@ -77,11 +81,13 @@ class predictor():
         return predicted_joint_damage
 
     def _init_model(self):
-        self.model = tf.keras.models.load_model(self.model_file, compile = False)
+        model_file = self.model_file[self.model_index]
+        
+        self.model = tf.keras.models.load_model(f'../resources/{model_file}', compile = False)
 
 class joint_damage_predictor(predictor):
-    def __init__(self, model_parameters):
-        super().__init__(model_parameters['model'], no_outcomes = model_parameters['no_outcomes'], is_wrist = model_parameters.get('is_wrist', False))
+    def __init__(self, model_parameters, model_index = 0):
+        super().__init__(model_parameters['model'], no_outcomes = model_parameters['no_outcomes'], is_wrist = model_parameters.get('is_wrist', False), model_index = model_index)
 
         self.model_parameters = model_parameters
         self.no_classes = model_parameters['no_classes']
@@ -120,8 +126,8 @@ class joint_damage_predictor(predictor):
         return _classifciation_prediction_transformer
 
 class joint_damage_type_predictor(predictor):
-    def __init__(self, model_parameters):
-        super().__init__(model_parameters['damage_type_model'])
+    def __init__(self, model_parameters, model_index = 0):
+        super().__init__(model_parameters['damage_type_model'], model_index = model_index)
 
         self.model_parameters = model_parameters
         self.prediction_transformer = self._create_sig_prediction_transformer()
@@ -162,31 +168,44 @@ class augmented_predictor():
         
         self.scores = preds
         
-        return self.aggregator(preds, self.rounding_cutoff)
-
-class augmented_joint_damage_predictor(joint_damage_predictor):
-    def __init__(self, model_parameters, no_augments = 50, aggregator = _robust_mean):
-        super().__init__(model_parameters)
+        if self.aggregator is not None:
+            preds = self.aggregator(preds, self.rounding_cutoff)
         
-        # Number of times to augment the image
+        return preds
+    
+class ensemble_predictor():
+    def __init__(self, model_parameters, pred_type, no_models, aggregator = _robust_mean, rounding_cutoff = 0, no_augments = 50):
+        self.model_parameters = model_parameters
+        
+        self.pred_type = pred_type
+        self.no_models = no_models
+        
+        self.aggregator = _robust_mean
+        self.rounding_cutoff = rounding_cutoff
         self.no_augments = no_augments
-
-        # Function that aggregates the augmented predictions into a single prediction
-        self.aggregator = aggregator
+        
+        self._init_model()
+        
+    def _init_model(self):
+        def _get_predictor(model_index):
+            predictor = self.pred_type(self.model_parameters, model_index = model_index)
+            predictor = augmented_predictor(predictor, aggregator = None, no_augments = self.no_augments)
+            
+            return predictor
+        
+        self.predictors = list(map(_get_predictor, range(self.no_models)))
         
     def predict_joint_damage(self, img):
-        preds = np.zeros((self.no_augments + 1, self.no_outcomes))
+        preds = []
         
-        for n in range(self.no_augments):
-            aug_img, _ = _augment_and_clip_image(img, [], augments = pred_augments)
-
-            aug_img_pred = super().predict_joint_damage(aug_img)
+        for predictor in self.predictors:
+            pred = predictor.predict_joint_damage(img)
             
-            preds[n] = aug_img_pred
-
-        preds[self.no_augments, :] = super().predict_joint_damage(img)
-        
-        return self.aggregator(preds)
+            preds.extend(pred)
+            
+        preds = np.array(preds)
+            
+        return self.aggregator(preds, self.rounding_cutoff)
     
 class filtered_joint_damage_predictor():
     def __init__(self, model_parameters, filter_predictor, follow_up_predictor):
@@ -197,12 +216,19 @@ class filtered_joint_damage_predictor():
 
         self.filter_predictor = filter_predictor
         self.follow_up_predictor = follow_up_predictor
+        
+        self.n_processed_images = 0
+        self.n_filtered_images = 0
 
     def predict_joint_damage(self, img):
+        self.n_processed_images += 1
+        
         sig_pred = self.filter_predictor.predict_joint_damage(img)[0]
         
         # If the probability of it not being 0 is > cutoff, pass it on to the next predictor
         if sig_pred > self.cutoff:
             return self.follow_up_predictor.predict_joint_damage(img)
         else:
-            return [0.0]
+            self.n_filtered_images += 1
+            
+            return [0.0], ['F']

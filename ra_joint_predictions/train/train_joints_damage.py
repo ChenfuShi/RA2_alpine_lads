@@ -119,7 +119,10 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
     else:
         joint_dataset = mixed_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, joint_type = joint_type, split_type = split_type)
         
-        tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_mixed_joint_val_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
+        if do_validation:
+            tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_mixed_joint_val_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
+        else:
+            tf_dataset = joint_dataset.create_mixed_joint_dataset(outcomes_source, erosion_flag = erosion_flag)    
             
     return joint_dataset, tf_dataset, tf_val_dataset, no_val_samples
 
