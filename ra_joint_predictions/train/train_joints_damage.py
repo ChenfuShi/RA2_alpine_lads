@@ -102,7 +102,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
             else:
                 tf_dataset = joint_dataset.create_hands_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
         elif joint_type == 'W':
-            joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = False)
+            joint_dataset = hands_wrists_val_dataset(config, model_type = model_type, pad_resize = False, imagenet = False, split_type = split_type)
 
             if do_validation:
                 tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_wrists_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)

@@ -20,4 +20,4 @@ source activate /mnt/jw01-aruk-home01/projects/ra_challenge/tensorflow2.0_gpu
 rm -r ~/localscratch/dream/*
 
 # run python training script
-python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} ${joint_type} ${dmg_type} ${do_val:-"Y"} ${model_type:-"R"} ${is_combined:-"N"}
+python ../ra_joint_predictions/train_joint_model_script.py ${pretrained_model} ${model_name} ${joint_type} ${dmg_type} ${do_val:-"Y"} ${model_type:-"R"}

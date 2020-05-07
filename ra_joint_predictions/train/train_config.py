@@ -60,33 +60,33 @@ joint_damage_train_params = {
     'MH-J': {
         'epochs': 300,
         'batch_size': 64,
-        'steps_per_epoch': 150,
+        'steps_per_epoch': 190,
         'split_type': 'balanced',
-        'lr': 3e-4,
+        'lr': 1e-3,
         'wd': 1e-6
     },
     'MH-E': {
         'epochs': 300,
         'batch_size': 64,
-        'steps_per_epoch': 150,
+        'steps_per_epoch': 105,
         'split_type': 'balanced',
-        'lr': 3e-4,
+        'lr': 1e-3,
         'wd': 1e-6
     },
     'MF-J': {
         'epochs': 300,
         'batch_size': 64,
-        'steps_per_epoch': 125,
+        'steps_per_epoch': 160,
         'split_type': 'balanced',
-        'lr': 3e-4,
+        'lr': 1e-3,
         'wd': 1e-6
     },
     'MF-E': {
         'epochs': 300,
         'batch_size': 64,
-        'steps_per_epoch': 125,
+        'steps_per_epoch': 180,
         'split_type': 'balanced',
-        'lr': 3e-4,
+        'lr': 1e-3,
         'wd': 1e-6
     }
 }

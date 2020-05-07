@@ -1,11 +1,17 @@
 from dataset.joint_dataset import feet_joint_dataset, hands_joints_dataset, hands_wrists_dataset, combined_joint_dataset, mixed_joint_dataset
 from dataset.test_dataset import joint_test_dataset, combined_test_dataset
 
-hands_joints_source = './data/predictions/hands_joint_data_train_010holdout.csv'
-hands_joints_val_source = './data/predictions/hands_joint_data_test_010holdout.csv'
+#hands_joints_source = './data/predictions/hands_joint_data_train_010holdout.csv'
+#hands_joints_val_source = './data/predictions/hands_joint_data_test_010holdout.csv'
 
-feet_joints_source = './data/predictions/feet_joint_data_train_010holdout.csv'
-feet_joints_val_source = './data/predictions/feet_joint_data_test_010holdout.csv'
+#feet_joints_source = './data/predictions/feet_joint_data_train_010holdout.csv'
+#feet_joints_val_source = './data/predictions/feet_joint_data_test_010holdout.csv'
+
+hands_joints_source = './data/predictions/hand_joint_data_train_v2.csv'
+hands_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv'
+
+feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv'
+feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'
 
 class hands_joints_val_dataset(hands_joints_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
@@ -22,8 +28,8 @@ class hands_joints_val_dataset(hands_joints_dataset):
         return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe)
 
 class hands_wrists_val_dataset(hands_wrists_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False):
-        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
         
     def create_wrists_joints_dataset_with_validation(self, outcomes_source, joints_source = hands_joints_source, joints_val_source = hands_joints_val_source, erosion_flag = False):
         dataset = self.create_wrists_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)

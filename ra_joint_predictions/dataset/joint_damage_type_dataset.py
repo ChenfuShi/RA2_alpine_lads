@@ -7,11 +7,14 @@ import dataset.joint_dataset as joint_dataset
 from dataset.joint_dataset import dream_dataset
 from dataset.test_dataset import joint_test_dataset, combined_test_dataset
 
-hands_joints_source = './data/predictions/hands_joint_data_train_010holdout.csv'
-hands_joints_val_source = './data/predictions/hands_joint_data_test_010holdout.csv'
+hands_joints_source = './data/predictions/hand_joint_data_train_v2.csv'
+hands_joints_val_source = './data/predictions/hand_joint_data_test_v2.csv'
 
-feet_joints_source = './data/predictions/feet_joint_data_train_010holdout.csv'
-feet_joints_val_source = './data/predictions/feet_joint_data_test_010holdout.csv'
+feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv'
+feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'
+
+# feet_joints_source = './data/predictions/feet_joint_data_train_010holdout.csv'
+# feet_joints_val_source = './data/predictions/feet_joint_data_test_010holdout.csv'
 
 class joint_damage_type_dataset(dream_dataset):
     def __init__(self, config, pad_resize = False, joint_extractor = None, apply_clahe = False, repeat_test = True):

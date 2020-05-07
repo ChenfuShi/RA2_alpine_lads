@@ -2,8 +2,8 @@
     "hands_narrowing_model": 
         { 
             "model": [
-                "hands_narrowing_joint_damage_model_complex_rewritten_64bs_150steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_1.h5",
-                "hands_narrowing_joint_damage_model_complex_rewritten_64bs_150steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_2.h5"
+                "hands_narrowing_joint_damage_model_complex_rewritten_64bs_190steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_new_1.h5",
+                "hands_narrowing_joint_damage_model_complex_rewritten_64bs_190steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_new_2.h5"
             ], 
             "no_outcomes": 1, 
             "no_classes": 5, 
@@ -12,14 +12,14 @@
                 "hands_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_1.h5",
                 "hands_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_2.h5"
             ],
-            "damage_type_cutoff": 0.1,
+            "damage_type_cutoff": 0.2,
             "no_pred_models": 2,
             "no_dt_models": 2
         },
     "wrists_narrowing_model": { 
             "model": [ 
-                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_90steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_1.h5",
-                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_90steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_2.h5"
+                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_1.h5",
+                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_2.h5"
             ], 
             "no_outcomes": 6, 
             "no_classes": 5, 
@@ -30,8 +30,8 @@
     "feet_narrowing_model": 
         { 
             "model": [
-                "feet_narrowing_joint_damage_model_complex_rewritten_64bs_125steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020hands_fullmodel_1.h5",
-                "feet_narrowing_joint_damage_model_complex_rewritten_64bs_125steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020hands_fullmodel_2.h5"
+                "feet_narrowing_joint_damage_model_complex_rewritten_64bs_160steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020hands_fullmodel_new_1.h5",
+                "feet_narrowing_joint_damage_model_complex_rewritten_64bs_160steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020hands_fullmodel_new_2.h5"
                 ], 
             "no_outcomes": 1, 
             "no_classes": 5, 
@@ -40,22 +40,22 @@
                 "feet_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands__calpha_fullmodel_1.h5",
                 "feet_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands__calpha_fullmodel_2.h5"
             ],
-            "damage_type_cutoff": 0.1,
+            "damage_type_cutoff": 0.2,
             "no_pred_models": 2,
             "no_dt_models": 2
         },
     "hands_erosion_model": 
         { 
             "model": [
-                "hands_erosion_joint_damage_model_complex_rewritten_64bs_150steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_1.h5",
-                "hands_erosion_joint_damage_model_complex_rewritten_64bs_150steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_2.h5"
+                "hands_erosion_joint_damage_model_complex_rewritten_64bs_130steps_300epochs_adamW_3e4_1e6_fullwd_balanced_020feet_fullmodel_new_1.h5",
+                "hands_erosion_joint_damage_model_complex_rewritten_64bs_130steps_300epochs_adamW_3e4_1e6_fullwd_balanced_020feet_fullmodel_new_2.h5"
                 ], 
             "no_outcomes": 1, 
             "no_classes": 6, 
             "model_type": "R",
             "damage_type_model": [
-                "hands_erosion_joint_damage_model_complex_rewritten_64bs_150steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_1.h5",
-                "hands_erosion_joint_damage_model_complex_rewritten_64bs_150steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020feet_fullmodel_2.h5"
+                "hands_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_1.h5",
+                "hands_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_2.h5"
                 ], 
             "damage_type_cutoff": 0.1,
             "no_pred_models": 2,
@@ -64,8 +64,8 @@
     "wrists_erosion_model": 
         { 
             "model": [
-                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_90steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_1.h5",
-                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_90steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_2.h5"
+                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_1.h5",
+                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_2.h5"
                 ], 
             "no_outcomes": 6, 
             "no_classes": 6, 
@@ -76,8 +76,8 @@
     "feet_erosion_model": 
         { 
             "model": [
-                "feet_erosion_joint_damage_model_complex_rewritten_64bs_125steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020hands_fullmodel_1.h5",
-                "feet_erosion_joint_damage_model_complex_rewritten_64bs_125steps_300epochs_adamW_3e4_1e6_fullwd_fully_balanced_020hands_fullmodel_2.h5"
+                "feet_erosion_joint_damage_model_complex_rewritten_64bs_180steps_300epochs_adamW_1e3_1e6_fullwd_balanced_020hands_fullmodel_new_1.h5",
+                "feet_erosion_joint_damage_model_complex_rewritten_64bs_180steps_300epochs_adamW_1e3_1e6_fullwd_balanced_020hands_fullmodel_new_2.h5"
                 ], 
             "no_outcomes": 1, 
             "no_classes": 11, 
@@ -86,7 +86,7 @@
                 "feet_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands_calpha_fullmodel_1.h5",
                 "feet_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands_calpha_fullmodel_2.h5"
                 ], 
-            "damage_type_cutoff": 0.1,
+            "damage_type_cutoff": 0.2,
             "no_pred_models": 2,
             "no_dt_models": 2
         }
