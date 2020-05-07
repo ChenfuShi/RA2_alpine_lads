@@ -46,7 +46,7 @@ def load_image(file_info, y, directory, update_labels = False, imagenet = False)
 
     return img, y
 
-def clahe_img(img, clip_limit = 2., grid_size = 2):
+def clahe_img(img, clip_limit = 2., grid_size = 8):
     # Open CV requires uint8
     img_array = tf.image.convert_image_dtype(img, dtype = 'uint8')
         
@@ -59,7 +59,6 @@ def clahe_img(img, clip_limit = 2., grid_size = 2):
     clahe_img.set_shape(img.get_shape())
     
     return clahe_img
-
 
 def _clahe_img(img_array, clip_limit, grid_size):
     clahe = cv.createCLAHE(clipLimit = clip_limit, tileGridSize = (grid_size, grid_size))
@@ -108,6 +107,14 @@ def create_augment(augment):
         return img, y
 
     return _augment
+
+def clahe_aug(clip_limit = 2., grid_size = 8):
+    def _clahe(img, y, update_labels):
+        img = clahe_img(img, clip_limit = clip_limit, grid_size = grid_size)
+
+        return img, y
+
+    return _clahe
 
 def random_flip(flip_right_left = True, flip_up_down = True):
     def _random_flip(img, y, update_labels):

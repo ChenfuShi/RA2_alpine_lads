@@ -10,6 +10,10 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 default_augments = [
     {
+        'augment': img_ops.clahe_aug,
+        'p': 0.5
+    },
+    {
         'augment': img_ops.random_flip,
         'p': 1
     },
