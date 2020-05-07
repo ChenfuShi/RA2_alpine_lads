@@ -1,4 +1,6 @@
 import logging
+import time
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -105,6 +107,9 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     
     logging.info("Finished predictions")
 
+    # Wait 30s to ensure that log file is updated
+    time.sleep(30)
+
     return predictions_df
     
 def _get_test_datasets(config, hands_joint_source, feet_joints_source):
@@ -126,7 +131,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
 def _get_predictor(model_parameters):
     do_filter = 'damage_type_model' in model_parameters.keys()
     
-    dmg_pred = ensemble_predictor(model_parameters, joint_damage_predictor, model_parameters['no_pred_models'], rounding_cutoff = 0.15, no_augments = 50)
+    dmg_pred = ensemble_predictor(model_parameters, joint_damage_predictor, model_parameters['no_pred_models'], rounding_cutoff = 0.3, no_augments = 50)
 
     if do_filter:
         filter_pred = ensemble_predictor(model_parameters, joint_damage_type_predictor, model_parameters['no_dt_models'], no_augments = 50)
