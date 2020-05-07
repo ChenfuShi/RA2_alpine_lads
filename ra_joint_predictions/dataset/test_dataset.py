@@ -100,7 +100,7 @@ class joint_test_dataset(dream_dataset):
         if load_wrists:
             dataset = self._load_wrists_without_outcomes(dataset)
         else:
-            dataset = self._load_joints_without_outcomes(dataset)
+            dataset = self._load_joints_without_outcomes(dataset, apply_clahe = self.apply_clahe)
 
         dataset = self._resize_images_without_outcomes(dataset)
         
