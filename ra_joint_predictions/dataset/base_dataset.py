@@ -160,7 +160,7 @@ class joint_dataset(base_dataset):
         return pd.DataFrame(mapped_joints, index = np.arange(len(mapped_joints)))
 
 class dream_dataset(joint_dataset):
-    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+    def __init__(self, config, cache_postfix = '', model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
         super().__init__(config, 'dream/' + cache_postfix, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
 
         self.image_dir = config.train_fixed_location
@@ -169,6 +169,7 @@ class dream_dataset(joint_dataset):
         self.cache = self.cache + '_' + model_type
         self.split_type = split_type
         self.maj_ratio = 0.25
+        self.apply_clahe = apply_clahe
 
     def _create_dream_datasets(self, outcomes_source, joints_source, outcome_mapping, parts, outcome_columns, no_classes, wrist = False):
         outcome_joint_df = self._create_outcome_joint_dataframe(outcomes_source, joints_source, outcome_mapping, parts, wrist = wrist)
