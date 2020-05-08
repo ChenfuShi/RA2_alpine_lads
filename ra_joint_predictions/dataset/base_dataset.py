@@ -261,6 +261,8 @@ class dream_dataset(joint_dataset):
     def _create_interleaved_joint_datasets(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
         if self.split_type == 'balanced':
             dataset = self._create_fully_balanced_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
+        elif self.split_type == 'minority-balanced':
+            dataset = self._create_fully_balanced_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist, only_minority = True)
         elif self.split_type == 'minority':
             dataset = self._create_minority_dataset(file_info, joint_coords, maj_idx, outcomes = outcomes, dummy_outcomes = dummy_outcomes, wrist = wrist)
         elif self.split_type == 'none':
@@ -307,11 +309,14 @@ class dream_dataset(joint_dataset):
         
         return dataset
     
-    def _create_fully_balanced_dataset(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False):
+    def _create_fully_balanced_dataset(self, file_info, joint_coords, maj_idx, outcomes = None, dummy_outcomes = None, wrist = False, only_minority = False):
         if self.model_type == 'C':
             outcomes = dummy_outcomes
 
         idx_groups = self._get_idx_groups(outcomes)
+
+        if only_minority:
+            idx_groups = idx_groups[1:]
         
         datasets = []
         
