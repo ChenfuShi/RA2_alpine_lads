@@ -42,8 +42,8 @@ class hands_wrists_val_dataset(hands_wrists_dataset):
         return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet)
     
 class feet_joint_val_dataset(feet_joint_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
-        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
 
     def create_feet_joints_dataset_with_validation(self, outcomes_source, joints_source = feet_joints_source, joints_val_source = feet_joints_val_source, erosion_flag = False):
         dataset = self.create_feet_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
@@ -72,8 +72,8 @@ class combined_joint_val_dataset(combined_joint_dataset):
         return dataset, val_dataset, val_no_samples
     
 class mixed_joint_val_dataset(mixed_joint_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, joint_type = 'MH', split_type = None):
-        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, joint_type = joint_type, split_type = split_type)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, joint_type = 'MH', split_type = None, apply_clahe = False):
+        super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, joint_type = joint_type, split_type = split_type, apply_clahe = apply_clahe)
         
     def create_mixed_joint_val_dataset_with_validation(self, outcomes_source, 
             hand_joints_source = hands_joints_source, hand_joints_val_source = hands_joints_val_source, 
@@ -89,4 +89,4 @@ class mixed_joint_val_dataset(mixed_joint_dataset):
         return dataset, val_dataset, val_no_samples
             
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor) 
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe) 

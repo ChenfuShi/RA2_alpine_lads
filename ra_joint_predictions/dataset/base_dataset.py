@@ -317,7 +317,11 @@ class dream_dataset(joint_dataset):
         idx_groups = self._get_idx_groups(outcomes)
 
         if only_minority:
+            # res = [0.04, 0.23, 0.23, 0.23, 0.23]
+            
             idx_groups = idx_groups[1:]
+        else:
+            res = [0.2, 0.2, 0.2, 0.2, 0.2]
         
         datasets = []
         

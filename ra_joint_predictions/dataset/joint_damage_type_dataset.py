@@ -131,11 +131,11 @@ class joint_damage_type_dataset(dream_dataset):
         
         return dataset
 
-    def get_combined_joint_damage_type_dataset_with_validation(self, outcomes_source, hands_joints_source = hands_joints_source, hands_joints_val_source = hands_joints_val_source, feet_joints_source = hands_joints_source, feet_joints_val_source = feet_joints_val_source, erosion_flag = False):
+    def get_combined_joint_damage_type_dataset_with_validation(self, outcomes_source, hands_joints_source = hands_joints_source, hands_joints_val_source = hands_joints_val_source, feet_joints_source = feet_joints_source, feet_joints_val_source = feet_joints_val_source, erosion_flag = False):
         dataset = self.get_combined_joint_damage_type_dataset(outcomes_source, hands_joints_source = hands_joints_source, feet_joints_source = feet_joints_source, erosion_flag = erosion_flag)
 
         test_dataset = combined_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
-        val_dataset, val_no_samples = test_dataset.get_combined_joint_test_dataset(hand_joints_source = './data/predictions/hand_joint_data_test.csv', feet_joints_source = './data/predictions/feet_joint_data_test.csv', outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        val_dataset, val_no_samples = test_dataset.get_combined_joint_test_dataset(hand_joints_source = hands_joints_val_source, feet_joints_source = feet_joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
         
         self.val_outcomes = test_dataset.outcomes
 

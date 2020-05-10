@@ -19,7 +19,7 @@ from utils.saver import CustomSaver, _get_tensorboard_callback
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric
 
 from train.train_config import joint_damage_train_params
-from train.utils.callbacks import AdamWWarmRestartCallback
+from train.utils.callbacks import AdamWResetCallback
 
 finetune_params = {
     'epochs': 50,
@@ -95,7 +95,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
             else:
                 tf_dataset = joint_val_dataset.create_feet_joints_dataset(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
         elif joint_type == 'H':
-            joint_dataset = hands_joints_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, imagenet = False, split_type = split_type)
+            joint_dataset = hands_joints_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, imagenet = False, split_type = split_type, apply_clahe = True)
 
             if do_validation:
                 tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_hands_joints_dataset_with_validation(outcomes_source = outcomes_source, erosion_flag = erosion_flag)
@@ -117,7 +117,7 @@ def _get_dataset(config, joint_type, dmg_type, model_type, do_validation = False
             else:
                 tf_dataset = joint_dataset.create_combined_joint_dataset(outcomes_source = outcomes_source)      
     else:
-        joint_dataset = mixed_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, joint_type = joint_type, split_type = split_type)
+        joint_dataset = mixed_joint_val_dataset(config, model_type = model_type, pad_resize = False, joint_extractor = df_joint_extractor, joint_type = joint_type, split_type = split_type, apply_clahe = apply_clahe)
         
         if do_validation:
             tf_dataset, tf_val_dataset, no_val_samples = joint_dataset.create_mixed_joint_val_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
@@ -130,7 +130,7 @@ def _fit_joint_damage_model(model, model_name, tf_joint_dataset, class_weights, 
     saver = CustomSaver(model_name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model_name)
     
-    wr_callback = AdamWWarmRestartCallback()
+    reset_callback = AdamWResetCallback(reset_epochs = 200)
     
     logging.info('_fit_joint_damage_model params %s', params)
     

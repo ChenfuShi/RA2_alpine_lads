@@ -22,7 +22,7 @@ def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file 
     
     optimizer = _get_optimizier(joint_damage_type_model, optimizer_params)
         
-    joint_damage_type_model.compile(loss = focal_loss(alpha = alpha), metrics = metrics_dir, optimizer = optimizer)
+    joint_damage_type_model.compile(loss = focal_loss(alpha = alpha, gamma = 2.), metrics = metrics_dir, optimizer = optimizer)
 
     return joint_damage_type_model
 

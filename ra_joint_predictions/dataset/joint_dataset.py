@@ -83,12 +83,12 @@ hand_wrist_keys = ['w1', 'w2', 'w3']
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class feet_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, divide_erosion_by_2 = False):
-        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False, divide_erosion_by_2 = False):
+        super().__init__(config, 'feet_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
 
         self.image_dir = config.train_fixed_location
         
-        self.maj_ratio = 0.25
+        self.maj_ratio = 0.05
         self.divide_erosion_by_2 = divide_erosion_by_2
 
     def create_feet_joints_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
@@ -125,12 +125,12 @@ class feet_joint_dataset(dream_dataset):
     
 class hands_joints_dataset(dream_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False, multiply_by_two = False):
-        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+        super().__init__(config, 'hands_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
 
         self.image_dir = config.train_fixed_location
         self.apply_clahe = apply_clahe
         
-        self.maj_ratio = 0.25
+        self.maj_ratio = 0.05
         self.multiply_erosion_by_2 = multiply_by_two
         
     def create_hands_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
@@ -205,18 +205,18 @@ class hands_wrists_dataset(dream_dataset):
         return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
     
 class mixed_joint_dataset(dream_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, joint_type = 'HF'):
-        super().__init__(config, 'mixed_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet)
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, joint_type = 'HF', apply_clahe = False):
+        super().__init__(config, 'mixed_joints', model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, apply_clahe = apply_clahe)
         
         self.joint_type = joint_type
         self.is_main_hand = joint_type.endswith('H')
         
         if self.is_main_hand:
-            self.main_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
-            self.sec_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, divide_erosion_by_2 = True)
+            self.main_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
+            self.sec_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, divide_erosion_by_2 = True, apply_clahe = apply_clahe)
         else:
-            self.main_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
-            self.sec_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, multiply_by_two = True)
+            self.main_ds = feet_joint_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
+            self.sec_ds = hands_joints_dataset(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, multiply_by_two = True, apply_clahe = apply_clahe)
             
         self.maj_ratio = 0.8
         
