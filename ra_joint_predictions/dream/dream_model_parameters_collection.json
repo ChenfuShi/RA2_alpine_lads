@@ -10,11 +10,12 @@
             "model_type": "R",
             "damage_type_model": [
                 "hands_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_1.h5",
-                "hands_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_2.h5"
+                "narrowing_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_fullmodel_1.h5",
+                "hands_narrowing_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_gamma1_fullmodel_1.h5"
             ],
-            "damage_type_cutoff": 0.2,
+            "damage_type_cutoff": 0.35,
             "no_pred_models": 2,
-            "no_dt_models": 2
+            "no_dt_models": 3
         },
     "wrists_narrowing_model": { 
             "model": [ 
@@ -38,11 +39,12 @@
             "model_type": "R",
             "damage_type_model": [
                 "feet_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands__calpha_fullmodel_1.h5",
-                "feet_narrowing_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands__calpha_fullmodel_2.h5"
+                "narrowing_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_fullmodel_1.h5",
+                "feet_narrowing_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_gamma1_fullmodel_1.h5"
             ],
-            "damage_type_cutoff": 0.2,
+            "damage_type_cutoff": 0.35,
             "no_pred_models": 2,
-            "no_dt_models": 2
+            "no_dt_models": 3
         },
     "hands_erosion_model": 
         { 
@@ -55,11 +57,12 @@
             "model_type": "R",
             "damage_type_model": [
                 "hands_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_1.h5",
-                "hands_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020feet_calpha_fullmodel_2.h5"
+                "erosion_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_fullmodel_1.h5",
+                "hands_erosion_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_gamma1_fullmodel_1.h5"
                 ], 
-            "damage_type_cutoff": 0.1,
+            "damage_type_cutoff": 0.3,
             "no_pred_models": 2,
-            "no_dt_models": 2
+            "no_dt_models": 3
         },
     "wrists_erosion_model": 
         { 
@@ -84,10 +87,11 @@
             "model_type": "R",
             "damage_type_model": [
                 "feet_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands_calpha_fullmodel_1.h5",
-                "feet_erosion_joint_damage_type_model_adamW_3e4_1e6_75epochs_rewritten_complex_gap_bias_normsteps_020hands_calpha_fullmodel_2.h5"
+                "erosion_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_fullmodel_1.h5",
+                "feet_erosion_joint_damage_type_model_complex_rewritten_64bs_normsteps_75epochs_adamW_3e4_1e6_gamma1_fullmodel_1.h5"
                 ], 
-            "damage_type_cutoff": 0.2,
+            "damage_type_cutoff": 0.3,
             "no_pred_models": 2,
-            "no_dt_models": 2
+            "no_dt_models": 3
         }
 }
