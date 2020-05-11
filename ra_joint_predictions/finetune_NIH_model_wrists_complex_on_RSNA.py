@@ -1,4 +1,5 @@
 import tensorflow as tf
+i
 
 tf.config.threading.set_intra_op_parallelism_threads(8)
 tf.config.threading.set_inter_op_parallelism_threads(8)
@@ -21,8 +22,8 @@ configuration = Config()
 ## joints
 wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, pad_resize = False).create_rsna_wrist_dataset(val_split = True)
 
-model = RSNA_model.create_vgg_avg_rsna_model(configuration, "vvg_avg_wrists", no_joint_types = 1)
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_complex_gap_adam_model_100.h5", no_joint_types = 1, name = "RSNA_gap_wrists")
 
 model.summary()
 
-finetune_model(model, 'vvg_avg_wrists', wrist_dataset, wrist_val_dataset, epochs_before = 0, epochs_after = 51, n_outputs = 1, is_wrists = True)
+finetune_model(model, 'complex_gap_model_RSNA_wrists_pretrain', wrist_dataset, wrist_val_dataset, epochs_before = 0, epochs_after = 51, n_outputs = 1, is_wrists = True)

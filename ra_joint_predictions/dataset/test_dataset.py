@@ -147,15 +147,19 @@ class joint_test_dataset(dream_dataset):
 
                 outcomes = (tf_outcomes, tf_dummy_outcomes)
             elif self.model_type == 'DT':
-                maj_idx = outcomes == 0
+                n_outcomes = outcomes.shape[1]
 
-                # Set majority samples to 0
-                tf_outcomes = np.ones(df.shape[0])
-                tf_outcomes[np.where(maj_idx)[0]] = 0
+                joint_damage_type_outcomes = outcomes.to_numpy()
+                for n in range(n_outcomes):
+                    maj_idx = joint_damage_type_outcomes[:, n] == 0
+
+                    # Set majority samples to 0
+                    joint_damage_type_outcome = np.ones(outcomes.shape[0], dtype = np.int64)
+                    joint_damage_type_outcome[np.where(maj_idx)[0]] = 0
+
+                    joint_damage_type_outcomes[:, n] = joint_damage_type_outcome
                 
-                # tf_outcomes = outcomes.to_numpy()
-                
-                outcomes = tf_outcomes
+                outcomes = joint_damage_type_outcomes
         else:
             outcomes = np.zeros(df.shape[0])
 

@@ -34,7 +34,7 @@ def get_joint_damage_model(config, class_weights, params, pretrained_model_file 
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = 'categorical_crossentropy', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
-        joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer)
+        joint_damage_model.compile(loss = pseudo_huber_loss(delta = 3.2), metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_COMBINED:
         losses = {}
         lossWeights = {}
