@@ -16,6 +16,10 @@ feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'
 # feet_joints_source = './data/predictions/feet_joint_data_train_010holdout.csv'
 # feet_joints_val_source = './data/predictions/feet_joint_data_test_010holdout.csv'
 
+hand_wrist_keys = ['w1', 'w2', 'w3']
+
+AUTOTUNE = tf.data.experimental.AUTOTUNE
+
 class joint_damage_type_dataset(dream_dataset):
     def __init__(self, config, pad_resize = False, joint_extractor = None, apply_clahe = False, repeat_test = True):
         super().__init__(config, 'joint_damage_type', pad_resize = pad_resize, joint_extractor = joint_extractor, model_type = "DT")
@@ -28,6 +32,8 @@ class joint_damage_type_dataset(dream_dataset):
         self.n_positives = 0
         self.N = 0
         self.outcomes = np.array([])
+
+        self.is_wrist = False
 
     def get_hands_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.cache = self.cache + '_hands'
@@ -45,6 +51,35 @@ class joint_damage_type_dataset(dream_dataset):
         self.val_outcomes = test_dataset.outcomes
         
         return dataset, val_dataset, val_no_samples
+
+    def get_wrists_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
+        self.cache = self.cache + '_wrists'
+        self.is_wrist = True
+
+        outcome_columns = self._get_outcome_column(erosion_flag)
+
+        dataset = self._get_joint_damage_type_dataset(outcomes_source, joints_source, joint_dataset.wrist_outcome_mapping, joint_dataset.dream_hand_parts, outcome_columns)
+        dataset = self._split_wrist_outcomes(dataset)
+
+        return dataset
+
+    def get_wrists_joint_damage_type_dataset_with_validation(self, outcomes_source, joints_source = hands_joints_source, joints_val_source = hands_joints_val_source, erosion_flag = False):
+        dataset = self.get_wrists_joint_damage_type_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
+
+        test_dataset = self._create_test_dataset()
+        val_dataset, val_no_samples = test_dataset.get_wrists_joint_test_dataset(joints_source = joints_val_source, outcomes_source = outcomes_source, erosion_flag = erosion_flag)
+        
+        self.val_outcomes = test_dataset.outcomes
+
+        return dataset, val_dataset, val_no_samples
+
+    def _split_wrist_outcomes(self, dataset):
+        def __split_outcomes(x, y):
+            split_y = tf.split(y, 6, axis = 1)
+
+            return x, (split_y[0], split_y[1], split_y[2], split_y[3], split_y[4], split_y[5])
+
+        return dataset.map(__split_outcomes, num_parallel_calls=AUTOTUNE)
 
     def get_feet_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/feet_joint_data_v2.csv', erosion_flag = False):
         self.cache = self.cache + '_feet'
@@ -142,12 +177,20 @@ class joint_damage_type_dataset(dream_dataset):
         return dataset, val_dataset, val_no_samples
 
     def _get_outcome_column(self, erosion_flag):
-        if(erosion_flag):
-            outcome_column = 'erosion_0'
-            self.cache = self.cache + '_erosion'
+        if not self.is_wrist:
+            if(erosion_flag):
+                outcome_column = 'erosion_0'
+                self.cache = self.cache + '_erosion'
+            else:
+                outcome_column = 'narrowing_0'
+                self.cache = self.cache + '_narrowing'
         else:
-            outcome_column = 'narrowing_0'
-            self.cache = self.cache + '_narrowing'
+            if(erosion_flag):
+                outcome_column = ['erosion_0', 'erosion_1', 'erosion_2', 'erosion_3', 'erosion_4', 'erosion_5']
+                self.cache = self.cache + '_erosion'
+            else:
+                outcome_column = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
+                self.cache = self.cache + '_narrowing'
 
         return outcome_column
     
@@ -176,28 +219,46 @@ class joint_damage_type_dataset(dream_dataset):
         
         file_info = outcome_joint_df[['image_name', 'file_type', 'flip', 'key']].to_numpy()
 
-        outcomes = outcome_joint_df[outcome_columns]
-        maj_idx = outcomes == 0
-        
-        N = outcome_joint_df.shape[0]
-        n_negatives = np.count_nonzero(maj_idx)
-        
-        # Set majority samples to 0
-        joint_damage_type_outcome = np.ones(file_info.shape[0])
-        joint_damage_type_outcome[np.where(maj_idx)[0]] = 0
-        
-        coords = outcome_joint_df[['coord_x', 'coord_y']].to_numpy()
+        outcomes = outcome_joint_df[outcome_columns].astype(np.int64).to_numpy()
 
-        return self._create_dataset(file_info, coords, joint_damage_type_outcome, cache), N, n_negatives, outcomes
+        n_outcomes = outcomes.shape[1]
+        n_negatives = np.zeros(n_outcomes)
+
+        N = outcome_joint_df.shape[0]
+
+        joint_damage_type_outcomes = outcomes
+        for n in range(n_outcomes):
+            maj_idx = outcomes[:, n] == 0
+
+            n_negatives[n] = np.count_nonzero(maj_idx, axis = 0)
+
+            # Set majority samples to 0
+            joint_damage_type_outcome = np.ones(file_info.shape[0], dtype = np.int64)
+            joint_damage_type_outcome[np.where(maj_idx)[0]] = 0
+
+            joint_damage_type_outcomes[:, n] = joint_damage_type_outcome
+
+        coords = ['coord_x', 'coord_y']
+
+        if self.is_wrist:
+            coords = ['w1_x', 'w1_y', 'w2_x', 'w2_y', 'w3_x', 'w3_y']
+        
+        coords = outcome_joint_df[coords].to_numpy()
+
+        return self._create_dataset(file_info, coords, joint_damage_type_outcomes, cache), N, n_negatives, joint_damage_type_outcomes
     
     def _create_outcome_joint_dataframe(self, outcomes_source, joints_source, outcome_mapping, parts):
         outcomes_df = self._create_intermediate_outcomes_df(outcomes_source, outcome_mapping, parts)
-        joints_df = self._create_intermediate_joints_df(joints_source, outcome_mapping.keys())
+
+        if self.is_wrist:
+            joints_df = self._create_intermediate_wrists_df(joints_source, hand_wrist_keys)
+        else:
+            joints_df = self._create_intermediate_joints_df(joints_source, outcome_mapping.keys())
 
         return outcomes_df.merge(joints_df, on = ['image_name', 'key'])
 
     def _create_dataset(self, file_info, joint_coords, outcomes, cache):
-        dataset = self._create_joint_dataset(file_info, joint_coords, outcomes)
+        dataset = self._create_joint_dataset(file_info, joint_coords, outcomes, wrist = self.is_wrist)
         dataset = self._cache_shuffle_repeat_dataset(dataset, cache, buffer_size = outcomes.shape[0])
 
         return dataset

@@ -14,10 +14,10 @@ os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/R
 configuration = Config()
 
 ## joints
-wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, pad_resize = True).create_rsna_wrist_dataset(val_split = True)
+wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, pad_resize = False).create_rsna_wrist_dataset(val_split = True)
 
-model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_new_pretrain_model_0.h5", no_joint_types = 1, name = "RSNAonly_wrists")
+model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_complex_gap_adam_model_100.h5", no_joint_types = 1, name = "RSNA_gap_wrists")
 
 model.summary()
 
-finetune_model(model, 'complex_model_RSNA_wrists_pretrain_without_NIH_pretrain_fixed_joints_moreaug', wrist_dataset, wrist_val_dataset, epochs_before = 0, epochs_after = 101, n_outputs = 1)
+finetune_model(model, 'complex_gap_model_RSNA_wrists_pretrain', wrist_dataset, wrist_val_dataset, epochs_before = 0, epochs_after = 51, n_outputs = 1)
