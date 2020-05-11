@@ -22,7 +22,7 @@ configuration = Config()
 ## joints
 wrist_dataset, wrist_val_dataset = rsna_wrist_dataset(configuration, pad_resize = False).create_rsna_wrist_dataset(val_split = True)
 
-model = RSNA_model.complex_joint_finetune_model(configuration,weights="weights/NIH_complex_gap_adam_model_100.h5", no_joint_types = 1, name = "RSNA_gap_wrists")
+model = RSNA_model.finetune_rsna_model(configuration, "weights/NIH_complex_gap_adam_model_100.h5", no_joint_types = 1, name = "RSNA_gap_wrists")
 
 model.summary()
 
