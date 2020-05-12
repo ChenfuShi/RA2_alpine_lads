@@ -7,7 +7,7 @@ import dataset.ops.image_ops as img_ops
 
 from dataset.ops.dataset_ops import _augment_and_clip_image
 
-pred_augments = [
+joint_pred_augments = [
     {
         'augment': img_ops.random_flip,
         'p': 1
@@ -20,6 +20,20 @@ pred_augments = [
     },
     {
         'augment': img_ops.random_rotation
+    }
+]
+
+wrist_pred_augments = [
+    {
+        'augment': img_ops.random_brightness_and_contrast
+    },
+    {
+        'augment': img_ops.random_crop,
+        'params': {'min_scale': 0.9}
+    },
+    {
+        'augment': img_ops.random_rotation,
+        'params': {'max_rot': 10}
     }
 ]
 
@@ -143,92 +157,80 @@ class joint_damage_type_predictor(predictor):
 
         return _sig_prediction_transformer
 
-class augmented_predictor():
-    def __init__(self, base_predictor, no_augments = 50, aggregator = _robust_mean, rounding_cutoff = 0):
-        self.base_predictor = base_predictor
-        self.no_augments = no_augments
-        self.aggregator = aggregator
-        self.rounding_cutoff = rounding_cutoff
-        
-        augments = pred_augments
-        
-        if base_predictor.is_wrist:
-            augments = augments[1:]
-        
-        self.augments = img_ops.create_augments(augments)
-
-    def predict_joint_damage(self, img):
-        preds = np.zeros((self.no_augments + 1, self.base_predictor.no_outcomes))
-        
-        for n in range(self.no_augments):
-            aug_img, _ = _augment_and_clip_image(img, [], augments = self.augments)
-            preds[n] = self.base_predictor.predict_joint_damage(aug_img)
-
-        preds[self.no_augments, :] = self.base_predictor.predict_joint_damage(img)
-        
-        self.scores = preds
-        
-        if self.aggregator is not None:
-            preds = self.aggregator(preds, self.rounding_cutoff)
-        
-        return preds
-    
-class ensemble_predictor():
-    def __init__(self, model_parameters, pred_type, no_models, aggregator = _robust_mean, rounding_cutoff = 0, no_augments = 50):
+class ensembled_filter_predictor():
+    def __init__(self, model_parameters, aggregator = _robust_mean, rounding_cutoff = 0, no_augments = 50):
         self.model_parameters = model_parameters
+
+        self.no_outcomes = model_parameters['no_outcomes']
+        self.is_wrist = model_parameters.get('is_wrist', False)
+
+        self.no_pred_models = model_parameters.get('no_pred_models', 0)
+        self.no_filter_models = model_parameters.get('no_filter_models', 0)
         
-        self.pred_type = pred_type
-        self.no_models = no_models
+        self.filter_cutoff = self.model_parameters.get('damage_type_cutoff', 0.2)
+        # Value to return if the filter_prediction exceeds the cutoff
+        self.default_value = self.model_parameters.get('default_value', 0.0)
         
         self.aggregator = _robust_mean
         self.rounding_cutoff = rounding_cutoff
         self.no_augments = no_augments
         
+        self.augments = []
+
+        self.n_filtered_images = 0
+        self.n_processed_images = 0
+
         self._init_model()
-        
+
     def _init_model(self):
-        def _get_predictor(model_index):
-            predictor = self.pred_type(self.model_parameters, model_index = model_index)
-            predictor = augmented_predictor(predictor, aggregator = None, no_augments = self.no_augments)
+        def _get_predictor(model_index, pred_type):
+            predictor = pred_type(self.model_parameters, model_index = model_index)
             
             return predictor
         
-        self.predictors = list(map(_get_predictor, range(self.no_models)))
-        
-    def predict_joint_damage(self, img):
-        preds = []
-        
-        for predictor in self.predictors:
-            pred = predictor.predict_joint_damage(img)
-            
-            preds.extend(pred)
-            
-        preds = np.array(preds)
-            
-        return self.aggregator(preds, self.rounding_cutoff)
-    
-class filtered_joint_damage_predictor():
-    def __init__(self, model_parameters, filter_predictor, follow_up_predictor):
-        self.model_parameters = model_parameters
-        self.cutoff = self.model_parameters.get('damage_type_cutoff', 0.2)
-        # Value to return if the filter_prediction exceeds the cutoff
-        self.default_value = self.model_parameters.get('default_value', 0.0)
+        self.damage_predictors = list(map(lambda no_model: _get_predictor(no_model, joint_damage_predictor), range(self.no_pred_models)))
+        self.filter_predictors = list(map(lambda no_model: _get_predictor(no_model, joint_damage_type_predictor), range(self.no_filter_models)))
 
-        self.filter_predictor = filter_predictor
-        self.follow_up_predictor = follow_up_predictor
-        
-        self.n_processed_images = 0
-        self.n_filtered_images = 0
-
-    def predict_joint_damage(self, img):
-        self.n_processed_images += 1
-        
-        sig_pred = self.filter_predictor.predict_joint_damage(img)[0]
-        
-        # If the probability of it not being 0 is > cutoff, pass it on to the next predictor
-        if sig_pred > self.cutoff:
-            return self.follow_up_predictor.predict_joint_damage(img)
+        if self.is_wrist:
+            self.augments = img_ops.create_augments(wrist_pred_augments)
         else:
-            self.n_filtered_images += 1
+            self.augments = img_ops.create_augments(joint_pred_augments)
+    
+    def predict_joint_damage(self, img):
+        self.n_processed_images += self.no_outcomes
+
+        no_preds = self.no_augments + 1
+
+        dmg_preds = np.zeros((len(self.damage_predictors * no_preds), self.no_outcomes))
+        filter_preds = np.zeros((len(self.filter_predictors * no_preds), self.no_outcomes))
+        
+        dmg_idx = 0
+        filter_idx = 0
+
+        for n in range(self.no_augments + 1):
+            if n > 0:
+                pred_img, _ = _augment_and_clip_image(img, [], augments = self.augments)
+            else:
+                pred_img = img
+
+            for damage_predictor in self.damage_predictors:
+                dmg_preds[dmg_idx] = damage_predictor.predict_joint_damage(pred_img)
+                dmg_idx += 1
             
-            return [0.0], ['F']
+            for filter_predictor in self.filter_predictors:
+                filter_preds[filter_idx] = filter_predictor.predict_joint_damage(pred_img)
+                filter_idx += 1
+
+        dmg_preds, dmg_pred_labels = self.aggregator(dmg_preds, self.rounding_cutoff)
+              
+        filter_preds, _ = self.aggregator(filter_preds)
+        
+        filtered_idx = np.where(filter_preds <= self.filter_cutoff)[0]
+        
+        dmg_preds[filtered_idx] = self.default_value
+        for idx in filtered_idx:
+            dmg_pred_labels[idx] = 'F'
+
+        self.n_filtered_images += filtered_idx.size
+        
+        return dmg_preds, dmg_pred_labels

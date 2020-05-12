@@ -15,18 +15,26 @@
             ],
             "damage_type_cutoff": 0.35,
             "no_pred_models": 2,
-            "no_dt_models": 3
+            "no_filter_models": 3
         },
     "wrists_narrowing_model": { 
             "model": [ 
-                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_1.h5",
-                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_2.h5"
+                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_changed_size_augs_full_model_1.h5",
+                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_changed_size_augs_left_group_full_model_1.h5",
+                "wrists_narrowing_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_changed_size_augs_right_group_full_model_1.h5"
             ], 
             "no_outcomes": 6, 
             "no_classes": 5, 
             "is_wrist": true, 
             "model_type": "R",
-            "no_pred_models": 2
+            "damage_type_model": [
+                "wrists_narrowing_joint_damage_type_model_complex_rewritten_gap_64bs_normsteps_75epochs_adamW_1e3_1e6_changed_size_changed_augs_full_model_1.h5",
+                "wrists_narrowing_joint_damage_type_model_complex_rewritten_gap_64bs_normsteps_75epochs_adamW_1e3_1e6_changed_size_changed_augs_left_group_full_model_1.h5",
+                "wrists_narrowing_joint_damage_type_model_complex_rewritten_gap_64bs_normsteps_75epochs_adamW_1e3_1e6_changed_size_changed_augs_right_group_full_model_1.h5"
+            ],
+            "damage_type_cutoff": 0.3,
+            "no_pred_models": 3,
+            "no_filter_models": 3
         },
     "feet_narrowing_model": 
         { 
@@ -44,7 +52,7 @@
             ],
             "damage_type_cutoff": 0.35,
             "no_pred_models": 2,
-            "no_dt_models": 3
+            "no_filter_models": 3
         },
     "hands_erosion_model": 
         { 
@@ -62,19 +70,27 @@
                 ], 
             "damage_type_cutoff": 0.3,
             "no_pred_models": 2,
-            "no_dt_models": 3
+            "no_filter_models": 3
         },
     "wrists_erosion_model": 
         { 
             "model": [
-                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_1.h5",
-                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_300epochs_adamW_1e3_1e6_fullwd_05maj_fullmodel_2.h5"
+                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_75epochs_adamW_1e3_1e6_changed_size_augs_full_model_1.h5",
+                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_75epochs_adamW_1e3_1e6_changed_size_augs_left_group_full_model_1.h5",
+                "wrists_erosion_joint_damage_model_complex_rewritten_64bs_60steps_75epochs_adamW_1e3_1e6_changed_size_augs_right_group_full_model_1.h5"
                 ], 
             "no_outcomes": 6, 
             "no_classes": 6, 
             "is_wrist": true, 
             "model_type": "R",
-            "no_pred_models": 2
+            "damage_type_model": [
+                "wrists_erosion_joint_damage_type_model_complex_rewritten_gap_64bs_normsteps_75epochs_adamW_1e3_1e6_changed_size_changed_augs_full_model_1.h5",
+                "wrists_erosion_joint_damage_type_model_complex_rewritten_gap_64bs_normsteps_75epochs_adamW_1e3_1e6_changed_size_changed_augs_left_group_full_model_1.h5",
+                "wrists_erosion_joint_damage_type_model_complex_rewritten_gap_64bs_normsteps_75epochs_adamW_1e3_1e6_changed_size_changed_augs_right_group_full_model_1.h5"
+            ],
+            "damage_type_cutoff": 0.2,
+            "no_pred_models": 3,
+            "no_filter_models": 3
         },
     "feet_erosion_model": 
         { 
@@ -92,6 +108,6 @@
                 ], 
             "damage_type_cutoff": 0.3,
             "no_pred_models": 2,
-            "no_dt_models": 3
+            "no_filter_models": 3
         }
 }

@@ -11,7 +11,7 @@ from dataset.test_dataset import joint_test_dataset
 from dataset.joints.joint_extractor_factory import get_joint_extractor
 
 from dataset.joints.joint_extractor import default_joint_extractor
-from prediction.joint_damage_prediction import joint_damage_type_predictor, joint_damage_predictor, augmented_predictor, filtered_joint_damage_predictor, ensemble_predictor
+from prediction.joint_damage_prediction import ensembled_filter_predictor
 
 def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv'):
     datasets = _get_test_datasets(config, hands_joint_source, feet_joint_source)
@@ -61,21 +61,20 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
                     
         logging.info('-------------')        
         
-        if isinstance(narrowing_predictor, filtered_joint_damage_predictor):
-            n_filtered = narrowing_predictor.n_filtered_images
-            n_images = narrowing_predictor.n_processed_images
+        n_filtered = narrowing_predictor.n_filtered_images
+        n_images = narrowing_predictor.n_processed_images
             
-            filtered_ratio = n_filtered / n_images
+        filtered_ratio = n_filtered / n_images
             
-            logging.info(f'{joint_type} narrowing filtered {filtered_ratio} of joints ({n_filtered} / {n_images})')
+        logging.info(f'{joint_type} narrowing filtered {filtered_ratio} of joints ({n_filtered} / {n_images})')
             
-        if isinstance(erosion_predictor, filtered_joint_damage_predictor):
-            n_filtered = erosion_predictor.n_filtered_images
-            n_images = erosion_predictor.n_processed_images
+        
+        n_filtered = erosion_predictor.n_filtered_images
+        n_images = erosion_predictor.n_processed_images
             
-            filtered_ratio = n_filtered / n_images
+        filtered_ratio = n_filtered / n_images
             
-            logging.info(f'{joint_type} erosion filtered {filtered_ratio} of joints ({n_filtered} / {n_images})')
+        logging.info(f'{joint_type} erosion filtered {filtered_ratio} of joints ({n_filtered} / {n_images})')
         logging.info('-------------') 
         logging.info('-------------')
 
@@ -129,16 +128,7 @@ def _get_test_datasets(config, hands_joint_source, feet_joints_source):
     }
 
 def _get_predictor(model_parameters):
-    do_filter = 'damage_type_model' in model_parameters.keys()
-    
-    dmg_pred = ensemble_predictor(model_parameters, joint_damage_predictor, model_parameters['no_pred_models'], rounding_cutoff = 0.3, no_augments = 50)
-
-    if do_filter:
-        filter_pred = ensemble_predictor(model_parameters, joint_damage_type_predictor, model_parameters['no_dt_models'], no_augments = 50)
-
-        dmg_pred = filtered_joint_damage_predictor(model_parameters, filter_pred, dmg_pred)
-
-    return dmg_pred
+    return ensembled_filter_predictor(model_parameters, no_augments = 50, rounding_cutoff = 0.3)
 
 def _get_details(file_info):
     file_info = file_info.numpy()
