@@ -80,8 +80,8 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     img_shape = tf.cast(tf.shape(img), tf.float64)
     w1_x, w2_x, w3_x, w1_y, w2_y, w3_y = [tf.cast(x, tf.float64) for x in [w1_x, w2_x, w3_x, w1_y, w2_y, w3_y]]
 
-    extra_pad_height = img_shape[0] / 15
-    extra_pad_width = img_shape[1] / 15
+    extra_pad_height = img_shape[0] / 12
+    extra_pad_width = img_shape[1] / 12
 
     # identify left top most points
     x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0) - extra_pad_width
@@ -104,7 +104,7 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     total_width = x_box_max - x_box
 
     # calculate height as a ratio of the total width and calculate box
-    total_height = total_width * 0.7
+    total_height = total_width * 0.8
 
     y_box_max = y_box + total_height
 

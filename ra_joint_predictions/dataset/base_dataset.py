@@ -51,14 +51,16 @@ class base_dataset():
                         'augment': img_ops.random_brightness_and_contrast
                     },
                     {
-                        'augment': img_ops.random_crop
+                        'augment': img_ops.random_crop,
+                        'params': {'min_scale': 0.9}
                     },
                     {
                         'augment': img_ops.random_gaussian_noise,
                         'p': 0.2
                     },
                     {
-                        'augment': img_ops.random_rotation
+                        'augment': img_ops.random_rotation,
+                        'params': {'max_rot': 10}
                     }]
             elif self.is_chest:
                 augments = [
@@ -84,6 +86,8 @@ class base_dataset():
                 augments = ds_ops.default_augments
         else:
             augments = []
+        
+        print(augments)
         
         dataset = ds_ops.augment_and_resize_images(dataset, img_height, img_width, update_labels = update_labels, pad_resize = pad_resize, augments = augments)
         dataset = ds_ops.batch_and_prefetch_dataset(dataset, batch_size)

@@ -11,7 +11,9 @@ import dataset.ops.landmark_ops as lm_ops
 PNG_EXTENSION_REGEX = '(?i).*png'
 JPG_EXTENSION_REGEX = '(?i).*jp[e]?g'
 
-def _create_boxes(scales = np.arange(0.8, 1, 0.01)):
+def _create_boxes(min_scale = 0.8):
+    scales = np.arange(min_scale, 1, 0.01)
+    
     boxes = np.zeros((scales.size, 4))
     
     for i, scale in enumerate(scales):
@@ -140,7 +142,9 @@ def random_brightness_and_contrast(max_delta = 0.1, max_contrast = 0.1):
 
     return _random_brightness_and_contrast
 
-def random_rotation(min_rot = -20, max_rot = 20):
+def random_rotation(max_rot = 20):
+    min_rot = -1 * max_rot 
+    
     def _random_rotation(img, y, update_labels):
         random_degree_angle = tf.random.uniform(shape=[], minval = min_rot, maxval = max_rot)
         
@@ -155,7 +159,9 @@ def random_rotation(min_rot = -20, max_rot = 20):
 
     return _random_rotation
 
-def random_crop(boxes = _create_boxes()):
+def random_crop(min_scale = 0.8):
+    boxes = _create_boxes(min_scale = min_scale)
+    
     def _random_crop(img, y, update_labels):
         no_boxes = boxes.shape[0]
         

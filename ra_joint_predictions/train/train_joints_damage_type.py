@@ -20,10 +20,14 @@ train_params = {
     'wd': 1e-6
 }
 
-def train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False):
+def train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, group_flag = None):
     tf_dataset, N, alpha, init_bias, tf_val_dataset, val_no_samples = _get_dataset(config, joint_type, dmg_type, do_validation)
     
     params = train_params.copy()
+    
+    if joint_type == 'W':
+        params['lr'] = 1e-3
+        params['group_flag'] = group_flag
     
     epochs = params['epochs']
     batch_size = params['batch_size']
@@ -79,6 +83,11 @@ def _get_dataset(config, joint_type, dmg_type, do_validation):
             tf_dataset, tf_val_dataset, val_no_samples = dataset.get_mixed_joint_damage_type_dataset_with_validation(outcomes_source, joint_type, erosion_flag = erosion_flag)
         else:
             tf_dataset = dataset.get_mixed_joint_damage_type_dataset(outcomes_source, joint_type, erosion_flag = erosion_flag)
+    elif joint_type == 'W':
+        if do_validation:
+            tf_dataset, tf_val_dataset, val_no_samples = dataset.get_wrists_joint_damage_type_dataset_with_validation(outcomes_source, erosion_flag = erosion_flag)
+        else:
+            tf_dataset = dataset.get_wrists_joint_damage_type_dataset(outcomes_source, erosion_flag = erosion_flag)
             
     N = dataset.N
     alpha = dataset.alpha

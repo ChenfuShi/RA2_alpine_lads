@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import tensorflow.keras as keras
 
@@ -11,6 +13,8 @@ def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
 def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .9, init_bias = 0):
+    group_flag = optimizer_params.get('group_flag', None)
+    
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
     output, metrics_dir, losses = _add_output(base_ouptut, init_bias, alpha)
@@ -21,8 +25,18 @@ def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file 
         name = model_name)
     
     optimizer = _get_optimizier(joint_damage_type_model, optimizer_params)
-        
-    joint_damage_type_model.compile(loss = losses, metrics = metrics_dir, optimizer = optimizer)
+    
+    loss_weights = None
+    
+    if group_flag is not None:
+        if group_flag == 'R':
+            loss_weights = [55 / 3, 55 / 3, 45 / 3, 55 / 3, 45 / 3, 45 / 3]
+        elif group_flag == 'L':
+            loss_weights = [45 / 3, 45 / 3, 55 / 3, 45 / 3, 55 / 3, 55 / 3]
+            
+        logging.info('Loss Weights:', loss_weights)
+    
+    joint_damage_type_model.compile(loss = losses, loss_weights = loss_weights, metrics = metrics_dir, optimizer = optimizer)
 
     return joint_damage_type_model
 
@@ -37,15 +51,22 @@ def _get_base_model(config, pretrained_model_file):
 
         return input, base_model
 
-def _add_output(base_output, init_bias, alpha, gamma = 1.):
+def _add_output(base_output, init_bias, alpha, gamma = 2., group_flag = None):
     n_bias = init_bias.size
 
     outputs = []
     losses = []
     metrics_dir = {}
+    
+    is_wrist = n_bias > 1
 
     for n in range(n_bias):
         bias_initializers = keras.initializers.Constant(value = init_bias[n])
+        
+        if is_wrist:
+            output = keras.layers.Dense(16, activation = 'relu', kernel_initializer = 'he_uniform', name = f'joint_damage_type_dense_{n}')(base_output)
+        else:
+            output = base_output
         
         outputs.append(keras.layers.Dense(1, activation = 'sigmoid', bias_initializer = bias_initializers, name = f'joint_damage_type_{n}')(base_output))
     

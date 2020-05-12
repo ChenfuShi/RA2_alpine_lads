@@ -35,9 +35,15 @@ if __name__ == '__main__':
         pretrained_model = None
     else:
         pretrained_model = '../trained_models/' + pretrained_model + '.h5'
+
+    group_flag = sys.argv[6]
+
+    if group_flag == 'None':
+        group_flag = None
+
     
     # load pretrained model
-    trained_model, hist_df = train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = do_validation)
+    trained_model, hist_df = train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = do_validation, group_flag = group_flag)
 
     save_pretrained_model(trained_model, 0, '../trained_models/' + model_name)
     hist_df.to_csv('../trained_models/' + model_name + '_hist.csv')

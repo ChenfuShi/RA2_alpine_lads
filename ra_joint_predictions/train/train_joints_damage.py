@@ -27,10 +27,13 @@ finetune_params = {
     'steps_per_epoch': 160
 }
 
-def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R'):
-    logging.info(f'Training model with joint_type: {joint_type} - dmg_type: {dmg_type} - model_type: {model_type}')
+def train_joints_damage_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, model_type = 'R', group_flag = None):
+    logging.info(f'Training model with joint_type: {joint_type} - dmg_type: {dmg_type} - model_type: {model_type} - group_flag: {group_flag}')
     
     params = _get_train_params(joint_type, dmg_type)
+    
+    if joint_type == 'W':
+        params['group_flag'] = group_flag
      
     joint_dataset, non0_tf_dataset, tf_joint_val_dataset, no_val_samples = _get_dataset(config, joint_type, dmg_type, model_type, do_validation = do_validation, split_type = params['split_type'])
     

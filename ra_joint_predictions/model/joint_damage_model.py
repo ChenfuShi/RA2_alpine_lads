@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import tensorflow.keras as keras
 import tensorflow_addons as tfa
@@ -34,7 +36,19 @@ def get_joint_damage_model(config, class_weights, params, pretrained_model_file 
     if model_type == MODEL_TYPE_CLASSIFICATION:
         joint_damage_model.compile(loss = 'categorical_crossentropy', metrics = metrics_dir, optimizer = optimizer)
     elif model_type == MODEL_TYPE_REGRESSION:
-        joint_damage_model.compile(loss = pseudo_huber_loss(delta = 3.2), metrics = metrics_dir, optimizer = optimizer)
+        group_flag = params.get('group_flag', None)
+        
+        loss_weights = None
+    
+        if group_flag is not None:
+            if group_flag == 'R':
+                loss_weights = [55 / 3, 55 / 3, 45 / 3, 55 / 3, 45 / 3, 45 / 3]
+            elif group_flag == 'L':
+                loss_weights = [45 / 3, 45 / 3, 55 / 3, 45 / 3, 55 / 3, 55 / 3]
+                
+            logging.info('Loss Weights:', loss_weights)
+        
+        joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer, loss_weights = loss_weights)
     elif model_type == MODEL_TYPE_COMBINED:
         losses = {}
         lossWeights = {}
