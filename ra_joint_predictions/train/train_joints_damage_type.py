@@ -26,7 +26,6 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
     params = train_params.copy()
     
     if joint_type == 'W':
-        params['lr'] = 1e-3
         params['group_flag'] = group_flag
     
     epochs = params['epochs']
@@ -44,6 +43,10 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
     
     # Normalize steps to always pass through the dataset exactly once per epoch
     steps_per_epoch = np.ceil(N / batch_size)
+    
+    if joint_type == 'W':
+        steps_per_epoch = steps_per_epoch * 3
+    
     params['steps_per_epoch'] = steps_per_epoch
 
     model = get_joint_damage_type_model(config, params, pretrained_model, model_name = model_name, alpha = alpha, init_bias = init_bias)

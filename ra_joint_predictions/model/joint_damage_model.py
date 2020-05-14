@@ -42,9 +42,9 @@ def get_joint_damage_model(config, class_weights, params, pretrained_model_file 
     
         if group_flag is not None:
             if group_flag == 'R':
-                loss_weights = [55 / 3, 55 / 3, 45 / 3, 55 / 3, 45 / 3, 45 / 3]
+                loss_weights = [60 / 3, 60 / 3, 40 / 3, 60 / 3, 40 / 3, 40 / 3]
             elif group_flag == 'L':
-                loss_weights = [45 / 3, 45 / 3, 55 / 3, 45 / 3, 55 / 3, 55 / 3]
+                loss_weights = [40 / 3, 40 / 3, 60 / 3, 40 / 3, 60 / 3, 60 / 3]
                 
             logging.info('Loss Weights:', loss_weights)
         

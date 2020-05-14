@@ -75,40 +75,46 @@ def _extract_joint_from_image(img, joint_key, x, y, joint_extractor):
 
     return img
 
-
 def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     img_shape = tf.cast(tf.shape(img), tf.float64)
     w1_x, w2_x, w3_x, w1_y, w2_y, w3_y = [tf.cast(x, tf.float64) for x in [w1_x, w2_x, w3_x, w1_y, w2_y, w3_y]]
 
-    extra_pad_height = img_shape[0] / 12
-    extra_pad_width = img_shape[1] / 12
-
     # identify left top most points
-    x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0) - extra_pad_width
-    y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0) - extra_pad_height
-
+    x_box = tf.reduce_min(tf.stack([w1_x, w2_x, w3_x]),0)
+    y_box = tf.reduce_min(tf.stack([w1_y, w2_y, w3_y]),0)
+    
+    # identify the most right points
+    x_box_max = tf.reduce_max(tf.stack([w1_x, w2_x, w3_x]),0)
+    y_box_max = tf.reduce_max(tf.stack([w1_y, w2_y, w3_y]),0)
+    
     # make sure they are within the image
     x_box = tf.math.maximum(x_box, 10)
     y_box = tf.math.maximum(y_box, 10)
     x_box = tf.math.minimum(x_box, img_shape[1] - 11)
     y_box = tf.math.minimum(y_box, img_shape[0] - 11)
 
-    # identify the most right point (total width)
-    x_box_max = tf.reduce_max(tf.stack([w1_x, w2_x, w3_x]),0) + extra_pad_width
-
-    # make sure they are within the image
     x_box_max = tf.math.maximum(x_box_max, 11)
     x_box_max = tf.math.minimum(x_box_max, img_shape[1] - 10)
-
+    y_box_max = tf.math.maximum(y_box_max, 11)
+    y_box_max = tf.math.minimum(y_box_max, img_shape[0] - 10)
+    
     # calculate width
     total_width = x_box_max - x_box
-
-    # calculate height as a ratio of the total width and calculate box
-    total_height = total_width * 0.8
-
-    y_box_max = y_box + total_height
-
+    
+    x_box = x_box - (total_width / 2)
+    x_box_max = x_box_max + (total_width / 2)
+    
+    y_box = y_box - (total_width / 2)  * 0.75
+    y_box_max = y_box_max + (total_width / 2)
+    
     # make sure it's inside the image
+    x_box = tf.math.maximum(x_box, 10)
+    y_box = tf.math.maximum(y_box, 10)
+    x_box = tf.math.minimum(x_box, img_shape[1] - 11)
+    y_box = tf.math.minimum(y_box, img_shape[0] - 11)
+
+    x_box_max = tf.math.maximum(x_box_max, 11)
+    x_box_max = tf.math.minimum(x_box_max, img_shape[1] - 10)
     y_box_max = tf.math.maximum(y_box_max, 11)
     y_box_max = tf.math.minimum(y_box_max, img_shape[0] - 10)
 
@@ -124,6 +130,3 @@ def _extract_wrist_from_image(img, w1_x, w2_x, w3_x, w1_y, w2_y, w3_y):
     img = tf.image.crop_to_bounding_box(img, round_to_int(y_box), round_to_int(x_box), round_to_int(box_height), round_to_int(box_width))
 
     return img
-
-
-

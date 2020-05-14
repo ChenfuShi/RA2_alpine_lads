@@ -137,7 +137,11 @@ def create_vgg_avg_rsna_model(config, name, no_joint_types = 13):
 def finetune_rsna_model(config, weights, name, no_joint_types = 13):
     pretrained_model = keras.models.load_model(weights, compile = False)
     
-    input_layer = pretrained_model.input
+    if "rewritten" in weights:
+        input_layer = pretrained_model.layers[1].input
+    else:
+        input_layer = pretrained_model.input
+
     pretrained_model = pretrained_model.layers[-4].output
 
     boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(pretrained_model)

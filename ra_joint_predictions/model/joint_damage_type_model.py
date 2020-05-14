@@ -61,12 +61,9 @@ def _add_output(base_output, init_bias, alpha, gamma = 2., group_flag = None):
     is_wrist = n_bias > 1
 
     for n in range(n_bias):
-        bias_initializers = keras.initializers.Constant(value = init_bias[n])
+        bias = init_bias[n]
         
-        if is_wrist:
-            output = keras.layers.Dense(16, activation = 'relu', kernel_initializer = 'he_uniform', name = f'joint_damage_type_dense_{n}')(base_output)
-        else:
-            output = base_output
+        bias_initializers = keras.initializers.Constant(value = bias)
         
         outputs.append(keras.layers.Dense(1, activation = 'sigmoid', bias_initializer = bias_initializers, name = f'joint_damage_type_{n}')(base_output))
     
