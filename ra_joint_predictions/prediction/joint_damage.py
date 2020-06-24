@@ -14,6 +14,8 @@ from dataset.joints.joint_extractor import default_joint_extractor
 from prediction.joint_damage_prediction import ensembled_filter_predictor
 
 def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv', hands_invalid_images = None, feet_invalid_images = None):
+    train_df = pd.read_csv(config.train_location + '/training.csv')
+    
     datasets = _get_test_datasets(config, hands_joint_source, feet_joint_source)
     
     preds = {}
