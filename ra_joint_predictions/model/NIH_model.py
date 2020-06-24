@@ -1,11 +1,3 @@
-########################################
-
-
-
-
-########################################
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from tensorflow import keras 
@@ -13,10 +5,9 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 from model.utils.keras_nasnet import NASNet
-from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu, relu_joint_res_net, complex_rewritten
+from model.utils.building_blocks_joints import create_complex_joint_model, bigger_kernel_base, rewritten_complex, rewritten_elu, relu_joint_res_net, complex_rewritten, small_densenet, bottlenecked_small_dense, small_resnet_with_bottleneck, small_vgg_with_bottleneck
 
 def create_rewritten_elu(config):
-
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
 
     # create new model with common part
@@ -24,6 +15,41 @@ def create_rewritten_elu(config):
     common_part = base_net(inputs)
 
     return _add_common(common_part,"rewritten_elu_NIH",inputs)
+
+def create_small_bottlenecked_vgg(config, model_name, inputs = None):
+    if inputs is None:
+        inputs = keras.layers.Input(shape = [config.chest_img_height, config.chest_img_width, 1])
+
+    model = small_vgg_with_bottleneck(inputs)
+    
+    optimizer = keras.optimizers.Adam(learning_rate = 3e-4)
+    
+    model = _add_common(model, model_name, inputs, optimizer = optimizer)
+    
+    return model
+
+def create_small_dense(config, model_name, inputs = None):
+    if inputs is None:
+        inputs = keras.layers.Input(shape = [config.chest_img_height, config.chest_img_width, 1])
+
+    model = bottlenecked_small_dense(inputs)
+    
+    optimizer = keras.optimizers.Adam(learning_rate = 3e-4)
+    
+    model = _add_common(model, model_name, inputs, optimizer = optimizer)
+    
+    return model
+
+def create_small_resnet(config):
+    inputs = keras.layers.Input(shape = [config.img_height, config.img_width, 1])
+    
+    model = small_resnet_with_bottleneck(inputs)
+    
+    optimizer = keras.optimizers.Adam(learning_rate = 3e-4)
+    
+    model = _add_common(model, 'small_bottlenecked_res_900k_NIH_no_sex', inputs, optimizer = optimizer)
+    
+    return model
 
 def create_complex_joint_multioutput(config):
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
@@ -248,16 +274,21 @@ def _add_common(common_part,name,inputs, optimizer = 'adam'):
     # get final model
     model = keras.models.Model(
         inputs=inputs,
-        outputs=[disease,sex, age],
+        outputs=[disease, age],
         name=name)
 
     losses = {
-    "disease_pred": tfa.losses.focal_loss.SigmoidFocalCrossEntropy(),
-    "sex_pred" : "binary_crossentropy",
-    "age_pred": "mean_squared_error",
+        "disease_pred": "binary_crossentropy",
+        # "sex_pred" : "binary_crossentropy",
+        "age_pred": "mean_squared_error",
     }
-    lossWeights = {"disease_pred": 2.0,"sex_pred" :0.5,"age_pred": 0.005}
+    
+    lossWeights = {
+        "disease_pred": 2.0, 
+        "age_pred": 0.005
+    }
 
-    model.compile(optimizer = optimizer, loss = losses, loss_weights = lossWeights, metrics = {"disease_pred":"binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"})
-
+    # model.compile(optimizer = optimizer, loss = losses, loss_weights = lossWeights, metrics = {"disease_pred": "binary_accuracy","sex_pred":"binary_accuracy","age_pred":"mae"})
+    model.compile(optimizer = optimizer, loss = losses, loss_weights = lossWeights, metrics = {"disease_pred": "binary_accuracy", "age_pred":"mae"})
+    
     return model

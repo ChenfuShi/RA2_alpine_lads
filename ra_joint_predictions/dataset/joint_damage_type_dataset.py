@@ -55,6 +55,9 @@ class joint_damage_type_dataset(dream_dataset):
     def get_wrists_joint_damage_type_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         self.cache = self.cache + '_wrists'
         self.is_wrist = True
+        
+        self.joint_height = self.config.wrist_img_height
+        self.joint_width = self.config.wrist_img_width
 
         outcome_columns = self._get_outcome_column(erosion_flag)
 

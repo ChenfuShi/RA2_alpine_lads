@@ -24,6 +24,9 @@ class joint_test_dataset(dream_dataset):
         self.repeat = repeat
         self.divide_erosion_by_2 = False
         
+        self.img_height = config.joint_img_height
+        self.img_width = config.joint_img_width
+        
     def get_hands_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
         if erosion_flag is False:
             params = joint_dataset.hands_narrowing_params
@@ -35,6 +38,9 @@ class joint_test_dataset(dream_dataset):
         return self._create_joint_dataset(joints_source, joint_dataset.hand_outcome_mapping, outcomes_source, params)
 
     def get_wrists_joint_test_dataset(self, joints_source = './data/predictions/hand_joint_data_test.csv', outcomes_source = None, erosion_flag = None):
+        self.img_height = self.config.wrist_img_height
+        self.img_width = self.config.wrist_img_width
+        
         if erosion_flag is False:
             params = joint_dataset.wrists_narrowing_params
         elif erosion_flag is True:
@@ -103,6 +109,13 @@ class joint_test_dataset(dream_dataset):
             dataset = self._load_joints_without_outcomes(dataset, apply_clahe = self.apply_clahe)
 
         dataset = self._resize_images_without_outcomes(dataset)
+        
+        def map_single(x, y, z):
+            y = tf.image.per_image_standardization(y)
+        
+            return x, y, z
+        
+        # dataset = dataset.map(map_single, num_parallel_calls=AUTOTUNE)
         
         if params:
             dataset = self._remove_file_info(dataset)
@@ -200,7 +213,7 @@ class joint_test_dataset(dream_dataset):
 
     def _resize_images_without_outcomes(self, dataset):
         def __resize(file_info, img, y):
-            img, _ =  img_ops.resize_image(img, [], self.config.joint_img_height, self.config.joint_img_width, pad_resize = self.pad_resize, update_labels = False)
+            img, _ =  img_ops.resize_image(img, [], self.img_height, self.img_width, pad_resize = self.pad_resize, update_labels = False)
 
             return file_info, img, y
 

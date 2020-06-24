@@ -24,13 +24,16 @@ os.chdir('/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/michael_dev/R
 
 configuration = Config()
 
-joint_extractor = get_joint_extractor('H', True)
+joint_extractor = get_joint_extractor('RSNA', False)
 
 ## joints
-joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, pad_resize = False, joint_extractor = joint_extractor).create_rsna_joints_dataset(val_split = True, include_wrist_joints = True)
+joint_dataset, joint_val_dataset = rsna_joint_dataset(configuration, pad_resize = False, joint_extractor = joint_extractor).create_rsna_joints_dataset(val_split = True, include_wrist_joints = False)
 
-model = RSNA_model.create_rsna_extended_complex(configuration, 'extended_complex_erosion_joints_sgd', no_joint_types = 13)
+# model = RSNA_model.create_small_bottlenecked_vgg(configuration, 'small_bottlenecked_vgg_500k_gap_renorm_nohead_nosex_92x92_diffextractor_adamW_200', no_joint_types = 10)
 
+model = RSNA_model.finetune_rsna_model(configuration, './weights/small_wrist_dense_1M_NIH_nosex_256x256_model_100.h5', 'small_bottlenecked_dense_1M_nosex_joints_224x224_adamW_200_withNIH', no_joint_types = 10)
+
+#model = RSNA_model.finetune_rsna_model(configuration, './weights/small_bottlenecked_dense_1M_gap_renorm_nohead_nosex_92x92_diffextractor_now_adamW_200after_model_200.h5', 'small_bottlenecked_dense_1M_gap_renorm_nohead_nosex_92x92_diffextractor_now_adamW_200_withNIH', no_joint_types = 10)
 model.summary()
 
-finetune_model(model, "extended_complex_erosion_joints_sgd", joint_dataset, joint_val_dataset, n_outputs = 13, epochs_before = 0, epochs_after = 201)
+finetune_model(model, "small_bottlenecked_dense_1M_nosex_joints_224x224_adamW_200_withNIH", joint_dataset, joint_val_dataset, n_outputs = 10, epochs_before = 25, epochs_after = 201)

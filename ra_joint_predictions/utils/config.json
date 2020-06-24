@@ -13,7 +13,7 @@
     "output_dir": "logs",
     "img_height": 224,
     "img_width": 224,
-    "cache_loc": "~/localscratch/RA_challenge_scratch/",
+    "cache_loc": "~/localscratch/",
     "CPU_threads": 8,
     "batch_size": 64,
     "augment":true,
@@ -23,5 +23,9 @@
     "joint_img_width": 224,
     "rsna_img_dir": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/checked_rsna_training",
     "rsna_labels": "/mnt/jw01-aruk-home01/projects/ra_challenge/RA_challenge/rsna_boneAge/boneage-training-dataset.csv",
-    "test_template_path": "../resources/template.csv"
+    "test_template_path": "../resources/template.csv",
+    "chest_img_height": 256,
+    "chest_img_width": 256,
+    "wrist_img_height": 192,
+    "wrist_img_width": 256
 }

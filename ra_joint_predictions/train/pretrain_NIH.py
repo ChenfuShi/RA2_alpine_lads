@@ -27,5 +27,7 @@ def pretrain_NIH_chest(model, data_train, data_val, config, model_name, epochs =
 
 def _split_dataset_outputs(x,y):
     # split outputs of dataset for multioutput
-    return x,(tf.split(y,[1,1,14],1)[2],tf.split(y,[1,1,14],1)[1],tf.split(y,[1,1,14],1)[0])
+    # return x,(tf.split(y,[1,1,14],1)[2],tf.split(y,[1,1,14],1)[1],tf.split(y,[1,1,14],1)[0])
+    
+    return x,(tf.split(y,[1,1,14],1)[2], tf.split(y,[1,1,14],1)[0])
 

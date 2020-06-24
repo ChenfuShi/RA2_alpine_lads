@@ -18,6 +18,9 @@ class rsna_joint_dataset(joint_dataset):
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
         self.cache = self.cache + 'rsna/'
+        
+        self.joint_height = 224
+        self.joint_width = 224
 
     def create_rsna_joints_dataset(self, joints_source = './data/predictions/rsna_joint_data_v3.csv', val_split = False, include_wrist_joints = True):
         joint_keys = hand_joint_keys
@@ -86,6 +89,9 @@ class rsna_wrist_dataset(rsna_joint_dataset):
 
         self.image_dir = config.rsna_img_dir
         self.outcomes_source = config.rsna_labels
+        
+        self.joint_height = config.wrist_img_height
+        self.joint_width = config.wrist_img_width
 
     def create_rsna_wrist_dataset(self, joints_source = './data/predictions/rsna_joint_data_v3.csv', val_split = False):
         outcomes_df = self._create_intermediate_outcomes_wrists_df(self.image_dir, hand_wrist_keys) 

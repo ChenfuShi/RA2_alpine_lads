@@ -8,7 +8,7 @@ import tensorflow.keras as keras
 from dataset.joint_damage_type_dataset import joint_damage_type_dataset
 from dataset.joints.joint_extractor_factory import get_joint_extractor
 from dataset.test_dataset import joint_test_dataset
-from model.joint_damage_type_model import get_joint_damage_type_model
+from model.joint_damage_type_model import get_joint_damage_type_model, _recompile_model
 from train.utils.callbacks import AdamWWarmRestartCallback
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
@@ -27,6 +27,8 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
     
     if joint_type == 'W':
         params['group_flag'] = group_flag
+        params['no_outcomes'] = 6
+        params['lr'] = 3e-4
     
     epochs = params['epochs']
     batch_size = params['batch_size']
@@ -51,6 +53,8 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
 
     model = get_joint_damage_type_model(config, params, pretrained_model, model_name = model_name, alpha = alpha, init_bias = init_bias)
 
+    model.summary()
+    
     return _fit_joints_damage_type_model(model, tf_dataset, params, val_dataset = tf_val_dataset, no_val_samples = val_no_samples, wr_callback = adamW_warm_restart_callback)
 
 def _get_dataset(config, joint_type, dmg_type, do_validation):
@@ -113,10 +117,18 @@ def _fit_joints_damage_type_model(model, dataset, train_params, val_dataset = No
     else:
         val_steps = np.ceil(no_val_samples / batch_size)
         
+        frozen_history = model.fit(
+            dataset, epochs = 25, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks,
+                validation_data = val_dataset, validation_steps = val_steps)
+        frozen_hist_df = pd.DataFrame(frozen_history.history)
+        
+        model = _recompile_model(model, train_params)
         history = model.fit(
             dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks,
                 validation_data = val_dataset, validation_steps = val_steps)
 
-    hist_df = pd.DataFrame(history.history)
+        hist_df = pd.DataFrame(history.history)
+        
+        hist_df = pd.concat([frozen_hist_df, hist_df])
 
     return model, hist_df

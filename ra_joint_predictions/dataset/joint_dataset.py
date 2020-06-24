@@ -175,6 +175,9 @@ class hands_wrists_dataset(dream_dataset):
         self.image_dir = config.train_fixed_location
         self.is_wrist = True
         self.maj_ratio = 0.3
+        
+        self.joint_height = config.wrist_img_height
+        self.joint_width = config.wrist_img_width
 
     def create_wrists_joints_dataset(self, outcomes_source, joints_source = './data/predictions/hand_joint_data_v2.csv', erosion_flag = False):
         outcome_columns = ['narrowing_0', 'narrowing_1', 'narrowing_2', 'narrowing_3', 'narrowing_4', 'narrowing_5']
@@ -188,6 +191,7 @@ class hands_wrists_dataset(dream_dataset):
         dataset = self._create_dream_datasets(outcomes_source, joints_source, wrist_outcome_mapping, dream_hand_parts, outcome_columns, no_classes, wrist = True)
 
         return self._split_outcomes(dataset, no_classes)
+    
     # Overwrite method for wrist dataset to change how maj elements are found
     def _find_maj_indices(self, outcomes):
         # Find elements with all 0

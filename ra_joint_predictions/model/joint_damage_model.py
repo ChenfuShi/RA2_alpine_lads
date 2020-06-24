@@ -4,9 +4,9 @@ import numpy as np
 import tensorflow.keras as keras
 import tensorflow_addons as tfa
 
-from keras_adamw import AdamW, get_weight_decays, fill_dict_in_order
+from keras_adamw import AdamW, SGDW, get_weight_decays, fill_dict_in_order
 
-from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model, complex_rewritten, _vvg_fc_block
+from model.utils.building_blocks_joints import get_joint_model_input, create_complex_joint_model, complex_rewritten, _vvg_fc_block, _vgg_block_with_sp, _dense_block
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric, softmax_mae_metric, softmax_rmse_metric, class_filter_softmax_rmse_metric
 from model.utils.layers import ReLUOutput
 from model.utils.losses import softmax_focal_loss, pseudo_huber_loss
@@ -21,7 +21,7 @@ def load_joint_damage_model(model_file):
 def get_joint_damage_model(config, class_weights, params, pretrained_model_file = None, model_name = 'joint_damage_model', model_type = 'R', has_outputs = False):
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
-    outputs, metrics_dir = _add_outputs(class_weights, base_ouptut, model_type, params.get('is_wrist', False))
+    outputs, metrics_dir, max_outcome = _add_outputs(class_weights, base_ouptut, model_type, params.get('is_wrist', False))
 
     if has_outputs:
         outputs = [base_ouptut]
@@ -31,6 +31,8 @@ def get_joint_damage_model(config, class_weights, params, pretrained_model_file 
         outputs = outputs,
         name = model_name)
     
+    joint_damage_model.summary()
+
     optimizer = _get_optimizier(joint_damage_model, params)
 
     if model_type == MODEL_TYPE_CLASSIFICATION:
@@ -81,10 +83,44 @@ def load_minority_model(model_file, class_weights, epochs, steps, model_name = '
     
     return joint_damage_model
 
+def re_compile_joint_damage_model(joint_damage_model, class_weights, params):
+    epochs = params['epochs']
+    steps_per_epoch = params['steps_per_epoch']
+    lr = params['lr']
+    wd = params['wd']
+    
+    max_outcome = max(class_weights[0].keys())
+    
+    metrics_dir = {}
+    for idx, class_weight in enumerate(class_weights):
+        metrics_dir[f'reg_output_{idx}'] = [mae_metric(max_outcome), rmse_metric(max_outcome), class_filter_rmse_metric(max_outcome, 0)]
+    
+    for trainable_layer in joint_damage_model.layers:
+        trainable_layer.trainable = True
+    
+    weight_decays = {}
+    # Only layers with "kernel" need wd applied
+    for layer in joint_damage_model.layers:
+        if hasattr(layer, 'kernel'):
+            layer.kernel_regularizer = keras.regularizers.l2(0)
+            weight_decays.update({layer.kernel.name: wd})
+            
+    optimizer = AdamW(lr = 1e-3, use_cosine_annealing = True, total_iterations = 200 * steps_per_epoch, init_verbose = False, batch_size = 1, weight_decays = weight_decays)
+    
+    loss_weights = joint_damage_model.loss_weights
+    joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer, loss_weights = loss_weights)
+    
+    return joint_damage_model
+
 def _get_base_model(config, pretrained_model_file):
     if pretrained_model_file is not None:
         pretrained_model = keras.models.load_model(pretrained_model_file, compile = False)
-        
+       
+        # Set Convs to not trainable
+        for layer in pretrained_model.layers:
+            if hasattr(layer, 'kernel'):
+                layer.trainable = False
+
         return pretrained_model.input, pretrained_model.output
     else:
         input = get_joint_model_input(config)
@@ -95,15 +131,21 @@ def _get_base_model(config, pretrained_model_file):
 def _add_outputs(class_weights, base_output, model_type, is_wrist):
     metrics_dir = {}
     outputs = []
+
+    max_outcome = max(class_weights[0].keys())
     
     for idx, class_weight in enumerate(class_weights):
         no_outcomes = len(class_weight.keys())
 
         if 'R' in model_type:
-            req_output = keras.layers.Dense(1, activation = 'linear', name = f'reg_output_{idx}')(base_output)
-            outputs.append(req_output)
+            # conv = keras.layers.AveragePooling2D((2, 2), name = 'added_avg_pool')(base_output)
+            # conv = _dense_block(base_output, 16, 3, 'added_dense', add_pool = False, add_bottle_neck = True)
+            # model = keras.layers.GlobalAveragePooling2D()(conv)
             
-            max_outcome = max(class_weight.keys())
+            # req_output = _vvg_fc_block(base_output, 256, f'reg_output_{idx}_fc_block_1', use_renorm = True, use_dropout = True, initializer = 'he_uniform')
+            req_output = keras.layers.Dense(1, activation = 'linear', name = f'reg_output_{idx}')(base_output)
+            
+            outputs.append(req_output)
 
             metrics_dir[f'reg_output_{idx}'] = [mae_metric(max_outcome), rmse_metric(max_outcome), class_filter_rmse_metric(max_outcome, 0)]
         
@@ -115,7 +157,7 @@ def _add_outputs(class_weights, base_output, model_type, is_wrist):
 
             metrics_dir[f'class_output_{idx}'] = [softmax_mae_metric(np.arange(no_outcomes)), softmax_rmse_metric(np.arange(no_outcomes)), class_filter_softmax_rmse_metric(np.arange(no_outcomes), 0)]
 
-    return outputs, metrics_dir
+    return outputs, metrics_dir, max_outcome
 
 def _get_optimizier(model, params):
     epochs = params['epochs']
@@ -131,7 +173,6 @@ def _get_optimizier(model, params):
             layer.kernel_regularizer = keras.regularizers.l2(0)
             weight_decays.update({layer.kernel.name: wd})
             
-    optimizer = AdamW(lr = lr, use_cosine_annealing = True, weight_decays = weight_decays, total_iterations = epochs * steps_per_epoch, init_verbose = False, batch_size = 1)
+    optimizer = AdamW(lr = lr, total_iterations = 50 * steps_per_epoch, use_cosine_annealing = False, init_verbose = False, batch_size = 1, weight_decays = weight_decays, eta_min = 0.1)
     
     return optimizer
-

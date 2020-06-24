@@ -14,7 +14,7 @@ import dataset.joint_dataset as joint_dataset
 from dataset.joint_val_dataset import hands_joints_val_dataset, hands_wrists_val_dataset, feet_joint_val_dataset, combined_joint_val_dataset, mixed_joint_val_dataset
 from dataset.test_dataset import joint_test_dataset
 from dataset.joints.joint_extractor_factory import get_joint_extractor
-from model.joint_damage_model import get_joint_damage_model, load_minority_model
+from model.joint_damage_model import get_joint_damage_model, load_minority_model, re_compile_joint_damage_model
 from utils.saver import CustomSaver, _get_tensorboard_callback
 from model.utils.metrics import mae_metric, rmse_metric, class_filter_rmse_metric
 
@@ -133,23 +133,26 @@ def _fit_joint_damage_model(model, model_name, tf_joint_dataset, class_weights, 
     saver = CustomSaver(model_name, n = 10)
     tensorboard_callback = _get_tensorboard_callback(model_name)
     
-    reset_callback = AdamWResetCallback(reset_epochs = 200)
-    
     logging.info('_fit_joint_damage_model params %s', params)
     
     epochs = params['epochs']
     steps_per_epoch = params['steps_per_epoch']
     batch_size = params['batch_size']
     
-    if tf_joint_val_dataset is None:
-        history = model.fit(
-            tf_joint_dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = [saver, tensorboard_callback])
-    else:
-        val_steps = np.ceil(no_val_samples / batch_size)
-        
-        history = model.fit(tf_joint_dataset, 
-            epochs = epochs, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
-
-    hist_df = pd.DataFrame(history.history)
+    hist_df = None
+    
+    val_steps = np.ceil(no_val_samples / batch_size)
+    
+    frozen_history = model.fit(tf_joint_dataset, 
+            epochs = 50, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
+    hist_df = pd.DataFrame(frozen_history.history)
+            
+    model = re_compile_joint_damage_model(model, class_weights, params)
+    history = model.fit(tf_joint_dataset, 
+            epochs = 200, steps_per_epoch = steps_per_epoch, validation_data = tf_joint_val_dataset, validation_steps = val_steps, verbose = 2, callbacks = [saver, tensorboard_callback])
+    
+    next_hist_df = pd.DataFrame(history.history)
+            
+    hist_df = pd.concat([hist_df, next_hist_df])
 
     return model, hist_df

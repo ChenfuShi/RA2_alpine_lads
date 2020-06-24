@@ -8,7 +8,11 @@ from tensorflow.keras.layers import Dense, Dropout
 import model.NIH_model as NIH
 from model.utils.building_blocks_joints import _fc_block
 from model.utils.building_blocks_joints import create_complex_joint_model, relu_joint_res_net, extended_complex
-from model.utils.building_blocks_joints import get_joint_model_input, vvg_joint_model, complex_rewritten, avg_joint_vgg
+from model.utils.building_blocks_joints import get_joint_model_input, vvg_joint_model, complex_rewritten, avg_joint_vgg, vgg19_with_sp_dropout, small_resnet_with_bottleneck, small_densenet, bottlenecked_small_dense, small_vgg_with_bottleneck, small_vgg_with_bottleneck
+
+from model import NIH_model
+
+from keras_adamw import AdamW
 
 elu_activation = lambda x: keras.activations.elu(x, alpha = 0.3)
 
@@ -134,39 +138,94 @@ def create_vgg_avg_rsna_model(config, name, no_joint_types = 13):
     
     return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name) 
     
+def create_vgg19_with_sp_dropout(config, name, no_joint_types = 13):
+    input_layer = get_joint_model_input(config)
+    model = vgg19_with_sp_dropout(input_layer)
+    
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
+
+def create_small_bottlenecked_vgg(config, name, no_joint_types = 13):
+    input_layer = get_joint_model_input(config)
+    
+    model = small_vgg_with_bottleneck(input_layer)
+    
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
+
+def create_small_resnet_withbottleneck(config, name, no_joint_types = 13):
+    input_layer = get_joint_model_input(config)
+    model = small_resnet_with_bottleneck(input_layer)
+    
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
+
+def create_small_densenet(config, name, no_joint_types = 13, input_layer = None):
+    if input_layer is None:
+        input_layer = get_joint_model_input(config)
+        
+    model = bottlenecked_small_dense(input_layer)
+    
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name)
+    
 def finetune_rsna_model(config, weights, name, no_joint_types = 13):
     pretrained_model = keras.models.load_model(weights, compile = False)
     
-    if "rewritten" in weights:
-        input_layer = pretrained_model.layers[1].input
-    else:
-        input_layer = pretrained_model.input
-
-    pretrained_model = pretrained_model.layers[-4].output
-
-    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(pretrained_model)
-    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(pretrained_model)
-    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(pretrained_model)
+    input_layer = keras.layers.Input(shape = [224, 224, 1])
     
-    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name) 
+    new_model = NIH_model.create_small_dense(config, name, inputs = input_layer)
+    new_model.set_weights(pretrained_model.get_weights())
+    
+    model_output = new_model.layers[-3].output
+    
+    #if "rewritten" in weights:
+    # input_layer = pretrained_model.layers[1].input
+    #else:
+        #input_layer = pretrained_model.input
 
-def _create_compile_rsna_multioutput(input, boneage, sex, joint_type, name):
+
+    boneage = keras.layers.Dense(1, activation = 'linear', name = 'boneage_pred', kernel_initializer = 'he_uniform')(model_output)
+    sex = keras.layers.Dense(1, activation = 'sigmoid', name = 'sex_pred', kernel_initializer = 'he_uniform')(model_output)
+    joint_type = keras.layers.Dense(no_joint_types, activation = 'softmax', name = 'joint_type_pred', kernel_initializer = 'he_uniform')(model_output)
+    
+    optimizer = keras.optimizers.Adam(learning_rate = 3e-4)
+    
+    return _create_compile_rsna_multioutput(input_layer, boneage, sex, joint_type, name, optimizier = optimizer) 
+
+def _create_compile_rsna_multioutput(input, boneage, sex, joint_type, name, optimizier = 'adam'):
     # get final model
     model = keras.models.Model(
         inputs=input,
-        outputs=[boneage, sex, joint_type],
+        outputs=[boneage, joint_type],
         name=name)
+    
+    for layer in model.layers[:-2]:
+        if hasattr(layer, 'kernel'):
+                layer.trainable = False
 
     losses = {
         'boneage_pred': 'mean_squared_error',
-        'sex_pred' : 'binary_crossentropy',
+        # 'sex_pred' : 'binary_crossentropy',
         'joint_type_pred': 'categorical_crossentropy',
     }
 
-    lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
+    lossWeights = {'boneage_pred': 0.005, 'joint_type_pred': 1}
     
-    model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
-        metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
+    model.compile(optimizer = optimizier, loss = losses, loss_weights = lossWeights, 
+        metrics={'boneage_pred': 'mae', 'joint_type_pred': 'categorical_accuracy'})
 
     return model
 
@@ -199,7 +258,7 @@ def create_rsna_NASnet_multioutupt(config, no_joint_types = 13):
     }
 
     lossWeights = {'boneage_pred': 0.005, 'sex_pred': 2, 'joint_type_pred': 1}
-
+    
     model.compile(optimizer = 'adam', loss = losses, loss_weights = lossWeights, 
         metrics={'boneage_pred': 'mae', 'sex_pred': 'binary_accuracy', 'joint_type_pred': 'categorical_accuracy'})
 

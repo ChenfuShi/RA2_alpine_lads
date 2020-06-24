@@ -1,11 +1,3 @@
-########################################
-
-
-
-
-########################################
-
-
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -52,7 +44,7 @@ class pretrain_dataset_NIH_chest(base_dataset):
             x, data, self.config.pretrain_NIH_chest_location, imagenet = imagenet)
         
         # resize the images because it was taking too long
-        chest_dataset = dataset_ops.augment_and_resize_images(chest_dataset, 350, 350, pad_resize = True, augments = [])
+        chest_dataset = dataset_ops.augment_and_resize_images(chest_dataset, 256, 256, pad_resize = True, augments = [])
 
         # here separate validation set
         chest_dataset, chest_dataset_val = self._create_validation_split(chest_dataset,1000)
@@ -62,8 +54,8 @@ class pretrain_dataset_NIH_chest(base_dataset):
         chest_dataset = self._cache_shuffle_repeat_dataset(chest_dataset, cache = self.cache + 'chest', buffer_size = 5000)
         chest_dataset_val = self._cache_shuffle_repeat_dataset(chest_dataset_val, cache = self.cache + 'chest_val', buffer_size = 1000)
         
-        chest_dataset = self._prepare_for_training(chest_dataset, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size, pad_resize = False)
-        chest_dataset_val = self._prepare_for_training(chest_dataset_val, self.config.img_height, self.config.img_width, batch_size = self.config.batch_size, augment = False, pad_resize = False)
+        chest_dataset = self._prepare_for_training(chest_dataset, self.config.chest_img_height, self.config.chest_img_width, batch_size = self.config.batch_size, pad_resize = False)
+        chest_dataset_val = self._prepare_for_training(chest_dataset_val, self.config.chest_img_height, self.config.chest_img_width, batch_size = self.config.batch_size, augment = False, pad_resize = False)
 
         return chest_dataset, chest_dataset_val
     

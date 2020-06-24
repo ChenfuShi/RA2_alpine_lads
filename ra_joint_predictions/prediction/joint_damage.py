@@ -13,7 +13,7 @@ from dataset.joints.joint_extractor_factory import get_joint_extractor
 from dataset.joints.joint_extractor import default_joint_extractor
 from prediction.joint_damage_prediction import ensembled_filter_predictor
 
-def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv'):
+def predict_test_set(config, model_parameters_collection, hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv', feet_joint_source = './data/predictions/feet_joint_data_test_v2.csv', hands_invalid_images = None, feet_invalid_images = None):
     datasets = _get_test_datasets(config, hands_joint_source, feet_joint_source)
     
     preds = {}
@@ -76,7 +76,7 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
             
         logging.info(f'{joint_type} erosion filtered {filtered_ratio} of joints ({n_filtered} / {n_images})')
         logging.info('-------------') 
-        logging.info('-------------')
+        logging.info('-------------')    
 
     logging.info("Predicting hands")
     _predict('hands', joint_dataset.hand_outcome_mapping)
@@ -84,6 +84,17 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     _predict('wrists', joint_dataset.wrist_outcome_mapping)
     logging.info("Predicting feet")
     _predict('feet', joint_dataset.foot_outcome_mapping)
+    
+    logging.info("Adding Missing Predictions")
+
+    missing_preds = _get_missing_preds(train_df, hands_invalid_images, feet_invalid_images)
+    for patient_id in missing_preds:
+        _init_preds(patient_id)
+        
+        for outcome_key in missing_preds[patient_id]['missing_values']:
+            logging.info(f'Adding missing outcome {outcome_key} for patient {patient_id}')
+            
+            preds[patient_id][outcome_key] = missing_preds[patient_id]['missing_values'][outcome_key]
 
     predictions_df = pd.DataFrame(preds.values(), index = np.arange(len(preds.values())))
     
@@ -105,9 +116,6 @@ def predict_test_set(config, model_parameters_collection, hands_joint_source = '
     predictions_df = predictions_df[template.columns]
     
     logging.info("Finished predictions")
-
-    # Wait 30s to ensure that log file is updated
-    time.sleep(30)
 
     return predictions_df
     
@@ -141,3 +149,51 @@ def _get_details(file_info):
     part = patient_info[1]
         
     return patient_id, part, key
+
+def _get_missing_preds(train_df, hands_invalid_images, feet_invalid_images):
+    mean_train_df = train_df.mean()
+    
+    missing_preds = {}
+    
+    def _init_missing_preds(patient_id):
+        if not patient_id in missing_preds.keys():
+            missing_preds[patient_id] = {
+                'missing_values': {}
+            }
+    
+    def _add_missing_preds_for_outcome_mapping(patient_id, outcome_mapping):
+        for key in outcome_mapping:
+            for outcome_key in outcome_mapping[key][0]:
+                outcome_key = outcome_key.format(part = part)
+                
+                missing_preds[patient_id]['missing_values'][outcome_key] = mean_train_df[outcome_key]
+                
+            for outcome_key in outcome_mapping[key][1]:
+                outcome_key = outcome_key.format(part = part)
+                
+                missing_preds[patient_id]['missing_values'][outcome_key] = mean_train_df[outcome_key]
+    
+    if hands_invalid_images is not None:
+        for hand_invalid_image in hands_invalid_images:
+            details = hand_invalid_image.split('-')
+
+            patient_id = details[0]
+            part = details[1]
+
+            _init_missing_preds(patient_id)
+
+            _add_missing_preds_for_outcome_mapping(patient_id, joint_dataset.hand_outcome_mapping)
+            _add_missing_preds_for_outcome_mapping(patient_id, joint_dataset.wrist_outcome_mapping)
+        
+    if feet_invalid_images is not None:
+        for feet_invalid_image in feet_invalid_images:
+            details = feet_invalid_image.split('-')
+
+            patient_id = details[0]
+            part = details[1]
+
+            _init_missing_preds(patient_id)
+
+            _add_missing_preds_for_outcome_mapping(patient_id, joint_dataset.foot_outcome_mapping)
+                
+    return missing_preds
