@@ -223,14 +223,15 @@ class ensembled_filter_predictor():
 
         dmg_preds, dmg_pred_labels = self.aggregator(dmg_preds, self.rounding_cutoff)
               
-        filter_preds, _ = self.aggregator(filter_preds)
+        if self.no_filter_models > 0:
+            filter_preds, _ = self.aggregator(filter_preds)
         
-        filtered_idx = np.where(filter_preds <= self.filter_cutoff)[0]
+            filtered_idx = np.where(filter_preds <= self.filter_cutoff)[0]
         
-        dmg_preds[filtered_idx] = self.default_value
-        for idx in filtered_idx:
-            dmg_pred_labels[idx] = 'F'
+            dmg_preds[filtered_idx] = self.default_value
+            for idx in filtered_idx:
+                dmg_pred_labels[idx] = 'F'
 
-        self.n_filtered_images += filtered_idx.size
+            self.n_filtered_images += filtered_idx.size
         
         return dmg_preds, dmg_pred_labels

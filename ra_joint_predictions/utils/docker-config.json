@@ -10,5 +10,7 @@
     "joint_img_width": 224,
     "cache_loc": "/output",
     "batch_size": 64,
-    "test_template_path": "/test/template.csv"
+    "test_template_path": "/test/template.csv",
+    "wrist_img_height": 192,
+    "wrist_img_width": 256
 }
