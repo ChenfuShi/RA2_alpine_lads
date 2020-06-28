@@ -184,9 +184,9 @@ def create_small_densenet(config, name, no_joint_types = 13, input_layer = None)
 def finetune_rsna_model(config, weights, name, no_joint_types = 13):
     pretrained_model = keras.models.load_model(weights, compile = False)
     
-    input_layer = keras.layers.Input(shape = [224, 224, 1])
+    input_layer = keras.layers.Input(shape = [192, 256, 1])
     
-    new_model = NIH_model.create_small_dense(config, name, inputs = input_layer)
+    new_model = NIH_model.create_complex_joint_multioutput(config, name, inputs = input_layer)
     new_model.set_weights(pretrained_model.get_weights())
     
     model_output = new_model.layers[-3].output

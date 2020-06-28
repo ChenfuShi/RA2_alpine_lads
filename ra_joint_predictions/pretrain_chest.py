@@ -31,10 +31,10 @@ if __name__ == '__main__':
     # define model
 
     # no weights then go for new model
-    model = NIH_model.create_small_dense(configuration, "small_wrist_dense_1M_NIH_nosex_256x256")
+    model = NIH_model.create_complex_joint_multioutput(configuration, "complex_gap_wrist_NIH_nosex_256x256")
     model.summary()
     # check if there is weights to load
     logging.info("model prepared")
     # train
     logging.info("starting training")
-    pretrain_NIH_chest(model, chest_dataset, chest_dataset_val, configuration, "small_wrist_dense_1M_NIH_nosex_256x256", epochs = 101)
+    pretrain_NIH_chest(model, chest_dataset, chest_dataset_val, configuration, "complex_gap_wrist_NIH_nosex_256x256", epochs = 101)

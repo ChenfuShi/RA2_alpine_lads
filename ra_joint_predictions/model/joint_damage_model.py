@@ -105,7 +105,7 @@ def re_compile_joint_damage_model(joint_damage_model, class_weights, params):
             layer.kernel_regularizer = keras.regularizers.l2(0)
             weight_decays.update({layer.kernel.name: wd})
             
-    optimizer = AdamW(lr = 1e-3, use_cosine_annealing = True, total_iterations = 200 * steps_per_epoch, init_verbose = False, batch_size = 1, weight_decays = weight_decays)
+    optimizer = AdamW(lr = lr, use_cosine_annealing = True, total_iterations = 200 * steps_per_epoch, init_verbose = False, batch_size = 1, weight_decays = weight_decays)
     
     loss_weights = joint_damage_model.loss_weights
     joint_damage_model.compile(loss = 'mean_squared_error', metrics = metrics_dir, optimizer = optimizer, loss_weights = loss_weights)

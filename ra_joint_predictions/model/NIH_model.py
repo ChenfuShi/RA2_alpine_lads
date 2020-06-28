@@ -51,14 +51,16 @@ def create_small_resnet(config):
     
     return model
 
-def create_complex_joint_multioutput(config):
-    inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])
+def create_complex_joint_multioutput(config, model_name, inputs = None):
+    if inputs is None:
+        inputs = keras.layers.Input(shape = [config.chest_img_height, config.chest_img_width, 1])
 
     # create new model with common part
-    common_part = create_complex_joint_model(inputs)
+    model = complex_rewritten(inputs, use_dense = False, decay = None)
 
-    return _add_common(common_part,"complex_multiout_NIH",inputs)
-
+    optimizer = keras.optimizers.Adam(learning_rate = 3e-4)
+    
+    return _add_common(model, model_name, inputs, optimizer = optimizer)
 
 def create_rewritten_complex_joint_multioutput(config):
     inputs = keras.layers.Input(shape=[config.img_height,config.img_width,1])

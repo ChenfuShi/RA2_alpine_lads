@@ -13,6 +13,7 @@ from train.utils.callbacks import AdamWWarmRestartCallback
 from utils.saver import CustomSaver, _get_tensorboard_callback
 
 train_params = {
+    'frozen_epochs': 5,
     'epochs': 75,
     'batch_size': 64,
     'restart_epochs': 0,
@@ -20,7 +21,7 @@ train_params = {
     'wd': 1e-6
 }
 
-def train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, group_flag = None):
+def train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = False, group_flag = None, gamma = 2.0):
     tf_dataset, N, alpha, init_bias, tf_val_dataset, val_no_samples = _get_dataset(config, joint_type, dmg_type, do_validation)
     
     params = train_params.copy()
@@ -51,7 +52,7 @@ def train_joints_damage_type_model(config, model_name, pretrained_model, joint_t
     
     params['steps_per_epoch'] = steps_per_epoch
 
-    model = get_joint_damage_type_model(config, params, pretrained_model, model_name = model_name, alpha = alpha, init_bias = init_bias)
+    model = get_joint_damage_type_model(config, params, pretrained_model, model_name = model_name, alpha = alpha, init_bias = init_bias, gamma = gamma)
 
     model.summary()
     
@@ -106,29 +107,28 @@ def _fit_joints_damage_type_model(model, dataset, train_params, val_dataset = No
     epochs = train_params['epochs']
     batch_size = train_params['batch_size']
     steps_per_epoch = train_params['steps_per_epoch']
+    frozen_epochs = train_params.get('frozen_epochs', 0)
     
     callbacks = [CustomSaver(model.name, n = 5), _get_tensorboard_callback(model.name, log_dir = '../logs/tensorboard/joint_damage_type/')]
     if wr_callback is not None:
         callbacks.append(wr_callback)
 
-    if val_dataset is None:
-        history = model.fit(
-            dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks)
-    else:
-        val_steps = np.ceil(no_val_samples / batch_size)
+    val_steps = np.ceil(no_val_samples / batch_size)
         
+    if frozen_epochs > 0:
         frozen_history = model.fit(
-            dataset, epochs = 25, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks,
+            dataset, epochs = frozen_epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks,
                 validation_data = val_dataset, validation_steps = val_steps)
         frozen_hist_df = pd.DataFrame(frozen_history.history)
         
-        model = _recompile_model(model, train_params)
-        history = model.fit(
-            dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks,
-                validation_data = val_dataset, validation_steps = val_steps)
+    model = _recompile_model(model, train_params)
+    history = model.fit(
+        dataset, epochs = epochs, steps_per_epoch = steps_per_epoch, verbose = 2, callbacks = callbacks,
+            validation_data = val_dataset, validation_steps = val_steps)
 
-        hist_df = pd.DataFrame(history.history)
+    hist_df = pd.DataFrame(history.history)
         
+    if frozen_epochs > 0:
         hist_df = pd.concat([frozen_hist_df, hist_df])
 
     return model, hist_df

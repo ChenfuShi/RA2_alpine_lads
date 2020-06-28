@@ -12,12 +12,12 @@ from keras_adamw import AdamW, SGDW
 def load_joint_damage_model(model_file):
     return keras.models.load_model(model_file, compile = False)
 
-def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .9, init_bias = 0):
+def get_joint_damage_type_model(config, optimizer_params, pretrained_model_file = None, model_name = 'joint_damage_type_model', alpha = .9, init_bias = 0, gamma = 2.0):
     group_flag = optimizer_params.get('group_flag', None)
     
     base_input, base_ouptut = _get_base_model(config, pretrained_model_file)
 
-    output, metrics_dir, losses = _add_output(base_ouptut, init_bias, alpha)
+    output, metrics_dir, losses = _add_output(base_ouptut, init_bias, alpha, gamma = gamma)
 
     joint_damage_type_model = keras.models.Model(
         inputs = base_input,
@@ -80,6 +80,7 @@ def _add_output(base_output, init_bias, alpha, gamma = 2., group_flag = None):
     return outputs, metrics_dir, losses
 
 def _get_optimizier(model, optimizer_params):
+    epochs = optimizer_params.get('frozen_epochs', 0)
     lr = optimizer_params['lr']
     wd = optimizer_params['wd']
     use_wr = optimizer_params['use_wr']
@@ -93,7 +94,7 @@ def _get_optimizier(model, optimizer_params):
             layer.kernel_regularizer = keras.regularizers.l2(0)
             weight_decays.update({layer.kernel.name: wd})
         
-    optimizer = AdamW(lr = lr, total_iterations = 25 * optimizer_params['steps_per_epoch'], weight_decays = weight_decays, use_cosine_annealing = False, init_verbose = False, batch_size = 1)
+    optimizer = AdamW(lr = lr, total_iterations = epochs * optimizer_params['steps_per_epoch'], weight_decays = weight_decays, use_cosine_annealing = False, init_verbose = False, batch_size = 1)
     
     return optimizer
 
@@ -115,9 +116,8 @@ def _recompile_model(model, optimizer_params):
         layer.trainable = True
         
     optimizer = AdamW(lr = lr, weight_decays = weight_decays, use_cosine_annealing = use_wr, total_iterations = total_iterations, init_verbose = False, batch_size = 1)
-    loss = model.loss
     
-    print(loss)
+    loss = model.loss
     
     metrics_dir = {}
     for n in range(no_outcomes):

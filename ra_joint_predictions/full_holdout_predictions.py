@@ -8,6 +8,8 @@ import logging
 import os
 import sys
 
+import pandas as pd
+
 from utils.config import Config
 from utils.saver import save_pretrained_model
 
@@ -25,5 +27,10 @@ if __name__ == '__main__':
 
     logging.info(f"Running full holdout predictions, with params {model_parameters_collection}, writing to output file: {output_file}")
 
-    predictions = predict_test_set(config, model_parameters_collection)
+    hands_joint_source = './data/predictions/hand_joint_data_test_v2.csv'
+    hands_df = pd.read_csv(hands_joint_source)
+    
+    hands_invalid_images = hands_df['image_name'].to_numpy()
+    
+    predictions = predict_test_set(config, model_parameters_collection, hands_invalid_images = hands_invalid_images)
     predictions.to_csv(f'../trained_models/{output_file}.csv', index = False)

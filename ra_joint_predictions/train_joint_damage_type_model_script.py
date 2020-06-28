@@ -40,10 +40,11 @@ if __name__ == '__main__':
 
     if group_flag == 'None':
         group_flag = None
-
+        
+    gamma = float(sys.argv[7])
     
     # load pretrained model
-    trained_model, hist_df = train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = do_validation, group_flag = group_flag)
+    trained_model, hist_df = train_joints_damage_type_model(config, model_name, pretrained_model, joint_type, dmg_type, do_validation = do_validation, group_flag = group_flag, gamma = gamma)
 
     save_pretrained_model(trained_model, 0, '../trained_models/' + model_name)
     hist_df.to_csv('../trained_models/' + model_name + '_hist.csv')

@@ -14,9 +14,11 @@ feet_joints_source = './data/predictions/feet_joint_data_train_v2.csv'
 feet_joints_val_source = './data/predictions/feet_joint_data_test_v2.csv'
 
 class hands_joints_val_dataset(hands_joints_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False, repeat = True):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
 
+        self.repeat = repeat
+        
     def create_hands_joints_dataset_with_validation(self, outcomes_source, joints_source = hands_joints_source, joints_val_source = hands_joints_val_source, erosion_flag = False):
         dataset = self.create_hands_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
         
@@ -25,11 +27,13 @@ class hands_joints_val_dataset(hands_joints_dataset):
         return dataset, val_dataset, val_no_samples
     
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe)
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, apply_clahe = self.apply_clahe, repeat = self.repeat)
 
 class hands_wrists_val_dataset(hands_wrists_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, repeat = True):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type)
+        
+        self.repeat = repeat
         
     def create_wrists_joints_dataset_with_validation(self, outcomes_source, joints_source = hands_joints_source, joints_val_source = hands_joints_val_source, erosion_flag = False):
         dataset = self.create_wrists_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
@@ -39,12 +43,14 @@ class hands_wrists_val_dataset(hands_wrists_dataset):
         return dataset, val_dataset, val_no_samples
     
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet)
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, imagenet = self.imagenet, repeat = self.repeat)
     
 class feet_joint_val_dataset(feet_joint_dataset):
-    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False):
+    def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None, imagenet = False, split_type = None, apply_clahe = False, repeat = True):
         super().__init__(config, model_type = model_type, pad_resize = pad_resize, joint_extractor = joint_extractor, imagenet = imagenet, split_type = split_type, apply_clahe = apply_clahe)
 
+        self.repeat = repeat
+        
     def create_feet_joints_dataset_with_validation(self, outcomes_source, joints_source = feet_joints_source, joints_val_source = feet_joints_val_source, erosion_flag = False):
         dataset = self.create_feet_joints_dataset(outcomes_source, joints_source = joints_source, erosion_flag = erosion_flag)
         
@@ -53,7 +59,7 @@ class feet_joint_val_dataset(feet_joint_dataset):
         return dataset, val_dataset, val_no_samples
     
     def _create_test_dataset(self):
-        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor)
+        return joint_test_dataset(self.config, self.image_dir, model_type = self.model_type, pad_resize = self.pad_resize, joint_extractor = self.joint_extractor, repeat = self.repeat)
     
 class combined_joint_val_dataset(combined_joint_dataset):
     def __init__(self, config, model_type = 'R', pad_resize = False, joint_extractor = None):
