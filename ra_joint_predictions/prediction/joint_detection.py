@@ -75,9 +75,9 @@ class joint_detector():
     def _detect_joints_in_image_data(self, data_frame, img_dir, joint_detectors, coord_mapping):
         dataset = self._create_joint_detection_dataset(data_frame, img_dir)
 
-        joint_dataframe = self._get_joint_predictions(dataset, joint_detectors, coord_mapping)
+        joint_dataframe, invalid_images = self._get_joint_predictions(dataset, joint_detectors, coord_mapping)
 
-        return data_frame.merge(joint_dataframe)
+        return data_frame.merge(joint_dataframe), invalid_images
 
     def _create_joint_detection_dataset(self, data_frame, img_dir):
         image_info = data_frame[['image_name', 'file_type', 'flip']].values
@@ -99,36 +99,39 @@ class joint_detector():
 
     def _get_joint_predictions(self, joint_prediction_dataset, joint_detectors, coord_mapping):
         joint_predictions_list = []
+        invalid_images = []
     
         for image_name, landmark_image, original_image_shape in joint_prediction_dataset:
             img_name = image_name.numpy().decode('UTF-8')
             
             # Predict Landmark positions
-            joint_predictions = self._cascading_joint_detection(landmark_image, img_name, joint_detectors)
+            joint_predictions, is_valid = self._cascading_joint_detection(landmark_image, img_name, joint_detectors)
 
-            if np.count_nonzero(joint_predictions < 0) != 0:
+            if is_valid is True:
+                # Scale landmarks to original img size
+                upscaled_joint_locations = lm_ops.upscale_detected_landmarks(joint_predictions, (self.landmark_img_height, self.landmark_img_width), original_image_shape)
+
+                joint_prediction = {
+                    'image_name': img_name
+                }
+
+                for key in coord_mapping:
+                    coords = coord_mapping[key]
+                    joint_coordinates = upscaled_joint_locations[coords[0]:coords[1]].numpy()
+
+                    coord_x = joint_coordinates[0]
+                    coord_y = joint_coordinates[1]
+
+                    joint_prediction[key + '_x'] = coord_x
+                    joint_prediction[key + '_y'] = coord_y
+
+                joint_predictions_list.append(joint_prediction)
+            else:
                 logging.error('No detector worked for image %s!', img_name)
+                
+                invalid_images.append(img_name)
 
-            # Scale landmarks to original img size
-            upscaled_joint_locations = lm_ops.upscale_detected_landmarks(joint_predictions, (self.landmark_img_height, self.landmark_img_width), original_image_shape)
-
-            joint_prediction = {
-                'image_name': img_name
-            }
-
-            for key in coord_mapping:
-                coords = coord_mapping[key]
-                joint_coordinates = upscaled_joint_locations[coords[0]:coords[1]].numpy()
-
-                coord_x = joint_coordinates[0]
-                coord_y = joint_coordinates[1]
-
-                joint_prediction[key + '_x'] = coord_x
-                joint_prediction[key + '_y'] = coord_y
-
-            joint_predictions_list.append(joint_prediction)
-
-        return pd.DataFrame(joint_predictions_list, index = np.arange(len(joint_predictions_list)))
+        return pd.DataFrame(joint_predictions_list, index = np.arange(len(joint_predictions_list))), invalid_images
     
     def _cascading_joint_detection(self, landmark_image, img_name, joint_detectors):
         for idx, joint_detector in enumerate(joint_detectors):
@@ -136,14 +139,26 @@ class joint_detector():
             
             joint_predictions = joint_detector.predict(landmark_image)[0]
             
-            if np.count_nonzero(joint_predictions < 0) != 0:
-                logging.warn('Detector %d failed for image %s with landmarks less than 0', idx, img_name)
-            elif (np.count_nonzero(joint_predictions[0::2] > img_shape[2]) > 0 or np.count_nonzero(joint_predictions[1::2] > img_shape[1]) > 0):
-                logging.warn('Detector %d failed for image %s with landmarks outside the image', idx, img_name)
-            else:
+            is_valid = self._validate_joint_predictions(joint_predictions, img_shape, img_name, idx)
+            
+            if is_valid:
                 break
         
-        return joint_predictions
+        return joint_predictions, is_valid
+    
+    def _validate_joint_predictions(self, joint_predictions, img_shape, img_name, idx):
+        is_valid = True
+        
+        if np.count_nonzero(joint_predictions < 0) != 0:
+            logging.warn(f'Detector {idx} failed for image {img_name} with landmarks less than 0')
+            
+            is_valid = False
+        elif (np.count_nonzero(joint_predictions[0::2] > img_shape[2]) > 0 or np.count_nonzero(joint_predictions[1::2] > img_shape[1]) > 0):
+            logging.warn(f'Detector {idx} failed for image {img_name} with landmarks outside the image')
+            
+            is_valid = False
+            
+        return is_valid
 
 class dream_joint_detector(joint_detector):
     def __init__(self, config, hand_joint_detectors, feet_joint_detectors):
@@ -161,10 +176,10 @@ class dream_joint_detector(joint_detector):
         hand_dataframe = full_dataframe.iloc[hands_mask]
         feet_dataframe = full_dataframe.iloc[feet_mask]
 
-        data_hands = self._detect_joints_in_image_data(hand_dataframe, img_dir, self.hand_joint_detectors, hand_coord_mapping)
-        data_feet = self._detect_joints_in_image_data(feet_dataframe, img_dir, self.feet_joint_detectors, foot_coord_mapping)
+        data_hands, hands_invalid_images = self._detect_joints_in_image_data(hand_dataframe, img_dir, self.hand_joint_detectors, hand_coord_mapping)
+        data_feet, feet_invalid_images = self._detect_joints_in_image_data(feet_dataframe, img_dir, self.feet_joint_detectors, foot_coord_mapping)
 
-        return data_hands, data_feet
+        return data_hands, data_feet, hands_invalid_images, feet_invalid_images
 
 class rsna_joint_detector(joint_detector):
     def __init__(self, config, hand_joint_detectors):
