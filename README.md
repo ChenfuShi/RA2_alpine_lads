@@ -20,4 +20,4 @@ Matplotlib
 
 opencv
 
-keras-adamw (Available here: https://github.com/OverLordGoldDragon/keras-adamw - the repository contains a copy of this repo, to fix some issues, that have since been fixed in the original code)
+keras-adamw (Available here: https://github.com/OverLordGoldDragon/keras-adamw - this repository contains a copy (./ra_joint_predictions/keras-adamw) of the keras-adamw repo, to fix some issues, that have since been fixed in the original code)
