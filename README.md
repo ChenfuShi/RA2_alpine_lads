@@ -1,6 +1,6 @@
 ## A two-stage model to classify joint damage in radiographs
 
-This repository contains the source code developed for our submission to the RA2 DREAM Challenge: Automated Scoring of Radiographic Joint Damage.
+This repository contains the source code developed for our submission to the RA2 DREAM Challenge: Automated Scoring of Radiographic Joint Damage: https://www.synapse.org/#!Synapse:syn20545111/wiki/.
 
 Various trained models are available from the ./trained_models directory. Refer to ./ra_joint_predictions/dream/dream_model_parameters_collection.json to see which models were used in the final predictions. 
 
