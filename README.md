@@ -1,61 +1,14 @@
-weights used:
+## A two-stage model to classify joint damage in radiographs
 
-#### original model for landmarks 
-Face Pretraining: FACE_original_retrained_model_100
+This repository contains the source code developed for our submission to the RA2 DREAM Challenge: Automated Scoring of Radiographic Joint Damage.
 
-hands landmark prediciton:
-HANDS_train_original_model_1000 
-resources/hands_landmarks_original_epoch_1000_predictor_1.h5
+Various trained models are available from the ./trained_models directory. Refer to ./ra_joint_predictions/dream/dream_model_parameters_collection.json to see which models were used in the final predictions. Some models used exceed the size restrictions of github, please reach out to use if you require these models for your research. Alternatively, all models used in the final submission are available from our challenge page: https://www.synapse.org/#!Synapse:syn21610007/wiki/604496 
 
-feet landmark prediction:
-FEET_train_original_model_1000
-resources/feet_landmarks_original_epoch_1000_predictor_1.h5
-
-
-#### resnet model for landmarks 
-seems to not be as good as the original model
-faces pretraining:
-FACE_pretrain_resnet_model_250
-
-hands landmark prediciton:
-HANDS_train_resnet_model_2500
-  
-feet landmark prediction:
-HANDS_train_resnet_model_2500
-
-
-
-
-
-
-
-#### joint classfication model "complex"
-NIH pretraining:
-NIH_new_pretrain_model_250
-
-
-
-#### joint classfication model resnet
-NIH pretraining:
-NIH_resnet_pretrain_model_250
-
-
-
-
-
-
-Dependencies
-
+### Dependencies
 tensorflow 2.0.0
-
 tensorflow-gpu 2.0.0
-
 tensorflow-addons 0.6.0
-
 Pillow
-
 Pandas
-
 Matplotlib
-
 opencv
