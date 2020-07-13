@@ -1,8 +1,7 @@
 weights used:
 
 #### original model for landmarks 
-faces pretraining:
-FACE_original_retrained_model_100
+Face Pretraining: FACE_original_retrained_model_100
 
 hands landmark prediciton:
 HANDS_train_original_model_1000 
